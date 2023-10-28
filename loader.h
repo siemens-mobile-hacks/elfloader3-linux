@@ -1,4 +1,3 @@
-
 /*
  * Этот файл является частью программы ElfLoader
  * Copyright (C) 2011 by Z.Vova, Ganster
@@ -13,10 +12,14 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "debug.h"
+
 #define __arch
 
-#define l_msg(x, y) printf("MESSAGE: %s\n", (char *)y);
-#define __e_div(a, b) (b % a)
+extern int __ep3_debug;
+
+#define EP3_ERROR(fmt, ...) do { fprintf(stderr, "[EP3] [error] " fmt, ## __VA_ARGS__); } while (0)
+#define EP3_DEBUG(fmt, ...) do { if (__ep3_debug) { fprintf(stderr, "[EP3] [debug] " fmt, ## __VA_ARGS__); } } while (0)
 
 #include "elf.h"
 
@@ -26,8 +29,6 @@ static const unsigned char elf_magic_header[] = {
 	0x01, /* Only LSB data. */
 	0x01, /* Only ELF version 1. */
 };
-
-#define __arch
 
 #define NO_FILEORDIR "no such file or directory"
 #define BADFILE "bad file type"
@@ -55,6 +56,11 @@ enum ERROR {
 
 typedef struct
 {
+	void *value;
+} AlignedMemory;
+
+typedef struct
+{
 	void *lib;
 	void *next;
 	void *prev;
@@ -74,7 +80,7 @@ typedef enum elf32_type {
 
 typedef struct
 {
-	char *body;
+	AlignedMemory *body;
 	unsigned int bin_size;
 	Elf32_Ehdr ehdr;
 	unsigned int v_addr;
@@ -91,6 +97,7 @@ typedef struct
 	int *switab;
 	const char *fname; // не постоянная переменная, после загрузки эльфа она обнулится
 	char *temp_env; // временное переменное окружение для эльфа
+	struct link_map linkmap;
 } Elf32_Exec;
 
 typedef struct
@@ -104,49 +111,36 @@ typedef struct
 typedef int ELF_ENTRY(const char *, void *);
 typedef int LIB_FUNC();
 
-extern unsigned int ferr;
+int loader_check_elf(Elf32_Ehdr *ehdr);
+unsigned int loader_get_bin_size(Elf32_Exec *ex, Elf32_Phdr *phdrs);
+int loader_load_sections(Elf32_Exec *ex);
+int loader_do_reloc(Elf32_Exec *ex, Elf32_Dyn *dyn_sect, Elf32_Phdr *phdr);
+unsigned long loader_elf_hash(const char *name);
+Elf32_Word loader_find_export(Elf32_Exec *ex, const char *name);
+Elf32_Word loader_find_function(Elf32_Lib *lib, const char *name);
 
-static inline int *AddrLibrary_a() {
-	return 0;
-}
-
-static inline void SUBPROC_a(void *func, void *p) {
-	
-}
-
-extern char tmp[258];
-void ep_log(Elf32_Exec *ex, const char *data, int size);
-
-#define lprintf(...)                                 \
-	{                                                \
-		int __dsz = snprintf(tmp, 256, __VA_ARGS__); \
-		ep_log(tmp, __dsz);                          \
-	}
-
-int CheckElf(Elf32_Ehdr *ehdr);
-unsigned int GetBinSize(Elf32_Exec *ex, Elf32_Phdr *phdrs);
-int LoadSections(Elf32_Exec *ex);
-int DoRelocation(Elf32_Exec *ex, Elf32_Dyn *dyn_sect, Elf32_Phdr *phdr);
-unsigned long elfhash(const char *name);
-Elf32_Word findExport(Elf32_Exec *ex, const char *name);
-Elf32_Word FindFunction(Elf32_Lib *lib, const char *name);
+void loader_set_debug(int flag);
 
 /* shared support */
-Elf32_Lib *OpenLib(const char *name, Elf32_Exec *ex);
-int CloseLib(Elf32_Lib *lib, int immediate);
-int dlopen(const char *name);
-int dlclose(int handle);
-Elf32_Word dlsym(int handle, const char *name);
+Elf32_Lib *loader_lib_open(const char *name, Elf32_Exec *ex);
+int loader_lib_close(Elf32_Lib *lib, int immediate);
+void loader_lib_unref_clients(Elf32_Lib *lib);
+
+int loader_dlopen(const char *name);
+int loader_dlclose(int handle);
+Elf32_Word loader_dlsym(int handle, const char *name);
 
 /* executable support */
-Elf32_Exec *elfopen(const char *filenam);
-int elfclose(Elf32_Exec *ex);
-void *elf_entry(Elf32_Exec *);
-
-__arch void sub_clients(Elf32_Lib *lib);
+Elf32_Exec *loader_elf_open(const char *filenam);
+int loader_elf_close(Elf32_Exec *ex);
+void *loader_elf_entry(Elf32_Exec *);
 
 /* init/fini arrays support */
-void run_INIT_Array(Elf32_Exec *ex);
-void run_FINI_Array(Elf32_Exec *ex);
+void loader_run_INIT_Array(Elf32_Exec *ex);
+void loader_run_FINI_Array(Elf32_Exec *ex);
+
+/* user-defined impl */
+void loader_subproc_impl(void *func, void *p1);
+int *loader_library_impl();
 
 #endif

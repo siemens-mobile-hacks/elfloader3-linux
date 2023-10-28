@@ -4,7 +4,7 @@
 char **l__environ = 0;
 static char **l_last_environ = 0;
 
-__arch char *
+char *
 _strchrnul(const char *s, int c_in) {
 	while (*++s != c_in && *s)
 		;
@@ -18,7 +18,7 @@ _strchrnul(const char *s, int c_in) {
    must be used directly.  This is all complicated by the fact that we try
    to reuse values once generated for a `setenv' call since we can never
    free the strings. [in uclibc, we do not]  */
-__arch static int __add_to_environ(const char *name, const char *value,
+static int __add_to_environ(const char *name, const char *value,
 	int replace) {
 	register char **ep;
 	register size_t size;
@@ -88,12 +88,12 @@ DONE:
 	return rv;
 }
 
-__arch int loader_setenv(const char *name, const char *value, int replace) {
+int loader_setenv(const char *name, const char *value, int replace) {
 	/* NB: setenv("VAR", NULL, 1) inserts "VAR=" string */
 	return __add_to_environ(name, value ? value : "", replace);
 }
 
-__arch int loader_unsetenv(const char *name) {
+int loader_unsetenv(const char *name) {
 	const char *eq;
 	size_t len;
 	char **ep;
@@ -126,7 +126,7 @@ __arch int loader_unsetenv(const char *name) {
 	return 0;
 }
 
-__arch char *loader_getenv(const char *var) {
+char *loader_getenv(const char *var) {
 	int len;
 	char **ep;
 
@@ -145,7 +145,7 @@ __arch char *loader_getenv(const char *var) {
 /* The `clearenv' was planned to be added to POSIX.1 but probably
    never made it.  Nevertheless the POSIX.9 standard (POSIX bindings
    for Fortran 77) requires this function.  */
-__arch int loader_clearenv(void) {
+int loader_clearenv(void) {
 
 	/* If we allocated this environment we can free it.
 	 * If we did not allocate this environment, it's NULL already

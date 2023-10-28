@@ -10,6 +10,8 @@
 
 #include <unistd.h>
 
+#define __e_div(a, b) (b % a)
+
 extern unsigned int realtime_libclean;
 char tmp[258] = { 0 }, dlerr[128] = { 0 };
 
@@ -20,14 +22,14 @@ int handles_cnt = 0;
 /*
  * Существует ли файл
  */
-__arch char __is_file_exist(const char *fl) {
+char __is_file_exist(const char *fl) {
 	return access(fl, 0) != -1;
 }
 
 /*
  * Возвращает хеш имени
  */
-__arch unsigned int name_hash(const char *name) {
+unsigned int name_hash(const char *name) {
 	unsigned int hash = 0;
 	unsigned int hi;
 	/* два раза *name требует больше времени */
@@ -53,7 +55,7 @@ __arch unsigned int name_hash(const char *name) {
 /*
  * Находит в библиотеке требуемый експорт
  */
-__arch Elf32_Word findExport(Elf32_Exec *ex, const char *name) {
+Elf32_Word loader_find_export(Elf32_Exec *ex, const char *name) {
 	if (!ex || !ex->hashtab)
 		return 0;
 
@@ -89,10 +91,10 @@ __arch Elf32_Word findExport(Elf32_Exec *ex, const char *name) {
 		switch (ELF_ST_BIND(sym.st_info)) {
 		case STB_GLOBAL:
 			/* Global definition.  Just what we need. */
-			return (Elf32_Word)ex->body + sym.st_value;
+			return (Elf32_Word)ex->body->value + sym.st_value;
 		case STB_WEAK:
 			/* Weak definition.  Use this value if we don't find another. */
-			func = (Elf32_Word)ex->body + sym.st_value;
+			func = (Elf32_Word)ex->body->value + sym.st_value;
 			break;
 		default:
 			/* Local symbols are ignored.  */
@@ -103,17 +105,17 @@ __arch Elf32_Word findExport(Elf32_Exec *ex, const char *name) {
 	return func;
 }
 
-__arch Elf32_Word FindFunction(Elf32_Lib *lib, const char *name) {
+Elf32_Word loader_find_function(Elf32_Lib *lib, const char *name) {
 	if (!lib)
 		return 0;
-	return findExport(lib->ex, name);
+	return loader_find_export(lib->ex, name);
 }
 
 /*
  * пропарсить содержимое переменной LD_LIBRARY_PATH
  * путь1;путь2;путь3;
  */
-__arch char *envparse(const char *str, char *buf, int num) {
+char *envparse(const char *str, char *buf, int num) {
 	if (!str || !buf || num < 0)
 		return 0;
 	const char *start = str;
@@ -144,12 +146,12 @@ __arch char *envparse(const char *str, char *buf, int num) {
 /*
  * Поиск библиотек в папках переменной окружения
  */
-__arch const char *findShared(const char *name) {
+const char *findShared(const char *name) {
 	const char *env = loader_getenv("LD_LIBRARY_PATH");
 
 	for (int i = 0;; ++i) {
 		if (!envparse(env, tmp, i))
-			return 0;
+			return NULL;
 		strcat(tmp, name);
 		if (__is_file_exist(tmp)) {
 			return tmp;
@@ -163,10 +165,10 @@ __arch const char *findShared(const char *name) {
 /*
  * Открывает и парсит заданную библиотеку
  */
-__arch Elf32_Lib *OpenLib(const char *name, Elf32_Exec *_ex) {
+Elf32_Lib *loader_lib_open(const char *name, Elf32_Exec *_ex) {
 	if (!name || !*name)
 		return 0;
-	printf("Starting loading shared library '%s'...\n", name);
+	EP3_DEBUG("Starting loading shared library '%s'...\n", name);
 	int fp, _size = 0;
 	Elf32_Ehdr ehdr;
 	Elf32_Exec *ex;
@@ -184,7 +186,7 @@ __arch Elf32_Lib *OpenLib(const char *name, Elf32_Exec *_ex) {
 		Elf32_Lib *lib = ready_libs->lib;
 
 		if (!strcmp(lib->soname, cmp_share_name)) {
-			printf(" '%s' is olready loaded\n", cmp_share_name);
+			EP3_DEBUG(" '%s' is olready loaded\n", cmp_share_name);
 			lib->users_cnt++;
 			memset(dlerr, 0, 2);
 			return lib;
@@ -233,7 +235,7 @@ try_again:
 	}
 
 	/* Проверяем шо это вообще такое */
-	if (_size < sizeof(Elf32_Ehdr) || CheckElf(&ehdr)) { // не эльф? о_О мб симлинк?!
+	if (_size < sizeof(Elf32_Ehdr) || loader_check_elf(&ehdr)) { // не эльф? о_О мб симлинк?!
 		int ns = lseek(fp, 0, SEEK_END); // если длина файл больше 256 байт то нахрен такой путь...
 		if (ns < 256 && ns > 0) {
 			lseek(fp, 0, SEEK_SET);
@@ -264,7 +266,7 @@ try_again:
 	ex->libs = 0;
 	ex->complete = 0;
 	ex->meloaded = (void *)_ex;
-	ex->switab = (int *)AddrLibrary_a();
+	ex->switab = (int *)loader_library_impl();
 	ex->fname = name;
 
 	const char *p = strrchr(name, '\\');
@@ -277,10 +279,10 @@ try_again:
 		ex->temp_env = 0;
 
 	/* Начинаем копать структуру либы */
-	if (LoadSections(ex)) {
+	if (loader_load_sections(ex)) {
 		strcpy(dlerr, BADFILE);
 		close(fp);
-		elfclose(ex);
+		loader_elf_close(ex);
 		return 0;
 	}
 
@@ -290,7 +292,7 @@ try_again:
 	/* Глобальная база либ */
 	Elf32_Lib *lib;
 	if (!(lib = malloc(sizeof(Elf32_Lib)))) {
-		elfclose(ex);
+		loader_elf_close(ex);
 		strcpy(dlerr, OUTOFMEM);
 		return 0;
 	}
@@ -322,7 +324,7 @@ try_again:
 	if (!global_ptr) // ?????...?? ??? :'(
 	{
 		strcpy(dlerr, OUTOFMEM);
-		CloseLib(lib, 0);
+		loader_lib_close(lib, 0);
 		return 0;
 	}
 
@@ -340,16 +342,16 @@ try_again:
 	lib_top = global_ptr;
 
 	/* запустим контсрукторы */
-	run_INIT_Array(ex);
+	loader_run_INIT_Array(ex);
 	ex->complete = 1;
 
 	/* запустим функциюю инициализации либы, если таковая имеется */
 	if (ex->dyn[DT_INIT]) {
-		printf("init function found\n");
-		((void (*)(const char *))(ex->body + ex->dyn[DT_INIT] - ex->v_addr))(name);
+		EP3_DEBUG("init function found\n");
+		((void (*)(const char *))(ex->body->value + ex->dyn[DT_INIT] - ex->v_addr))(name);
 	}
 
-	printf(" '%s' Loade complete\n", name);
+	EP3_DEBUG(" '%s' Loade complete\n", name);
 	dlerr[0] = 0;
 	dlerr[1] = 0;
 	ex->fname = 0;
@@ -359,14 +361,14 @@ try_again:
 /*
  * Вычесть общее количество клиентов либ
  */
-__arch void sub_clients(Elf32_Lib *lib) {
+void loader_lib_unref_clients(Elf32_Lib *lib) {
 	lib->users_cnt--;
 }
 
 /*
  * Закрывает бибилотеку и освобождает ресурсы
  */
-__arch int CloseLib(Elf32_Lib *lib, int immediate) {
+int loader_lib_close(Elf32_Lib *lib, int immediate) {
 	if (!lib)
 		return E_EMPTY;
 
@@ -377,7 +379,7 @@ __arch int CloseLib(Elf32_Lib *lib, int immediate) {
 
 		Elf32_Exec *ex = lib->ex;
 		if (ex->dyn[DT_FINI])
-			((LIB_FUNC *)(ex->body + ex->dyn[DT_FINI] - ex->v_addr))();
+			((LIB_FUNC *)(ex->body->value + ex->dyn[DT_FINI] - ex->v_addr))();
 
 		if (lib->glob_queue) {
 			// Функция финализации
@@ -397,7 +399,7 @@ __arch int CloseLib(Elf32_Lib *lib, int immediate) {
 			free(glob_queue);
 		}
 
-		elfclose(ex);
+		loader_elf_close(ex);
 		free(lib);
 	}
 end:
@@ -405,9 +407,9 @@ end:
 }
 
 /*
- * POSIX-подобная dlopen
+ * POSIX-подобная loader_loader_loader_dlclose
  */
-__arch int dlopen(const char *name) {
+int loader_loader_loader_dlclose(const char *name) {
 	int handle = -1;
 
 	if (!name)
@@ -446,7 +448,7 @@ __arch int dlopen(const char *name) {
 		handles = new_handles;
 	}
 
-	Elf32_Lib *lib = OpenLib(name, 0);
+	Elf32_Lib *lib = loader_lib_open(name, 0);
 	if (!lib)
 		return -1;
 
@@ -455,32 +457,32 @@ __arch int dlopen(const char *name) {
 }
 
 /*
- * POSIX-подобная dlclose
+ * POSIX-подобная loader_dlclose
  */
-int dlclose(int handle) {
+int loader_dlclose(int handle) {
 	if (0 > handle > handles_cnt - 1 || !handles)
 		return -1;
 
 	if (handles[handle]) {
 		Elf32_Lib *lib = handles[handle];
 		handles[handle] = 0;
-		sub_clients(lib);
+		loader_lib_unref_clients(lib);
 		// То что здесь стоит возвращать это? handle все равно же потерли...
-		return CloseLib(lib, 0);
+		return loader_lib_close(lib, 0);
 	}
 
 	return 0;
 }
 
 /*
- * POSIX-подобная dlsym
+ * POSIX-подобная loader_dlsym
  */
-Elf32_Word dlsym(int handle, const char *name) {
+Elf32_Word loader_dlsym(int handle, const char *name) {
 	if (0 > handle > handles_cnt - 1)
 		return 0;
 
 	if (handles && handles[handle])
-		return FindFunction(handles[handle], name);
+		return loader_find_function(handles[handle], name);
 
 	return 0;
 }
@@ -488,21 +490,21 @@ Elf32_Word dlsym(int handle, const char *name) {
 /*
  * POSIX-подобная dlerror
  */
-__arch const char *dlerror() {
+const char *dlerror() {
 	return dlerr;
 }
 
 /*
  * Шапка резинового массива^W^W связного списка либ
  */
-__arch void *SHARED_TOP() {
+void *SHARED_TOP() {
 	return lib_top;
 }
 
 /*
  * Очистка не нужных библиотек
  */
-__arch int dlclean_cache() {
+int dlclean_cache() {
 	if (!lib_top)
 		return -1;
 
@@ -516,7 +518,7 @@ __arch int dlclean_cache() {
 
 		if (bigger->users_cnt < 1) {
 			// закроем её, и она закроет весь хлам который сама юзает
-			CloseLib(bigger, 1); // срочняком кроим их!
+			loader_lib_close(bigger, 1); // срочняком кроим их!
 			++cleaned;
 		}
 

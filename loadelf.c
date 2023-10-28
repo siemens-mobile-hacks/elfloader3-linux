@@ -10,7 +10,7 @@
 #include <fcntl.h>
 
 // Загрузка эльфа
-__arch Elf32_Exec *elfopen(const char *filename) {
+Elf32_Exec *loader_elf_open(const char *filename) {
 	int fp;
 	Elf32_Ehdr ehdr;
 	Elf32_Exec *ex;
@@ -19,7 +19,7 @@ __arch Elf32_Exec *elfopen(const char *filename) {
 		return 0;
 
 	if (read(fp, &ehdr, sizeof(Elf32_Ehdr)) == sizeof(Elf32_Ehdr)) {
-		if (!CheckElf(&ehdr)) {
+		if (!loader_check_elf(&ehdr)) {
 			ex = malloc(sizeof(Elf32_Exec));
 
 			if (ex) {
@@ -33,7 +33,7 @@ __arch Elf32_Exec *elfopen(const char *filename) {
 				ex->complete = 0;
 				ex->__is_ex_import = 0;
 				ex->meloaded = 0;
-				ex->switab = (int *)AddrLibrary_a();
+				ex->switab = (int *)loader_library_impl();
 				ex->fname = filename;
 
 				const char *p = strrchr(filename, '\\');
@@ -45,13 +45,14 @@ __arch Elf32_Exec *elfopen(const char *filename) {
 				} else
 					ex->temp_env = 0;
 
-				if (!LoadSections(ex)) {
+				if (!loader_load_sections(ex)) {
 					ex->complete = 1;
 					close(fp);
 					ex->fname = 0;
 					return ex;
-				} else
-					elfclose(ex);
+				} else {
+					loader_elf_close(ex);
+				}
 			}
 		}
 	}
@@ -60,24 +61,24 @@ __arch Elf32_Exec *elfopen(const char *filename) {
 	return 0;
 }
 
-__arch void *elf_entry(Elf32_Exec *ex) {
+void *loader_elf_entry(Elf32_Exec *ex) {
 	if (!ex)
 		return 0;
-	return (ex->body + ex->ehdr.e_entry - ex->v_addr);
+	return (ex->body->value + ex->ehdr.e_entry - ex->v_addr);
 }
 
-__arch int elfclose(Elf32_Exec *ex) {
+int loader_elf_close(Elf32_Exec *ex) {
 	if (!ex)
 		return E_EMPTY;
 
 	if (ex->complete)
-		run_FINI_Array(ex);
+		loader_run_FINI_Array(ex);
 
 	// Закрываем либы
 	while (ex->libs) {
 		Libs_Queue *lib = ex->libs;
-		sub_clients(lib->lib);
-		CloseLib(lib->lib, 0);
+		loader_lib_unref_clients(lib->lib);
+		loader_lib_close(lib->lib, 0);
 		ex->libs = lib->next;
 		free(lib);
 	}
@@ -92,7 +93,7 @@ __arch int elfclose(Elf32_Exec *ex) {
 	return E_NO_ERROR;
 }
 
-__arch int sub_elfclose(Elf32_Exec *ex) {
-	SUBPROC_a((void *)elfclose, ex);
+int sub_elfclose(Elf32_Exec *ex) {
+	loader_subproc_impl((void *)loader_elf_close, ex);
 	return 0;
 }
