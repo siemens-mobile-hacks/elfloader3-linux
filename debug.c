@@ -7,10 +7,7 @@
 
 #include "loader.h"
 
-
-
-__arch void dump1(Elf32_Ehdr *ehdr)
-{
+__arch void dump1(Elf32_Ehdr *ehdr) {
 	printf("Elf32_Ehdr dump\n");
 	printf("e_ehsize: %d\n", ehdr->e_ehsize);
 	printf("e_entry: %d\n", ehdr->e_entry);
@@ -28,9 +25,7 @@ __arch void dump1(Elf32_Ehdr *ehdr)
 	printf("e_version: %d\n", ehdr->e_version);
 }
 
-
-__arch void dump2(Elf32_Phdr *p)
-{
+__arch void dump2(Elf32_Phdr *p) {
 	printf("Elf32_Phdr dump\n");
 	printf("p_align: %d\n", p->p_align);
 	printf("p_filesz: %d\n", p->p_filesz);
@@ -42,9 +37,7 @@ __arch void dump2(Elf32_Phdr *p)
 	printf("p_vaddr: %d\n", p->p_vaddr);
 }
 
-
-__arch void dump3(Elf32_Sym *p)
-{
+__arch void dump3(Elf32_Sym *p) {
 	printf("Elf32_Sym dump\n");
 	printf("st_name: %d\n", p->st_name);
 	printf("st_value: %d\n", p->st_value);
@@ -54,13 +47,10 @@ __arch void dump3(Elf32_Sym *p)
 	printf("st_shndx: %d\n", p->st_shndx);
 }
 
-
-__arch void dump(char *data, int sz)
-{
-	for(int i=0,a=0; i<sz; i++,a++)
-	{
-		if(a>5){
-			a=0;
+__arch void dump(char *data, int sz) {
+	for (int i = 0, a = 0; i < sz; i++, a++) {
+		if (a > 5) {
+			a = 0;
 			printf("\n");
 		}
 		printf("%02x ", data[i]);

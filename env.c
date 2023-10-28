@@ -1,18 +1,15 @@
 
 #include "loader.h"
 
-
 char **l__environ = 0;
 static char **l_last_environ = 0;
 
-
-
 __arch char *
-strchrnul (const char *s, int c_in)
-{
-  while( *++s != c_in && *s);
-  
-  return (char*)s;
+strchrnul(const char *s, int c_in) {
+	while (*++s != c_in && *s)
+		;
+
+	return (char *)s;
 }
 
 /* This function is used by `setenv' and `putenv'.  The difference between
@@ -22,8 +19,7 @@ strchrnul (const char *s, int c_in)
    to reuse values once generated for a `setenv' call since we can never
    free the strings. [in uclibc, we do not]  */
 __arch static int __add_to_environ(const char *name, const char *value,
- 		int replace)
-{
+	int replace) {
 	register char **ep;
 	register size_t size;
 	char *var_val;
@@ -68,8 +64,8 @@ __arch static int __add_to_environ(const char *name, const char *value,
 	ep[0] = NULL;
 	ep[1] = NULL;
 
- REPLACE:
-	var_val = (char*) name;
+REPLACE:
+	var_val = (char *)name;
 	if (value != NULL) {
 		const size_t vallen = strlen(value) + 1;
 
@@ -84,31 +80,26 @@ __arch static int __add_to_environ(const char *name, const char *value,
 	}
 	*ep = var_val;
 
- DONE_OK:
+DONE_OK:
 	rv = 0;
 
- DONE:
+DONE:
 
 	return rv;
 }
 
-
-__arch int setenv(const char *name, const char *value, int replace)
-{
+__arch int setenv(const char *name, const char *value, int replace) {
 	/* NB: setenv("VAR", NULL, 1) inserts "VAR=" string */
 	return __add_to_environ(name, value ? value : "", replace);
 }
 
-
-__arch int unsetenv(const char *name)
-{
+__arch int unsetenv(const char *name) {
 	const char *eq;
 	size_t len;
 	char **ep;
 
 	if (name == NULL || *name == '\0'
-	 || *(eq = strchrnul(name, '=')) == '='
-	) {
+		|| *(eq = strchrnul(name, '=')) == '=') {
 		//__set_errno(EINVAL);
 		return -1;
 	}
@@ -116,71 +107,65 @@ __arch int unsetenv(const char *name)
 
 	ep = l__environ;
 	/* NB: clearenv(); unsetenv("foo"); should not segfault */
-	if (ep)	while (*ep != NULL) {
-		if (!strncmp(*ep, name, len) && (*ep)[len] == '=') {
-			char *rm = *ep;
-			/* Found it.  Remove this pointer by moving later ones back.  */
-			char **dp = ep;
-			do {
-				dp[0] = dp[1];
-			} while (*dp++);
-			mfree(rm);
-			/* Continue the loop in case NAME appears again.  */
-		} else {
-			++ep;
+	if (ep)
+		while (*ep != NULL) {
+			if (!strncmp(*ep, name, len) && (*ep)[len] == '=') {
+				char *rm = *ep;
+				/* Found it.  Remove this pointer by moving later ones back.  */
+				char **dp = ep;
+				do {
+					dp[0] = dp[1];
+				} while (*dp++);
+				mfree(rm);
+				/* Continue the loop in case NAME appears again.  */
+			} else {
+				++ep;
+			}
 		}
-	}
 
 	return 0;
 }
 
+__arch char *getenv(const char *var) {
+	int len;
+	char **ep;
 
-__arch char *getenv(const char *var)
-{
-    int len;
-    char **ep;
-
-    if (!(ep=l__environ))
-	return NULL;
-    len = strlen(var);
-    while(*ep) {
-	if (memcmp(var, *ep, len) == 0 && (*ep)[len] == '=') {
-	    return *ep + len + 1;
+	if (!(ep = l__environ))
+		return NULL;
+	len = strlen(var);
+	while (*ep) {
+		if (memcmp(var, *ep, len) == 0 && (*ep)[len] == '=') {
+			return *ep + len + 1;
+		}
+		ep++;
 	}
-	ep++;
-    }
-    return NULL;
+	return NULL;
 }
 
 /* The `clearenv' was planned to be added to POSIX.1 but probably
    never made it.  Nevertheless the POSIX.9 standard (POSIX bindings
    for Fortran 77) requires this function.  */
-__arch int clearenv(void)
-{
+__arch int clearenv(void) {
 
 	/* If we allocated this environment we can free it.
 	 * If we did not allocate this environment, it's NULL already
 	 * and is safe to free().  */
-    if(!l_last_environ)
-        return 1;
+	if (!l_last_environ)
+		return 1;
 
 	int i = 0;
-	while(l_last_environ[i])
-	{
-	  mfree(l_last_environ[i]);
-          l_last_environ[i] = 0;
-	  ++i;
+	while (l_last_environ[i]) {
+		mfree(l_last_environ[i]);
+		l_last_environ[i] = 0;
+		++i;
 	}
 
-    mfree(l_last_environ);
+	mfree(l_last_environ);
 	l_last_environ = NULL;
 	l__environ = NULL;
 	return 0;
 }
 
-
-char **environ()
-{
-  return l__environ;
+char **environ() {
+	return l__environ;
 }
-

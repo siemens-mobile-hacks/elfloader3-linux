@@ -8,7 +8,7 @@
 #define S_CUR SEEK_CUR
 #define S_END SEEK_END
 
-//long lseek(FILE *fp, int off, int mod, int *err, int *err1 );
+// long lseek(FILE *fp, int off, int mod, int *err, int *err1 );
 void ShowMSG(int a, int b);
 void SUBPROC(void *proc, void *p);
 
