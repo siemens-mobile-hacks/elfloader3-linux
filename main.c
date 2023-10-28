@@ -11,8 +11,12 @@
 
 #include "loader.h"
 #include "env.h"
+#include "stubs.h"
 
-static int switab[4096] = { 0 };
+void swi_stub(int swi) {
+	fprintf(stderr, "Unk swi %02X func called\n", swi);
+	abort();
+}
 
 void loader_subproc_impl(void *func, void *p1) {
 	EP3_DEBUG("subproc called");
@@ -20,25 +24,12 @@ void loader_subproc_impl(void *func, void *p1) {
 
 int *loader_library_impl() {
 	fprintf(stderr, "loader_library_impl\n");
-	return switab;
-}
-
-void swi_stub() {
-	fprintf(stderr, "Unk swi func called\n");
-	abort();
-}
-
-void init_switab() {
-	for (int i = 0; i < 4096; i++) {
-		switab[i] = (int) swi_stub;
-	}
+	return (int *) switab_functions;
 }
 
 int main(int argc, char **argv) {
 	if (argc < 2)
 		return 0;
-	
-	init_switab();
 	
 	const char *NAME = argv[1];
 
