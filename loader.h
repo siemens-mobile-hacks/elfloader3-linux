@@ -8,51 +8,15 @@
 #ifndef __LOADER_H__
 #define __LOADER_H__
 
-#define _test_linux
-// #define __ZVOVA
-// #define __GANSTER
-
-#ifdef __GANSTER
-#include <swilib.h>
-#endif
-
-#ifdef __ZVOVA
-#include <inc/swilib.h>
-#define fopen open
-#define fread read
-#define fwrite write
-#define fclose close
-#endif
-
-#ifdef _test_linux
 #include <fcntl.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
-#define A_ReadOnly O_RDONLY
-#define A_BIN 0
-#define A_TXT O_TXT
-
 #define __arch
-
-#define mfree free
-
-#define fopen open
-#define fread read
-#define fwrite write
-#define fclose close
-
-#define S_SET SEEK_SET
-#define S_END SEEK_END
-#define P_READ 0
-
-#define zeromem_a(d, s) memset(d, 0, s)
-#define zeromem(d, s) memset(d, 0, s)
 
 #define l_msg(x, y) printf("MESSAGE: %s\n", (char *)y);
 #define __e_div(a, b) (b % a)
-#endif
 
 #include "elf.h"
 
@@ -63,18 +27,7 @@ static const unsigned char elf_magic_header[] = {
 	0x01, /* Only ELF version 1. */
 };
 
-// #define __thumb_mode 1
-
-#ifndef _test_linux
-#define printf(...)
-#ifdef __thumb_mode
-#define __arch __thumb
-#else
-#define __arch __arm
-#endif /*__thumb_mode*/
-#else
 #define __arch
-#endif /* _test_linux */
 
 #define NO_FILEORDIR "no such file or directory"
 #define BADFILE "bad file type"
@@ -153,15 +106,13 @@ typedef int LIB_FUNC();
 
 extern unsigned int ferr;
 
-#ifndef _test_linux
-#ifdef ARM
-#define zeromem_a(a, b) zeromem(a, b)
-#define l_msg(a, b) ShowMSG(a, b)
-#else
-void zeromem_a(void *d, int l);
-void l_msg(int a, int b);
-#endif
-#endif
+static inline int *AddrLibrary_a() {
+	return 0;
+}
+
+static inline void SUBPROC_a(void *func, void *p) {
+	
+}
 
 extern char tmp[258];
 void ep_log(Elf32_Exec *ex, const char *data, int size);

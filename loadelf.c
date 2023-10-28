@@ -1,4 +1,3 @@
-
 /*
  * Этот файл является частью программы ElfLoader
  * Copyright (C) 2011 by Z.Vova, Ganster
@@ -7,28 +6,8 @@
 
 #include "loader.h"
 
-#ifndef _test_linux
-#ifdef __thumb_mode
-extern __arm void *memcpy_a(void *dest, const void *src, size_t size);
-
-__arm void SUBPROC_a(void *elf, void *param) {
-	SUBPROC(elf, param);
-}
-
-__arm unsigned int AddrLibrary_a() {
-	return AddrLibrary();
-}
-
-#else
-#define memcpy_a memcpy
-#define SUBPROC_a SUBPROC
-#define AddrLibrary_a AddrLibrary
-#endif
-
-#else
-#define memcpy_a memcpy
-#define AddrLibrary_a() 1
-#endif
+#include <unistd.h>
+#include <fcntl.h>
 
 // Загрузка эльфа
 __arch Elf32_Exec *elfopen(const char *filename) {
@@ -36,20 +15,15 @@ __arch Elf32_Exec *elfopen(const char *filename) {
 	Elf32_Ehdr ehdr;
 	Elf32_Exec *ex;
 
-#ifndef _test_linux
-	if ((fp = fopen(filename, A_ReadOnly | A_BIN, P_READ, &ferr)) == -1)
+	if ((fp = open(filename, O_RDONLY)) < 0)
 		return 0;
-#else
-	if ((fp = fopen(filename, "r")) == NULL)
-		return 0;
-#endif
 
-	if (fread(fp, &ehdr, sizeof(Elf32_Ehdr), &ferr) == sizeof(Elf32_Ehdr)) {
+	if (read(fp, &ehdr, sizeof(Elf32_Ehdr)) == sizeof(Elf32_Ehdr)) {
 		if (!CheckElf(&ehdr)) {
 			ex = malloc(sizeof(Elf32_Exec));
 
 			if (ex) {
-				memcpy_a(&ex->ehdr, &ehdr, sizeof(Elf32_Ehdr));
+				memcpy(&ex->ehdr, &ehdr, sizeof(Elf32_Ehdr));
 				ex->v_addr = (unsigned int)-1;
 				ex->fp = fp;
 				ex->body = 0;
@@ -73,7 +47,7 @@ __arch Elf32_Exec *elfopen(const char *filename) {
 
 				if (!LoadSections(ex)) {
 					ex->complete = 1;
-					fclose(fp, &ferr);
+					close(fp);
 					ex->fname = 0;
 					return ex;
 				} else
@@ -82,7 +56,7 @@ __arch Elf32_Exec *elfopen(const char *filename) {
 		}
 	}
 	ex->fname = 0;
-	fclose(fp, &ferr);
+	close(fp);
 	return 0;
 }
 
@@ -105,26 +79,20 @@ __arch int elfclose(Elf32_Exec *ex) {
 		sub_clients(lib->lib);
 		CloseLib(lib->lib, 0);
 		ex->libs = lib->next;
-		mfree(lib);
+		free(lib);
 	}
 
 	if (ex->hashtab)
-		mfree(ex->hashtab);
+		free(ex->hashtab);
 	if (ex->body)
-		mfree(ex->body);
+		free(ex->body);
 	if (ex->temp_env)
-		mfree(ex->temp_env);
-	mfree(ex);
+		free(ex->temp_env);
+	free(ex);
 	return E_NO_ERROR;
 }
 
 __arch int sub_elfclose(Elf32_Exec *ex) {
-
-#ifdef _test_linux
-	elfclose(ex);
-#else
 	SUBPROC_a((void *)elfclose, ex);
-#endif
-
 	return 0;
 }

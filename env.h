@@ -2,9 +2,9 @@
 #ifndef __ENV_H__
 #define __ENV_H__
 
-int setenv(const char *name, const char *value, int replace);
-int unsetenv(const char *name);
-char *getenv(const char *var);
-int clearenv(void);
+int loader_setenv(const char *name, const char *value, int replace);
+int loader_unsetenv(const char *name);
+char *loader_getenv(const char *var);
+int loader_clearenv(void);
 
 #endif

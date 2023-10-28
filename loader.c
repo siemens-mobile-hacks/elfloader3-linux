@@ -6,11 +6,9 @@
 
 #include "loader.h"
 
-/* for testing on pc */
-#ifdef _test_linux
-#include "fix.h"
 #include <fcntl.h>
 #include <unistd.h>
+
 int loader_warnings = 1;
 int realtime_libclean = 1;
 int AddrLibrary() { return 1; }
@@ -18,30 +16,12 @@ int AddrLibrary() { return 1; }
 void ep_log(Elf32_Exec *ex, const char *l, int sz) {
 	printf("AAA: %s\n", l);
 }
-#endif
-
-/* wraper for thumb-mode calling */
-#ifdef __thumb_mode
-extern __arm void l_msg(int a, int b);
-
-__arm void *memcpy_a(void *dest, const void *src, size_t size) {
-	return memcpy(dest, src, size);
-}
-
-__arm int memcmp_a(const void *m1, const void *m2, size_t n) {
-	return memcmp(m1, m2, n);
-}
-#else
-#define l_msg ShowMSG
-#define memcpy_a memcpy
-#define memcmp_a memcmp
-#endif
 
 unsigned int ferr;
 
 // Проверка валидности эльфа
 __arch int CheckElf(Elf32_Ehdr *ehdr) {
-	if (memcmp_a(ehdr, elf_magic_header, sizeof(elf_magic_header)))
+	if (memcmp(ehdr, elf_magic_header, sizeof(elf_magic_header)))
 		return E_HEADER;
 	if (ehdr->e_machine != EM_ARM)
 		return E_MACHINE;
@@ -71,25 +51,15 @@ __arch unsigned int GetBinSize(Elf32_Exec *ex, Elf32_Phdr *phdrs) {
 }
 
 __arch char *LoadData(Elf32_Exec *ex, int offset, int size) {
-#ifdef _test_linux
-	if (size && lseek(ex->fp, offset - ex->v_addr, S_SET))
-#else
-	if (size && lseek(ex->fp, offset - ex->v_addr, S_SET, &ferr, &ferr))
-#endif
-	{
+	if (size && lseek(ex->fp, offset - ex->v_addr, SEEK_SET)) {
 		char *data = malloc(size + 1);
-#ifdef _test_linux
-		if (fread(ex->fp, data, size) == size)
-#else
-		if (fread(ex->fp, data, size, &ferr) == size)
-#endif
-		{
+		if (read(ex->fp, data, size) == size) {
 			data[size] = 0;
 			return data;
-		} else
-			mfree(data);
+		} else {
+			free(data);
+		}
 	}
-
 	return 0;
 }
 
@@ -136,7 +106,7 @@ __arch unsigned int try_search_in_base(Elf32_Exec *ex, const char *name, int bin
 // Релокация
 __arch int DoRelocation(Elf32_Exec *ex, Elf32_Dyn *dyn_sect, Elf32_Phdr *phdr) {
 	unsigned int i = 0;
-	Elf32_Word libs_needed[64];
+	Elf32_Word libs_needed[64] = {};
 	unsigned int libs_cnt = 0;
 	char dbg[128];
 
@@ -165,14 +135,14 @@ __arch int DoRelocation(Elf32_Exec *ex, Elf32_Dyn *dyn_sect, Elf32_Phdr *phdr) {
 	ex->strtab = ex->dyn[DT_STRTAB] ? ex->body + ex->dyn[DT_STRTAB] - ex->v_addr : 0;
 
 	printf("STRTAB: %X\n", ex->dyn[DT_STRTAB]);
-	printf("SYMTAB: %X %X\n", ex->dyn[DT_SYMTAB], ex->symtab);
+	printf("SYMTAB: %X %p\n", ex->dyn[DT_SYMTAB], ex->symtab);
 
 	if (ex->type == EXEC_LIB) {
 		Elf32_Word *hash_hdr = (Elf32_Word *)LoadData(ex, ex->dyn[DT_HASH], 8);
 		if (hash_hdr) {
 			int hash_size = hash_hdr[0] * sizeof(Elf32_Word) + hash_hdr[1] * sizeof(Elf32_Word) + 8;
 			ex->hashtab = (Elf32_Word *)LoadData(ex, ex->dyn[DT_HASH], hash_size);
-			mfree(hash_hdr);
+			free(hash_hdr);
 			if (!ex->hashtab)
 				goto __hash_err;
 		} else {
@@ -186,6 +156,7 @@ __arch int DoRelocation(Elf32_Exec *ex, Elf32_Dyn *dyn_sect, Elf32_Phdr *phdr) {
 	// Загрузка библиотек
 	for (i = 0; i < libs_cnt; ++i) {
 		char *lib_name = ex->strtab + libs_needed[i];
+		printf("ex->strtab=%p | %s | %08x\n", ex->strtab, lib_name, libs_needed[i]);
 		Elf32_Lib *lib;
 		if ((lib = OpenLib(lib_name, ex))) {
 			Libs_Queue *libq = malloc(sizeof(Libs_Queue));
@@ -279,9 +250,9 @@ __arch int DoRelocation(Elf32_Exec *ex, Elf32_Dyn *dyn_sect, Elf32_Phdr *phdr) {
 					case STT_NOTYPE:
 						printf("STT_NOTYPE\n");
 						if (bind_type != STB_LOCAL)
-							func = ex->body + sym->st_value;
+							func = (unsigned int) (ex->body + sym->st_value);
 						else
-							func = sym->st_value;
+							func = (unsigned int) (sym->st_value);
 
 						goto skeep_err;
 
@@ -328,7 +299,7 @@ __arch int DoRelocation(Elf32_Exec *ex, Elf32_Dyn *dyn_sect, Elf32_Phdr *phdr) {
 				if (!ex->symtab) {
 					int csz = sprintf(dbg, "Relocation R_ARM_GLOB_DAT cannot run without symtab\n");
 					ep_log(ex, dbg, csz);
-					mfree(reltab);
+					free(reltab);
 					return E_SYMTAB;
 				}
 
@@ -336,7 +307,7 @@ __arch int DoRelocation(Elf32_Exec *ex, Elf32_Dyn *dyn_sect, Elf32_Phdr *phdr) {
 					int csz = sprintf(dbg, "Relocation R_ARM_GLOB_DAT cannot run without strtab\n");
 					// l_msg(1, (int)dbg);
 					ep_log(ex, dbg, csz);
-					mfree(reltab);
+					free(reltab);
 					return E_STRTAB;
 				}
 
@@ -352,7 +323,7 @@ __arch int DoRelocation(Elf32_Exec *ex, Elf32_Dyn *dyn_sect, Elf32_Phdr *phdr) {
 					case STT_NOTYPE:
 						printf("STT_NOTYPE\n");
 						if (bind_type != STB_LOCAL)
-							func = ex->body + sym->st_value;
+							func = (unsigned int) (ex->body + sym->st_value);
 						else
 							func = sym->st_value;
 						goto skeep_err1;
@@ -393,7 +364,7 @@ __arch int DoRelocation(Elf32_Exec *ex, Elf32_Dyn *dyn_sect, Elf32_Phdr *phdr) {
 
 			case R_ARM_COPY:
 				printf("R_ARM_COPY\n");
-				memcpy_a((void *)addr,
+				memcpy((void *)addr,
 					(void *)(ex->body + sym->st_value), sym->st_size);
 				break;
 
@@ -418,13 +389,13 @@ __arch int DoRelocation(Elf32_Exec *ex, Elf32_Dyn *dyn_sect, Elf32_Phdr *phdr) {
 				int csz = sprintf(dbg, "Fatal error! Unknown type relocation '%d'!\n", r_type);
 				// l_msg(1, (int)dbg);
 				ep_log(ex, dbg, csz);
-				mfree(reltab);
+				free(reltab);
 				return E_RELOCATION;
 			}
 			++i;
 		}
 
-		mfree(reltab);
+		free(reltab);
 	}
 
 	// Биндим функции
@@ -467,20 +438,13 @@ __arch int LoadSections(Elf32_Exec *ex) {
 
 	// Читаем заголовки
 	while (i < ex->ehdr.e_phnum) {
-#ifdef _test_linux
-		if (lseek(ex->fp, hdr_offset, S_SET) == -1)
+		if (lseek(ex->fp, hdr_offset, SEEK_SET) == -1)
 			break;
-		if (fread(ex->fp, &phdrs[i], sizeof(Elf32_Phdr)) != sizeof(Elf32_Phdr))
-#else
-		if (lseek(ex->fp, hdr_offset, S_SET, &ferr, &ferr) == -1)
-			break;
-		if (fread(ex->fp, &phdrs[i], sizeof(Elf32_Phdr), &ferr) != sizeof(Elf32_Phdr))
-#endif
-		{
+		if (read(ex->fp, &phdrs[i], sizeof(Elf32_Phdr)) != sizeof(Elf32_Phdr)) {
 			/* кривой заголовок, шлём нафиг этот эльф */
-			mfree(ex->body);
+			free(ex->body);
 			ex->body = 0;
-			mfree(phdrs);
+			free(phdrs);
 			return E_PHDR;
 		}
 
@@ -499,14 +463,12 @@ __arch int LoadSections(Elf32_Exec *ex) {
 
 	ex->bin_size = maxadr - ex->v_addr;
 
-	if (i == ex->ehdr.e_phnum) // Если прочитались все заголовки
-	{
+	if (i == ex->ehdr.e_phnum) { // Если прочитались все заголовки
 		// ex->bin_size = GetBinSize(ex, phdrs);
 
-		if (ex->body = malloc(ex->bin_size + 1)) // Если хватило рамы
-		{
-			zeromem_a(ex->body, ex->bin_size + 1);
-			zeromem_a(ex->dyn, sizeof(ex->dyn));
+		if (ex->body = malloc(ex->bin_size + 1)) { // Если хватило рамы
+			memset(ex->body, 0, ex->bin_size + 1);
+			memset(ex->dyn, 0, sizeof(ex->dyn));
 
 			for (i = 0; i < ex->ehdr.e_phnum; ++i) {
 				Elf32_Phdr phdr = phdrs[i];
@@ -517,24 +479,15 @@ __arch int LoadSections(Elf32_Exec *ex) {
 					if (phdr.p_filesz == 0)
 						break; // Пропускаем пустые сегменты
 					printf("PT_LOAD: %X - %X\n", phdr.p_offset, phdr.p_filesz);
-#ifdef _test_linux
-					if (lseek(ex->fp, phdr.p_offset, S_SET) != -1)
-#else
-					if (lseek(ex->fp, phdr.p_offset, S_SET, &ferr, &ferr) != -1)
-#endif
-					{
-#ifdef _test_linux
-						if (fread(ex->fp, ex->body + phdr.p_vaddr - ex->v_addr, phdr.p_filesz) == phdr.p_filesz)
-#else
-						if (fread(ex->fp, ex->body + phdr.p_vaddr - ex->v_addr, phdr.p_filesz, &ferr) == phdr.p_filesz)
-#endif
+					if (lseek(ex->fp, phdr.p_offset, SEEK_SET) != -1) {
+						if (read(ex->fp, ex->body + phdr.p_vaddr - ex->v_addr, phdr.p_filesz) == phdr.p_filesz)
 							break;
 					}
 
 					// Не прочитали сколько нужно
-					mfree(ex->body);
+					free(ex->body);
 					ex->body = 0;
-					mfree(phdrs);
+					free(phdrs);
 					return E_SECTION;
 
 				case PT_DYNAMIC:
@@ -544,28 +497,28 @@ __arch int LoadSections(Elf32_Exec *ex) {
 					printf("Load data dynamic segment: %d - %d\n", phdr.p_offset, phdr.p_filesz);
 					if (dyn_sect = (Elf32_Dyn *)LoadData(ex, phdr.p_offset, phdr.p_filesz)) {
 						if (!DoRelocation(ex, dyn_sect, &phdr)) {
-							mfree(dyn_sect);
+							free(dyn_sect);
 							break;
 						}
 					}
 
 					// Если что-то пошло не так...
-					mfree(dyn_sect);
-					mfree(ex->body);
+					free(dyn_sect);
+					free(ex->body);
 					ex->body = 0;
-					mfree(phdrs);
+					free(phdrs);
 					return E_SECTION;
 				}
 			}
 
-			mfree(phdrs);
+			free(phdrs);
 			return E_NO_ERROR;
 		}
 	}
 
-	mfree(ex->body);
+	free(ex->body);
 	ex->body = 0;
-	mfree(phdrs);
+	free(phdrs);
 	return E_RAM;
 }
 
@@ -579,10 +532,8 @@ __arch void run_INIT_Array(Elf32_Exec *ex) {
 	printf("init_array sz: %d\n", sz);
 
 	for (int i = 0; i < sz; ++i) {
-		printf("init %d: 0x%X\n", i, arr[i]);
-#ifndef _test_linux
+		printf("init %d: 0x%p\n", i, arr[i]);
 		((void (*)())arr[i])();
-#endif
 	}
 }
 
@@ -596,9 +547,7 @@ __arch void run_FINI_Array(Elf32_Exec *ex) {
 	printf("fini_array sz: %d\n", sz);
 
 	for (int i = 0; i < sz; ++i) {
-		printf("fini %d: 0x%X\n", i, arr[i]);
-#ifndef _test_linux
+		printf("fini %d: 0x%p\n", i, arr[i]);
 		((void (*)())arr[i])();
-#endif
 	}
 }

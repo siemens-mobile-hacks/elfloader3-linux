@@ -5,7 +5,7 @@ char **l__environ = 0;
 static char **l_last_environ = 0;
 
 __arch char *
-strchrnul(const char *s, int c_in) {
+_strchrnul(const char *s, int c_in) {
 	while (*++s != c_in && *s)
 		;
 
@@ -25,7 +25,7 @@ __arch static int __add_to_environ(const char *name, const char *value,
 	char *var_val;
 	char **new_environ;
 	/* name may come from putenv() and thus may contain "=VAL" part */
-	const size_t namelen = strchrnul(name, '=') - name;
+	const size_t namelen = _strchrnul(name, '=') - name;
 	int rv = -1;
 
 	/* We have to get the pointer now that we have the lock and not earlier
@@ -88,18 +88,18 @@ DONE:
 	return rv;
 }
 
-__arch int setenv(const char *name, const char *value, int replace) {
+__arch int loader_setenv(const char *name, const char *value, int replace) {
 	/* NB: setenv("VAR", NULL, 1) inserts "VAR=" string */
 	return __add_to_environ(name, value ? value : "", replace);
 }
 
-__arch int unsetenv(const char *name) {
+__arch int loader_unsetenv(const char *name) {
 	const char *eq;
 	size_t len;
 	char **ep;
 
 	if (name == NULL || *name == '\0'
-		|| *(eq = strchrnul(name, '=')) == '=') {
+		|| *(eq = _strchrnul(name, '=')) == '=') {
 		//__set_errno(EINVAL);
 		return -1;
 	}
@@ -116,7 +116,7 @@ __arch int unsetenv(const char *name) {
 				do {
 					dp[0] = dp[1];
 				} while (*dp++);
-				mfree(rm);
+				free(rm);
 				/* Continue the loop in case NAME appears again.  */
 			} else {
 				++ep;
@@ -126,7 +126,7 @@ __arch int unsetenv(const char *name) {
 	return 0;
 }
 
-__arch char *getenv(const char *var) {
+__arch char *loader_getenv(const char *var) {
 	int len;
 	char **ep;
 
@@ -145,7 +145,7 @@ __arch char *getenv(const char *var) {
 /* The `clearenv' was planned to be added to POSIX.1 but probably
    never made it.  Nevertheless the POSIX.9 standard (POSIX bindings
    for Fortran 77) requires this function.  */
-__arch int clearenv(void) {
+__arch int loader_clearenv(void) {
 
 	/* If we allocated this environment we can free it.
 	 * If we did not allocate this environment, it's NULL already
@@ -155,12 +155,12 @@ __arch int clearenv(void) {
 
 	int i = 0;
 	while (l_last_environ[i]) {
-		mfree(l_last_environ[i]);
+		free(l_last_environ[i]);
 		l_last_environ[i] = 0;
 		++i;
 	}
 
-	mfree(l_last_environ);
+	free(l_last_environ);
 	l_last_environ = NULL;
 	l__environ = NULL;
 	return 0;
