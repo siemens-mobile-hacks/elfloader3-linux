@@ -1,4 +1,3 @@
-
 /*
  * Этот файл является частью программы ElfLoader
  * Copyright (C) 2011 by Z.Vova, Ganster
@@ -9,8 +8,8 @@
 #include <unistd.h>
 #include <stdio.h>
 
-#include "loader.h"
-#include "env.h"
+#include "elfloader/loader.h"
+#include "elfloader/env.h"
 #include "stubs.h"
 
 void swi_stub(int swi) {
