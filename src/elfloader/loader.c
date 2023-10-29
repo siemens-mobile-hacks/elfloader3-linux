@@ -14,14 +14,6 @@ int __ep3_debug = 0;
 int loader_warnings = 1;
 int realtime_libclean = 1;
 
-void loader_init_gdb(const char *self_path) {
-
-}
-
-/*
- * Loader
- * */
-
 void loader_set_debug(int flag) {
 	__ep3_debug = flag;
 }
@@ -103,7 +95,7 @@ static inline unsigned int _look_sym(Elf32_Exec *ex, const char *name) {
 
 /* функция пролетается рекурсивно по либам которые в зависимостях */
 unsigned int try_search_in_base(Elf32_Exec *ex, const char *name, int bind_type) {
-	EP3_DEBUG("'%s' Searching in libs... ", name);
+	EP3_DEBUG("'%s' Searching in libs... \n", name);
 	unsigned int address = 0;
 
 	if (ex->type == EXEC_LIB && !ex->dyn[DT_SYMBOLIC])
@@ -319,13 +311,13 @@ int loader_do_reloc(Elf32_Exec *ex, Elf32_Phdr *phdr) {
 				EP3_DEBUG("R_ARM_GLOB_DAT\n");
 
 				if (!ex->symtab) {
-					EP3_ERROR("Relocation R_ARM_GLOB_DAT cannot run without symtab\n");
+					EP3_ERROR("Relocation R_ARM_GLOB_DAT cannot run without symtab");
 					free(reltab);
 					return E_SYMTAB;
 				}
 
 				if (!ex->strtab) {
-					EP3_ERROR("Relocation R_ARM_GLOB_DAT cannot run without strtab\n");
+					EP3_ERROR("Relocation R_ARM_GLOB_DAT cannot run without strtab");
 					free(reltab);
 					return E_STRTAB;
 				}
@@ -483,7 +475,6 @@ int loader_load_sections(Elf32_Exec *ex) {
 
 			for (i = 0; i < ex->ehdr.e_phnum; ++i) {
 				Elf32_Phdr phdr = phdrs[i];
-				Elf32_Dyn *dyn_sect;
 
 				switch (phdr.p_type) {
 				case PT_LOAD:
@@ -512,7 +503,6 @@ int loader_load_sections(Elf32_Exec *ex) {
 						break;
 
 					// Если что-то пошло не так...
-					free(dyn_sect);
 					free(ex->body);
 					ex->body = 0;
 					free(phdrs);

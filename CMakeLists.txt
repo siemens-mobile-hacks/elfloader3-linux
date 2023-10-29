@@ -4,13 +4,11 @@ project(elfloader3 LANGUAGES C ASM CXX)
 set(CMAKE_SYSTEM_NAME Linux)
 set(CMAKE_SYSTEM_VERSION 1)
 
-set(CMAKE_CXX_STANDARD 11)
+set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_C_STANDARD 11)
 
 set(CMAKE_C_COMPILER		arm-linux-gnueabi-gcc${CMAKE_EXECUTABLE_SUFFIX})
 set(CMAKE_CXX_COMPILER		arm-linux-gnueabi-g++${CMAKE_EXECUTABLE_SUFFIX})
-
-set(CMAKE_C_FLAGS "-std=c11")
 
 add_compile_options(-mcpu=arm926ej-s -g -mfloat-abi=soft -fno-common -ffunction-sections -fdata-sections)
 
@@ -19,6 +17,8 @@ add_link_options(-static -Wl,-gc-sections -g)
 add_executable(elfloader3
 	src/main.cpp
 	src/stubs.cpp
+	src/utils.cpp
+	src/swi/libc.cpp
 	
 	src/elfloader/debug.c
 	src/elfloader/env.c

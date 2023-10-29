@@ -21,7 +21,7 @@ extern "C" {
 extern int __ep3_debug;
 
 #define EP3_ERROR(fmt, ...) do { fprintf(stderr, "[EP3] [error] " fmt "\n", ## __VA_ARGS__); } while (0)
-#define EP3_DEBUG(fmt, ...) do { if (__ep3_debug) { fprintf(stderr, "[EP3] [debug] " fmt "\n", ## __VA_ARGS__); } } while (0)
+#define EP3_DEBUG(fmt, ...) do { if (__ep3_debug) { fprintf(stderr, "[EP3] [debug] " fmt, ## __VA_ARGS__); } } while (0)
 
 #include "elf.h"
 
@@ -139,7 +139,6 @@ Elf32_Word loader_find_export(Elf32_Exec *ex, const char *name);
 Elf32_Word loader_find_function(Elf32_Lib *lib, const char *name);
 
 void loader_set_debug(int flag);
-void loader_init_gdb(const char *self_path);
 
 /* shared support */
 Elf32_Lib *loader_lib_open(const char *name, Elf32_Exec *ex);

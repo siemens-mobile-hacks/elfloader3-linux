@@ -42,14 +42,6 @@ void loader_gdb_add_lib(Elf32_Exec *ex) {
 	
 	_r_debug.r_state = RT_CONSISTENT;
 	_gdb_brk();
-	
-	printf("size: %d\n", sizeof(struct link_map));
-	printf("loader_gdb_add_map: %s\n", map->l_name);
-	printf(" map->l_addr: %08X\n", map->l_addr);
-	printf(" map->l_name: %s\n", map->l_name);
-	printf(" map->l_prev: %p\n", map->l_prev);
-	printf(" map->l_next: %p\n", map->l_next);
-	printf(" map->l_ld: %08X\n", map->l_ld);
 }
 
 void loader_gdb_remove_lib(Elf32_Exec *ex) {
