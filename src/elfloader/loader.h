@@ -3,23 +3,25 @@
  * Copyright (C) 2011 by Z.Vova, Ganster
  * Licence: GPLv3
  */
-
-#ifndef __LOADER_H__
-#define __LOADER_H__
+#pragma once
 
 #include <fcntl.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
-#include "debug.h"
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 #define __arch
 
+#define ELF_NAME_MAX_LEN 128
+
 extern int __ep3_debug;
 
-#define EP3_ERROR(fmt, ...) do { fprintf(stderr, "[EP3] [error] " fmt, ## __VA_ARGS__); } while (0)
-#define EP3_DEBUG(fmt, ...) do { if (__ep3_debug) { fprintf(stderr, "[EP3] [debug] " fmt, ## __VA_ARGS__); } } while (0)
+#define EP3_ERROR(fmt, ...) do { fprintf(stderr, "[EP3] [error] " fmt "\n", ## __VA_ARGS__); } while (0)
+#define EP3_DEBUG(fmt, ...) do { if (__ep3_debug) { fprintf(stderr, "[EP3] [debug] " fmt "\n", ## __VA_ARGS__); } } while (0)
 
 #include "elf.h"
 
@@ -35,7 +37,6 @@ static const unsigned char elf_magic_header[] = {
 #define OUTOFMEM "out of memory"
 
 enum ERROR {
-
 	E_NO_ERROR = 0x0,
 	E_RELOCATION,
 	E_READ,
@@ -54,20 +55,17 @@ enum ERROR {
 	E_HASTAB
 };
 
-typedef struct
-{
+typedef struct {
 	void *value;
 } AlignedMemory;
 
-typedef struct
-{
+typedef struct {
 	void *lib;
 	void *next;
 	void *prev;
 } Global_Queue;
 
-typedef struct
-{
+typedef struct {
 	void *lib;
 	void *next;
 } Libs_Queue;
@@ -78,8 +76,29 @@ typedef enum elf32_type {
 	EXEC_LIB,
 } Elf32_Type;
 
-typedef struct
-{
+enum {
+	RT_CONSISTENT,
+	RT_ADD,
+	RT_DELETE
+};
+
+struct link_map {
+	Elf32_Addr l_addr;
+	const char *l_name;
+	Elf32_Addr l_ld;
+	struct link_map *l_next;
+	struct link_map *l_prev;
+};
+
+struct r_debug {
+	int32_t r_version;
+	struct link_map *r_map;
+	void (*r_brk)(void);
+	int32_t r_state;
+	Elf32_Addr r_ldbase;
+};
+
+typedef struct {
 	AlignedMemory *body;
 	unsigned int bin_size;
 	Elf32_Ehdr ehdr;
@@ -95,13 +114,13 @@ typedef struct
 	char complete, __is_ex_import;
 	void *meloaded;
 	int *switab;
-	const char *fname; // не постоянная переменная, после загрузки эльфа она обнулится
+	char *fname; // не постоянная переменная, после загрузки эльфа она обнулится
 	char *temp_env; // временное переменное окружение для эльфа
 	struct link_map linkmap;
+	Elf32_Dyn *dynamic;
 } Elf32_Exec;
 
-typedef struct
-{
+typedef struct {
 	char soname[64];
 	Elf32_Exec *ex;
 	int users_cnt;
@@ -114,12 +133,13 @@ typedef int LIB_FUNC();
 int loader_check_elf(Elf32_Ehdr *ehdr);
 unsigned int loader_get_bin_size(Elf32_Exec *ex, Elf32_Phdr *phdrs);
 int loader_load_sections(Elf32_Exec *ex);
-int loader_do_reloc(Elf32_Exec *ex, Elf32_Dyn *dyn_sect, Elf32_Phdr *phdr);
+int loader_do_reloc(Elf32_Exec *ex, Elf32_Phdr *phdr);
 unsigned long loader_elf_hash(const char *name);
 Elf32_Word loader_find_export(Elf32_Exec *ex, const char *name);
 Elf32_Word loader_find_function(Elf32_Lib *lib, const char *name);
 
 void loader_set_debug(int flag);
+void loader_init_gdb(const char *self_path);
 
 /* shared support */
 Elf32_Lib *loader_lib_open(const char *name, Elf32_Exec *ex);
@@ -133,7 +153,7 @@ Elf32_Word loader_dlsym(int handle, const char *name);
 /* executable support */
 Elf32_Exec *loader_elf_open(const char *filenam);
 int loader_elf_close(Elf32_Exec *ex);
-void *loader_elf_entry(Elf32_Exec *);
+void *loader_elf_entry(Elf32_Exec *ex);
 
 /* init/fini arrays support */
 void loader_run_INIT_Array(Elf32_Exec *ex);
@@ -143,4 +163,12 @@ void loader_run_FINI_Array(Elf32_Exec *ex);
 void loader_subproc_impl(void *func, void *p1);
 int *loader_library_impl();
 
+/* debug */
+void loader_gdb_init();
+void loader_gdb_add_lib(Elf32_Exec *ex);
+void loader_gdb_remove_lib(Elf32_Exec *ex);
+Elf32_Word loader_gdb_r_debug();
+
+#ifdef __cplusplus
+}
 #endif

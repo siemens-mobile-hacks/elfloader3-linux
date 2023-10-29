@@ -21,7 +21,7 @@ Elf32_Exec *loader_elf_open(const char *filename) {
 	if (read(fp, &ehdr, sizeof(Elf32_Ehdr)) == sizeof(Elf32_Ehdr)) {
 		if (!loader_check_elf(&ehdr)) {
 			ex = malloc(sizeof(Elf32_Exec));
-
+			
 			if (ex) {
 				memcpy(&ex->ehdr, &ehdr, sizeof(Elf32_Ehdr));
 				ex->v_addr = (unsigned int)-1;
@@ -34,7 +34,7 @@ Elf32_Exec *loader_elf_open(const char *filename) {
 				ex->__is_ex_import = 0;
 				ex->meloaded = 0;
 				ex->switab = (int *)loader_library_impl();
-				ex->fname = filename;
+				ex->fname = strdup(filename);
 
 				const char *p = strrchr(filename, '\\');
 				if (p) {
@@ -42,13 +42,13 @@ Elf32_Exec *loader_elf_open(const char *filename) {
 					ex->temp_env = malloc(p - filename + 2);
 					memcpy(ex->temp_env, filename, p - filename);
 					ex->temp_env[p - filename] = 0;
-				} else
+				} else {
 					ex->temp_env = 0;
+				}
 
 				if (!loader_load_sections(ex)) {
 					ex->complete = 1;
 					close(fp);
-					ex->fname = 0;
 					return ex;
 				} else {
 					loader_elf_close(ex);
@@ -56,7 +56,6 @@ Elf32_Exec *loader_elf_open(const char *filename) {
 			}
 		}
 	}
-	ex->fname = 0;
 	close(fp);
 	return 0;
 }
@@ -73,7 +72,7 @@ int loader_elf_close(Elf32_Exec *ex) {
 
 	if (ex->complete)
 		loader_run_FINI_Array(ex);
-
+	
 	// Закрываем либы
 	while (ex->libs) {
 		Libs_Queue *lib = ex->libs;
@@ -83,6 +82,10 @@ int loader_elf_close(Elf32_Exec *ex) {
 		free(lib);
 	}
 
+	loader_gdb_remove_lib(ex);
+
+	if (ex->fname)
+		free(ex->fname);
 	if (ex->hashtab)
 		free(ex->hashtab);
 	if (ex->body)

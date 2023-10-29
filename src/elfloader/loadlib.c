@@ -267,7 +267,7 @@ try_again:
 	ex->complete = 0;
 	ex->meloaded = (void *)_ex;
 	ex->switab = (int *)loader_library_impl();
-	ex->fname = name;
+	ex->fname = strdup(ld_path);
 
 	const char *p = strrchr(name, '\\');
 	if (p) {
@@ -354,7 +354,6 @@ try_again:
 	EP3_DEBUG(" '%s' Loade complete\n", name);
 	dlerr[0] = 0;
 	dlerr[1] = 0;
-	ex->fname = 0;
 	return lib;
 }
 

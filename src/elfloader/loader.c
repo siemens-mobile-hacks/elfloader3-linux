@@ -5,75 +5,17 @@
  */
 
 #include "loader.h"
-#include "debug.h"
 
 #include <fcntl.h>
 #include <unistd.h>
 #include <sys/mman.h>
 
-extern void __attribute__((noinline)) rtld_db_dlactivity(void);
-static struct r_debug _r_debug = {1, NULL, &rtld_db_dlactivity, RT_CONSISTENT, 0};
-static struct link_map *r_debug_tail = NULL;
-
 int __ep3_debug = 0;
 int loader_warnings = 1;
 int realtime_libclean = 1;
 
-/*
- * Debug
- * */
-static void insert_soinfo_into_debug_map(Elf32_Exec *ex) {
-	struct link_map * map;
-	/* Copy the necessary fields into the debug structure. */
-	map = &(ex->linkmap);
-	map->l_addr = ex->v_addr;
-	map->l_name = (char *) ex->fname;
-	/* Stick the new library at the end of the list.
-	 * gdb tends to care more about libc than it does
-	 * about leaf libraries, and ordering it this way
-	 * reduces the back-and-forth over the wire.
-	 */
-	if (r_debug_tail) {
-		r_debug_tail->l_next = map;
-		map->l_prev = r_debug_tail;
-		map->l_next = 0;
-	} else {
-		_r_debug.r_map = map;
-		map->l_prev = 0;
-		map->l_next = 0;
-	}
-	r_debug_tail = map;
-}
+void loader_init_gdb(const char *self_path) {
 
-static void remove_soinfo_from_debug_map(Elf32_Exec *ex) {
-	struct link_map *map = &(ex->linkmap);
-	if (r_debug_tail == map)
-		r_debug_tail = map->l_prev;
-	if (map->l_prev) map->l_prev->l_next = map->l_next;
-	if (map->l_next) map->l_next->l_prev = map->l_prev;
-}
-
-static void notify_gdb_of_load(Elf32_Exec *ex) {
-	_r_debug.r_state = RT_ADD;
-	rtld_db_dlactivity();
-	insert_soinfo_into_debug_map(ex);
-	_r_debug.r_state = RT_CONSISTENT;
-	rtld_db_dlactivity();
-}
-
-static void notify_gdb_of_unload(Elf32_Exec *ex) {
-	_r_debug.r_state = RT_DELETE;
-	rtld_db_dlactivity();
-	remove_soinfo_from_debug_map(ex);
-	_r_debug.r_state = RT_CONSISTENT;
-	rtld_db_dlactivity();
-}
-
-static void notify_gdb_of_libraries() {
-	_r_debug.r_state = RT_ADD;
-	rtld_db_dlactivity();
-	_r_debug.r_state = RT_CONSISTENT;
-	rtld_db_dlactivity();
 }
 
 /*
@@ -189,31 +131,29 @@ unsigned int try_search_in_base(Elf32_Exec *ex, const char *name, int bind_type)
 }
 
 // Релокация
-int loader_do_reloc(Elf32_Exec *ex, Elf32_Dyn *dyn_sect, Elf32_Phdr *phdr) {
+int loader_do_reloc(Elf32_Exec *ex, Elf32_Phdr *phdr) {
 	unsigned int i = 0;
 	Elf32_Word libs_needed[64] = {};
 	unsigned int libs_cnt = 0;
 	char dbg[128];
 
 	// Вытаскиваем теги
-	while (dyn_sect[i].d_tag != DT_NULL) {
-		if (dyn_sect[i].d_tag <= DT_FLAGS) {
-			switch (dyn_sect[i].d_tag) {
+	while (ex->dynamic[i].d_tag != DT_NULL) {
+		if (ex->dynamic[i].d_tag <= DT_FLAGS) {
+			switch (ex->dynamic[i].d_tag) {
 				case DT_SYMBOLIC:
 					// Флаг SYMBOLIC-библиотек. В d_val 0, даже при наличии :(
-					ex->dyn[dyn_sect[i].d_tag] = 1;
+					ex->dyn[ex->dynamic[i].d_tag] = 1;
+				break;
+				case DT_DEBUG:
+					ex->dynamic[i].d_un.d_val = loader_gdb_r_debug();
 				break;
 				case DT_NEEDED:
 					// Получаем смещения в .symtab на имена либ
-					libs_needed[libs_cnt++] = dyn_sect[i].d_un.d_val;
-				break;
-				case DT_DEBUG:
-					// Set the DT_DEBUG entry to the addres of _r_debug for GDB
-					dyn_sect[i].d_un.d_ptr = (Elf32_Addr) &_r_debug;
+					libs_needed[libs_cnt++] = ex->dynamic[i].d_un.d_val;
 				break;
 				default:
-					EP3_ERROR("Unknown DT_XXXX tag: %d\n", dyn_sect[i].d_tag);
-					ex->dyn[dyn_sect[i].d_tag] = dyn_sect[i].d_un.d_val;
+					ex->dyn[ex->dynamic[i].d_tag] = ex->dynamic[i].d_un.d_val;
 				break;
 			}
 		}
@@ -549,7 +489,7 @@ int loader_load_sections(Elf32_Exec *ex) {
 				case PT_LOAD:
 					if (phdr.p_filesz == 0)
 						break; // Пропускаем пустые сегменты
-					EP3_DEBUG("PT_LOAD: %X - %X\n", phdr.p_offset, phdr.p_filesz);
+					EP3_DEBUG("PT_LOAD: %08X - %08X | %08X - %08X\n", phdr.p_offset, phdr.p_offset + phdr.p_filesz, phdr.p_vaddr - ex->v_addr, phdr.p_vaddr - ex->v_addr + phdr.p_filesz);
 					if (lseek(ex->fp, phdr.p_offset, SEEK_SET) != -1) {
 						if (read(ex->fp, ex->body->value + phdr.p_vaddr - ex->v_addr, phdr.p_filesz) == phdr.p_filesz)
 							break;
@@ -566,12 +506,10 @@ int loader_load_sections(Elf32_Exec *ex) {
 						break; // Пропускаем пустые сегменты
 
 					EP3_DEBUG("Load data dynamic segment: %d - %d\n", phdr.p_offset, phdr.p_filesz);
-					if (dyn_sect = (Elf32_Dyn *)_load_data(ex, phdr.p_offset, phdr.p_filesz)) {
-						if (!loader_do_reloc(ex, dyn_sect, &phdr)) {
-							free(dyn_sect);
-							break;
-						}
-					}
+					ex->dynamic = (Elf32_Dyn *) (ex->body->value + phdr.p_vaddr - ex->v_addr);
+					
+					if (!loader_do_reloc(ex, &phdr))
+						break;
 
 					// Если что-то пошло не так...
 					free(dyn_sect);
@@ -581,6 +519,8 @@ int loader_load_sections(Elf32_Exec *ex) {
 					return E_SECTION;
 				}
 			}
+
+			loader_gdb_add_lib(ex);
 
 			free(phdrs);
 			return E_NO_ERROR;

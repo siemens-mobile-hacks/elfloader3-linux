@@ -8,6 +8,10 @@
 #ifndef _QEMU_ELF_H
 #define _QEMU_ELF_H
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #include <inttypes.h>
 
 /*
@@ -1251,5 +1255,9 @@ typedef struct elf64_note {
 #endif
 
 #endif /* ELF_CLASS */
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif /* _QEMU_ELF_H */
