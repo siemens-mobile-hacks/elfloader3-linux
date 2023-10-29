@@ -5,7 +5,6 @@
 
 #include "elfloader/loader.h"
 #include "elfloader/env.h"
-#include "elfloader/debug.h"
 #include "stubs.h"
 
 void swi_stub(int swi) {

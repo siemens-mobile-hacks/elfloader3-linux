@@ -1,6 +1,8 @@
 #include <stdio.h>
 #include <stddef.h>
 
+#include "loader.h"
+
 extern struct r_debug _r_debug;
 static struct link_map *r_debug_tail = NULL;
 
