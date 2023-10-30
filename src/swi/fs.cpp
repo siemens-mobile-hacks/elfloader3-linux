@@ -18,6 +18,14 @@ struct FileSearchCtx {
 	size_t found_cnt;
 };
 
+static void _set_errno(int ret, uint32_t *errp) {
+	if (ret < 0) {
+		*errp = 1;
+	} else {
+		*errp = 0;
+	}
+}
+
 int SWI_open(const char *path, uint32_t f, uint32_t m, uint32_t *errp) {
 	int flags = 0;
 	mode_t mode = S_IRUSR | S_IWUSR;
@@ -52,70 +60,47 @@ int SWI_open(const char *path, uint32_t f, uint32_t m, uint32_t *errp) {
 		ret = open(SieFs::sie2path(path).c_str(), flags, mode);
 	}
 	
-	fprintf(stderr, "open(%s, %d, %d) = %d\n", SieFs::sie2path(path).c_str(), flags, mode, ret);
-	
-	if (ret < 0) {
-		perror("[SWI] open");
-		if (errp)
-			*errp = 1;
-	} else {
-		if (errp)
-			*errp = 0;
+	if (SWI_STRACE) {
+		fprintf(stderr, "[strace] open(%s, %d, %d) = %d\n", SieFs::sie2path(path).c_str(), flags, mode, ret);
 	}
+	
+	_set_errno(ret, errp);
 	return ret;
 }
 
 int SWI_read(int fd, void *buff, int count, uint32_t *errp) {
 	int ret = read(fd, buff, count);
-	if (ret < 0) {
-		perror("[SWI] read");
-		if (errp)
-			*errp = 1;
-	} else {
-		if (errp)
-			*errp = 0;
+	if (SWI_STRACE) {
+		fprintf(stderr, "[strace] read(%d, %p, %d) = %d\n", fd, buff, count, ret);
 	}
+	_set_errno(ret, errp);
 	return ret;
 }
 
 int SWI_write(int fd, const void *buff, int count, uint32_t *errp) {
 	int ret = write(fd, buff, count);
-	if (ret < 0) {
-		fprintf(stderr, "fd=%d\n", fd);
-		perror("[SWI] write");
-		if (errp)
-			*errp = 1;
-	} else {
-		if (errp)
-			*errp = 0;
+	if (SWI_STRACE) {
+		fprintf(stderr, "[strace] write(%d, %p, %d) = %d\n", fd, buff, count, ret);
 	}
+	_set_errno(ret, errp);
 	return ret;
 }
 
 int SWI_close(int fd, uint32_t *errp) {
 	int ret = close(fd);
-	// fprintf(stderr, "close(%d) = %d\n", fd, ret);
-	if (ret != 0) {
-		perror("[SWI] close");
-		if (errp)
-			*errp = 1;
-	} else {
-		if (errp)
-			*errp = 0;
+	if (SWI_STRACE) {
+		fprintf(stderr, "[strace] close(%d) = %d\n", fd, ret);
 	}
+	_set_errno(ret, errp);
 	return ret;
 }
 
 int SWI_flush(int fd, uint32_t *errp) {
 	int ret = fsync(fd);
-	if (ret != 0) {
-		perror("[SWI] flush");
-		if (errp)
-			*errp = 1;
-	} else {
-		if (errp)
-			*errp = 0;
+	if (SWI_STRACE) {
+		fprintf(stderr, "[strace] fsync(%d) = %d\n", fd, ret);
 	}
+	_set_errno(ret, errp);
 	return ret;
 }
 
@@ -127,14 +112,10 @@ long SWI_lseek(int fd, uint32_t offset, uint32_t origin, uint32_t *errp, uint32_
 
 int SWI_mkdir(const char *pathname, uint32_t *errp) {
 	int ret = mkdir(SieFs::sie2path(pathname).c_str(), 0755);
-	if (ret != 0) {
-		perror("[SWI] mkdir");
-		if (errp)
-			*errp = 1;
-	} else {
-		if (errp)
-			*errp = 0;
+	if (SWI_STRACE) {
+		fprintf(stderr, "[strace] mkdir(%s) = %d\n", SieFs::sie2path(pathname).c_str(), ret);
 	}
+	_set_errno(ret, errp);
 	return ret;
 }
 
@@ -186,7 +167,6 @@ int SWI_FindFirstFile(DIR_ENTRY *de, const char *pattern, uint32_t *errp) {
 	
 	int ret = glob(unix_path.c_str(), 0, NULL, &ctx->glob);
 	if (ret != 0) {
-		perror("[SWI] glob");
 		if (errp)
 			*errp = 1;
 		delete ctx;
@@ -295,7 +275,6 @@ int SWI_GetFileStats(const char *siemens_file, FSTATS *out_st, uint32_t *errp) {
 		
 		return 0;
 	} else {
-		perror("[SWI] lstat");
 		if (errp)
 			*errp = 1;
 	}

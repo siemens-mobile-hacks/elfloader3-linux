@@ -4,6 +4,7 @@
 #include <cstddef>
 
 #define NEWSGOLD 1
+#define SWI_STRACE 0
 
 /*
  * Internals
@@ -166,3 +167,37 @@ void SWI_GetDateTime(TDate *param1, TTime *param2);
 char SWI_GetWeek(TDate *param1);
 int SWI_GetTimeZoneShift(TDate *param1, TTime *param2, int timeZone);
 TDateTimeSettings *SWI_RamDateTimeSettings(void);
+
+/*
+ * Wide String
+ * */
+typedef struct {
+	uint16_t *wsbody;
+	void *(*ws_malloc)(size_t);
+	void (*ws_mfree)(void *);
+	int isbody_allocated;
+	uint16_t maxlen;
+	uint16_t unk1;
+} WSHDR;
+
+WSHDR *SWI_wstrcpy(WSHDR *wshdr_d, WSHDR *wshdr_s);
+WSHDR *SWI_wstrncpy(WSHDR *param1, WSHDR * param2, int param3);
+WSHDR *SWI_wstrcat(WSHDR *wshdr_d, WSHDR *wshdr_s);
+WSHDR *SWI_wstrncat(WSHDR *wshdr_d, WSHDR *wshdr_s, int n);
+int SWI_wstrlen(WSHDR *wshdr);
+int SWI_wsprintf(WSHDR* param1, const char *format,...);
+WSHDR *SWI_AllocWS(int len);
+void SWI_CutWSTR(WSHDR *wshdr, int len);
+WSHDR *SWI_CreateLocalWS(WSHDR *wshdr, uint16_t *wsbody, int len);
+WSHDR *SWI_CreateWS(void *(*ws_malloc)(size_t), void (*ws_mfree)(void *), int len);
+void SWI_FreeWS(WSHDR *wshdr);
+int SWI_str_2ws(WSHDR *ws, const char *str, uint32_t size);
+int SWI_wstrcmp(WSHDR *ws1, WSHDR *ws2);
+void SWI_wstrcpybypos(WSHDR *dest, WSHDR *src, int from, int len);
+void SWI_wsRemoveChars(WSHDR *ws, int from, int to);
+int SWI_ws_2utf8( WSHDR *from, char *to, int *result_length, uint32_t max_len);
+int SWI_utf8_2ws(WSHDR *ws, const char *utf8_str, uint32_t maxLen);
+short SWI_wstrchr(WSHDR *ws, uint32_t start_pos, uint32_t wchar);
+short SWI_wstrrchr(WSHDR *ws, uint32_t max_pos, uint32_t wchar);
+void SWI_wsAppendChar(WSHDR *ws, int wchar);
+int SWI_wsInsertChar(WSHDR *ws, int wchar, int pos);

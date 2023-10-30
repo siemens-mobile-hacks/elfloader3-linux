@@ -87,6 +87,30 @@ void loader_init_switab() {
 	switab_functions[0x00B5]	= (void *) SWI_GetWeek;
 	switab_functions[0x0230]	= (void *) SWI_GetTimeZoneShift;
 	
+	// Wide String
+	switab_functions[0x011F]	= (void *) SWI_wstrcpy,
+	switab_functions[0x0120]	= (void *) SWI_wstrncpy,
+	switab_functions[0x0121]	= (void *) SWI_wstrcat,
+	switab_functions[0x0122]	= (void *) SWI_wstrncat,
+	switab_functions[0x0123]	= (void *) SWI_wstrlen,
+	switab_functions[0x0124]	= (void *) SWI_wsprintf,
+	switab_functions[0x0125]	= (void *) SWI_AllocWS,
+	switab_functions[0x0126]	= (void *) SWI_CutWSTR,
+	switab_functions[0x0127]	= (void *) SWI_CreateLocalWS,
+	switab_functions[0x0128]	= (void *) SWI_CreateWS,
+	switab_functions[0x0129]	= (void *) SWI_FreeWS,
+	switab_functions[0x016C]	= (void *) SWI_str_2ws,
+	switab_functions[0x02E2]	= (void *) SWI_wstrcmp,
+	switab_functions[0x0214]	= (void *) SWI_wstrcpybypos,
+	switab_functions[0x0215]	= (void *) SWI_wsRemoveChars,
+	switab_functions[0x01E2]	= (void *) SWI_ws_2utf8,
+	switab_functions[0x01E3]	= (void *) SWI_utf8_2ws,
+	switab_functions[0x01DC]	= (void *) SWI_wstrchr,
+	switab_functions[0x01DD]	= (void *) SWI_wstrrchr,
+	switab_functions[0x001C]	= (void *) SWI_wsAppendChar,
+	switab_functions[0x001D]	= (void *) SWI_wsInsertChar,
+	
+	// Other
 	switab_functions[0x190]		= (void *) SWI_MutexCreate;
 	switab_functions[0x191]		= (void *) SWI_MutexDestroy;
 	switab_functions[0x2EE]		= (void *) SWI_elfclose;

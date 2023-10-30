@@ -30,7 +30,7 @@ std::string SieFs::path2sie(const std::string &unix_path) {
 	}
 	
 	std::replace(siemens_path.begin(), siemens_path.end(), '/', '\\');
-	LOGD("path2sie: %s -> %s\n", unix_path.c_str(), siemens_path.c_str());
+	// LOGD("path2sie: %s -> %s\n", unix_path.c_str(), siemens_path.c_str());
 	
 	if (!siemens_path.size()) {
 		LOGE("Invalid unix path: %s\n", unix_path.c_str());
@@ -52,7 +52,7 @@ std::string SieFs::sie2path(const std::string &siemens_path) {
 		
 		if (m_drives.find(drive) != m_drives.end()) {
 			std::string unix_path = m_drives[drive] + "/" + path;
-			fprintf(stderr, "sie2path: %s -> %s\n", siemens_path.c_str(), unix_path.c_str());
+			// LOGD("sie2path: %s -> %s\n", siemens_path.c_str(), unix_path.c_str());
 			return unix_path;
 		}
 	}

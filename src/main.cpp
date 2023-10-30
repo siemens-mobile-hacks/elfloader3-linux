@@ -41,6 +41,7 @@ int main(int argc, char **argv) {
 	
 	filename = std::filesystem::canonical(filename);
 	
+	std::string exe_dir = std::filesystem::canonical(std::filesystem::path(filename).parent_path());
 	std::string self_dir = std::filesystem::canonical(std::filesystem::path(argv[0]).parent_path());
 	
 	std::string library_path_env;
