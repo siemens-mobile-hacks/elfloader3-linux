@@ -144,6 +144,16 @@ typedef struct {
 	uint32_t millisec;
 } TTime;
 
+typedef struct {
+  int8_t yearNormBudd; //1 - norm, 2 - buddhist
+  int8_t dateFormat;
+  int8_t timeFormat; // 0-24h, 1-12h
+  int8_t timeZone; // internal representation
+  int8_t isAutoTime1;
+  int8_t isAutoTime2;
+} TDateTimeSettings;
+
 void SWI_GetDateTime(TDate *param1, TTime *param2);
 char SWI_GetWeek(TDate *param1);
 int SWI_GetTimeZoneShift(TDate *param1, TTime *param2, int timeZone);
+TDateTimeSettings *SWI_RamDateTimeSettings(void);

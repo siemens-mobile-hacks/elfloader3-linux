@@ -4,6 +4,14 @@
 #include <cstdlib>
 #include <ctime>
 
+static TDateTimeSettings time_settings = {
+	.timeZone = 123
+};
+
+TDateTimeSettings *SWI_RamDateTimeSettings(void) {
+	return &time_settings;
+}
+
 void SWI_GetDateTime(TDate *d, TTime *t) {
 	time_t now = time(NULL);
 	struct tm local_tm = {};
@@ -44,5 +52,5 @@ int SWI_GetTimeZoneShift(TDate *d, TTime *t, int timeZone) {
 	time_t unix_timestamp = mktime(&local_tm);
 	localtime_r(&unix_timestamp, &local_tm);
 	
-	return local_tm.tm_gmtoff / 60;
+	return -local_tm.tm_gmtoff / 60;
 }
