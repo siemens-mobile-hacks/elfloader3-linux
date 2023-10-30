@@ -80,7 +80,7 @@ int main(int argc, char **argv) {
 	
 	auto entry = (int (*)(const char *, const char *, const void *)) loader_elf_entry(ex);
 	printf("run entry at %p (fname=%s)\n", entry, fname.c_str());
-	int ret = entry(fname.c_str(), nullptr, nullptr);
+	int ret = entry(fname.c_str(), "", nullptr);
 	LOGD("entry ret = %d\n", ret);
 	
 	// loader_elf_close(ex);
