@@ -72,10 +72,18 @@ uint32_t SWI_strlen(const char *param1);
 #define A_TXT 0x4000
 #define A_BIN 0x8000
 
+// Attributes
+#define FA_READONLY 0x0001
+#define FA_HIDDEN 0x0002
+#define FA_SYSTEM 0x0004
+#define FA_DIRECTORY 0x0010
+#define FA_ARCHIVE 0x0020
+
 #pragma pack(1)
 typedef struct {
 #ifdef NEWSGOLD
-  char unk0[40];
+  void *priv;
+  char unk0[40 - sizeof(void *)];
   uint32_t file_size;
   short file_attr;
   uint32_t create_date_time;
@@ -87,7 +95,8 @@ typedef struct {
   short wsfolder_name[128+1];
   short wsfile_name[128+1];
 #else
-  char unk1[14];
+  void *priv;
+  char unk1[14 - sizeof(void *)];
   short file_attr;
   uint32_t create_date_time;
   uint32_t file_size;

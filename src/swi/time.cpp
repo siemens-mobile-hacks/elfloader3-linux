@@ -4,9 +4,7 @@
 #include <cstdlib>
 #include <ctime>
 
-static TDateTimeSettings time_settings = {
-	.timeZone = 123
-};
+static TDateTimeSettings time_settings = { };
 
 TDateTimeSettings *SWI_RamDateTimeSettings(void) {
 	return &time_settings;
