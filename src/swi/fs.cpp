@@ -7,6 +7,7 @@
 #include <sys/stat.h>
 #include <fcntl.h>
 #include <unistd.h>
+#include <cstring>
 
 int SWI_open(const char *path, unsigned int f, unsigned int m, unsigned int *errp) {
 	int flags = 0;
@@ -33,8 +34,17 @@ int SWI_open(const char *path, unsigned int f, unsigned int m, unsigned int *err
 	if ((f & A_Append))
 		flags |= O_APPEND;
 	
-	int ret = open(SieFs::sie2path(path).c_str(), flags, mode);
+	int ret;
+	if (strcmp(path, "0:\\Misc\\stdout.txt") == 0) {
+		ret = dup(STDOUT_FILENO);
+	} else if (strcmp(path, "0:\\Misc\\stderr.txt") == 0) {
+		ret = dup(STDERR_FILENO);
+	} else {
+		ret = open(SieFs::sie2path(path).c_str(), flags, mode);
+	}
+	
 	// fprintf(stderr, "open(%s) = %d\n", path, ret);
+	
 	if (ret < 0) {
 		perror("[SWI] open");
 		if (errp)
