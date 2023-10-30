@@ -12,7 +12,7 @@ void SieFs::mount(const std::string &drive, const std::string &path) {
 	m_drives[drive] = std::filesystem::canonical(path + "/");
 	if (m_drives[drive] == "/")
 		m_drives[drive] = "";
-	LOGD("mount: %s -> %s\n", drive.c_str(), m_drives[drive].c_str());
+	// LOGD("mount: %s -> %s\n", drive.c_str(), m_drives[drive].c_str());
 }
 
 std::string SieFs::path2sie(const std::string &unix_path) {
@@ -30,10 +30,10 @@ std::string SieFs::path2sie(const std::string &unix_path) {
 	}
 	
 	std::replace(siemens_path.begin(), siemens_path.end(), '/', '\\');
-	fprintf(stderr, "path2sie: %s -> %s\n", unix_path.c_str(), siemens_path.c_str());
+	LOGD("path2sie: %s -> %s\n", unix_path.c_str(), siemens_path.c_str());
 	
 	if (!siemens_path.size()) {
-		fprintf(stderr, "Invalid unix path: %s\n", unix_path.c_str());
+		LOGE("Invalid unix path: %s\n", unix_path.c_str());
 		abort();
 	}
 	
@@ -52,11 +52,11 @@ std::string SieFs::sie2path(const std::string &siemens_path) {
 		
 		if (m_drives.find(drive) != m_drives.end()) {
 			std::string unix_path = m_drives[drive] + "/" + path;
-			fprintf(stderr, "sie2path: %s:%s | -> %s\n", drive.c_str(), path.c_str(), unix_path.c_str());
+			fprintf(stderr, "sie2path: %s -> %s\n", siemens_path.c_str(), unix_path.c_str());
 			return unix_path;
 		}
 	}
-	fprintf(stderr, "Invalid siemens path: %s\n", siemens_path.c_str());
+	LOGE("Invalid siemens path: %s\n", siemens_path.c_str());
 	abort();
 	return "";
 }
