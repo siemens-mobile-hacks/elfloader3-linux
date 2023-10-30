@@ -76,9 +76,11 @@ int main(int argc, char **argv) {
 	LOGD("run INIT array\n");
 	loader_run_INIT_Array(ex);
 	
+	std::string fname = SieFs::path2sie(filename);
+	
 	auto entry = (int (*)(const char *, const char *, const void *)) loader_elf_entry(ex);
-	printf("run entry at %p\n", entry);
-	int ret = entry(filename.c_str(), nullptr, nullptr);
+	printf("run entry at %p (fname=%s)\n", entry, fname.c_str());
+	int ret = entry(fname.c_str(), nullptr, nullptr);
 	LOGD("entry ret = %d\n", ret);
 	
 	// loader_elf_close(ex);
