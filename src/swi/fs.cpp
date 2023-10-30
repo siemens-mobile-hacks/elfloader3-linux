@@ -35,7 +35,7 @@ int SWI_open(const char *path, unsigned int f, unsigned int m, unsigned int *err
 		flags |= O_APPEND;
 	
 	int ret;
-	if (0&&strcmp(path, "0:\\Misc\\stdout.txt") == 0) {
+	if (strcmp(path, "0:\\Misc\\stdout.txt") == 0) {
 		ret = dup(STDOUT_FILENO);
 	} else if (strcmp(path, "0:\\Misc\\stderr.txt") == 0) {
 		ret = dup(STDERR_FILENO);
