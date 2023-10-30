@@ -28,7 +28,6 @@ void SWI_GetDateTime(TDate *d, TTime *t) {
 		t->sec = local_tm.tm_sec;
 		t->millisec = 0;
 	}
-	
 }
 
 char SWI_GetWeek(TDate *param1) {

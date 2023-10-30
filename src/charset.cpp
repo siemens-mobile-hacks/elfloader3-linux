@@ -131,78 +131,54 @@ static size_t _decode_utf16(const uint16_t *buffer, size_t max_len, uint32_t *co
 	return 1;
 }
 
-size_t utf8_to_utf16(const std::string &input, uint16_t *buffer, size_t buffer_size) {
-	assert(buffer_size > 0);
+size_t utf8_to_utf16(const char *input, size_t input_len, uint16_t *buffer, size_t buffer_size) {
 	size_t new_len = 0;
-	for (size_t i = 0; i < input.size(); ) {
+	for (size_t i = 0; i < input_len; ) {
 		uint32_t codepoint = 0;
-		i += _decode_utf8(&input[i], input.size() - i, &codepoint);
+		i += _decode_utf8(&input[i], input_len - i, &codepoint);
 		if ((codepoint >= 0x0000 && codepoint <= 0xD7FF) || (codepoint >= 0xE000 && codepoint <= 0xFFFF)) {
-			if ((new_len + 1) > (buffer_size - 1))
+			if ((new_len + 1) > buffer_size)
 				break;
 			buffer[new_len++] = codepoint;
 		} else {
-			if ((new_len + 2) > (buffer_size - 1))
+			if ((new_len + 2) > buffer_size)
 				break;
 			uint32_t double_codepoint = codepoint - 0x10000;
 			buffer[new_len++] = ((double_codepoint >> 10) & 0x3FF) | 0xD800;
 			buffer[new_len++] = (double_codepoint & 0x3FF) | 0xDC00;
 		}
 	}
-	buffer[new_len] = 0;
 	return new_len;
 }
 
-size_t utf16_to_utf8(const std::vector<uint16_t> &input, char *buffer, size_t buffer_size) {
-	assert(buffer_size > 0);
+size_t utf16_to_utf8(const uint16_t *input, size_t input_len, char *buffer, size_t buffer_size) {
 	size_t new_len = 0;
-	for (size_t i = 0; i < input.size(); ) {
+	for (size_t i = 0; i < input_len; ) {
 		uint32_t codepoint = 0;
-		i += _decode_utf16(&input[i], input.size() - i, &codepoint);
+		i += _decode_utf16(&input[i], input_len - i, &codepoint);
 		size_t char_len = _codepoint_len(codepoint);
-		if (new_len + char_len > (buffer_size - 1))
+		if (new_len + char_len > buffer_size)
 			break;
 		new_len += _encode_codepoint(&buffer[new_len], codepoint);
 	}
-	buffer[new_len] = 0;
 	return new_len;
 }
 
-std::string cp1251_to_utf8(const std::string &input) {
-	char tmp[4];
-	std::string out;
-	for (auto &c: input)
-		out.append(tmp, _encode_codepoint(tmp, cp1251_to_utf16_table[c]));
-	return out;
-}
-
 size_t cp1251_to_utf8(const std::string &input, char *buffer, size_t buffer_size) {
-	assert(buffer_size > 0);
 	size_t new_len = 0;
 	for (size_t i = 0; i < input.size(); i++) {
 		uint16_t codepoint = cp1251_to_utf16_table[input[i]];
 		size_t char_len = _codepoint_len(codepoint);
-		if (new_len + char_len > (buffer_size - 1))
+		if (new_len + char_len > buffer_size)
 			break;
 		new_len += _encode_codepoint(&buffer[new_len], codepoint);
 	}
-	buffer[new_len] = 0;
 	return new_len;
 }
 
-std::vector<uint16_t> cp1251_to_utf16(const std::string &input) {
-	std::vector<uint16_t> out;
-	out.resize(input.size());
-	for (auto &c: input)
-		out.push_back(cp1251_to_utf16_table[c]);
-	return out;
-}
-
-size_t cp1251_to_utf16(const std::string &input, uint16_t *buffer, size_t buffer_size) {
-	assert(buffer_size > 0);
-	size_t new_len = std::min(buffer_size - 1, input.size());
+size_t cp1251_to_utf16(const char *input, size_t input_len, uint16_t *buffer, size_t buffer_size) {
+	size_t new_len = std::min(buffer_size, input_len);
 	for (size_t i = 0; i < new_len; i++)
 		buffer[i] = cp1251_to_utf16_table[input[i]];
-	buffer[new_len] = 0;
 	return new_len;
 }
