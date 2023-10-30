@@ -18,8 +18,14 @@ add_executable(elfloader3
 	src/main.cpp
 	src/stubs.cpp
 	src/utils.cpp
-	src/swi/libc.cpp
+	src/SieFs.cpp
 	
+	# SWI
+	src/swi.cpp
+	src/swi/libc.cpp
+	src/swi/fs.cpp
+	
+	# vova7890 & Ganster elfloader
 	src/elfloader/debug.c
 	src/elfloader/env.c
 	src/elfloader/loadelf.c
