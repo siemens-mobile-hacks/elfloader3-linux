@@ -5,13 +5,17 @@
 
 #define NEWSGOLD 1
 
-// internal
+/*
+ * Internals
+ * */
 extern void *switab_functions[4096];
 
 void loader_init_switab();
 void loader_swi_stub(int swi);
 
-// libc
+/*
+ * libc
+ * */
 typedef int _jmp_buf[11];
 
 char *SWI_strpbrk(const char *s1, const char *s2);
@@ -42,9 +46,11 @@ char *SWI_strcat(char *param1, const char *param2);
 char *SWI_strchr(const char *param1, int param2);
 int SWI_strcmp(const char *param1, const char *param2);
 char *SWI_strcpy(char *dest, const char *source);
-unsigned int SWI_strlen(const char *param1);
+uint32_t SWI_strlen(const char *param1);
 
-// Filesystem
+/*
+ * Filesystem
+ * */
 
 // Permissions
 #define P_WRITE 0x100
@@ -70,9 +76,9 @@ unsigned int SWI_strlen(const char *param1);
 typedef struct {
 #ifdef NEWSGOLD
   char unk0[40];
-  unsigned int file_size;
+  uint32_t file_size;
   short file_attr;
-  unsigned int create_date_time;
+  uint32_t create_date_time;
   char unk1[2];
   char folder_name[128];
   char unk2;
@@ -83,8 +89,8 @@ typedef struct {
 #else
   char unk1[14];
   short file_attr;
-  unsigned int create_date_time;
-  unsigned int file_size;
+  uint32_t create_date_time;
+  uint32_t file_size;
   char unk2[16];
   char folder_name[128];
   char unk3;
@@ -98,26 +104,46 @@ typedef struct {
   char unk2;
   char unk3;
   char unk4;
-  unsigned int size;
+  uint32_t size;
   char unk5[28];
   int file_attr;
 } FSTATS;
 
-int SWI_open(const char *cFileName, unsigned int iFileFlags, unsigned int iFileMode, unsigned int *ErrorNumber);
-int SWI_read(int FileHandler, void *cBuffer, int iByteCount, unsigned int *ErrorNumber);
-int SWI_write(int FileHandler, void const * cBuffer, int iByteCount, unsigned int *ErrorNumber);
-int SWI_close(int FileHandler, unsigned int *ErrorNumber);
-int SWI_flush(int stream, unsigned int *ErrorNumber);
-long SWI_lseek(int FileHandler, unsigned int offset, unsigned int origin, unsigned int *ErrorNumber, unsigned int *ErrorNumber2);
-int SWI_mkdir(const char * cFileName, unsigned int *ErrorNumber);
-int SWI_GetFileAttrib(const char *cFileName, unsigned char *cAttribute, unsigned int *ErrorNumber);
-int SWI_SetFileAttrib(const char *cFileName, unsigned char cAttribute, unsigned int *ErrorNumber);
-int SWI_setfilesize(int FileHandler, unsigned int iNewFileSize, unsigned int *ErrorNumber);
-int SWI_FindFirstFile(DIR_ENTRY *DIRENTRY, const char *mask, unsigned int *ErrorNumber);
-int SWI_FindNextFile(DIR_ENTRY *DIRENTRY,unsigned int *ErrorNumber);
-int SWI_FindClose(DIR_ENTRY *DIRENTRY,unsigned int *ErrorNumber);
-int SWI_fmove(const char * SourceFileName, const char * DestFileName, unsigned int *ErrorNumber);
-int SWI_rmdir(const char * cDirectory, unsigned int *ErrorNumber);
+int SWI_open(const char *cFileName, uint32_t iFileFlags, uint32_t iFileMode, uint32_t *ErrorNumber);
+int SWI_read(int FileHandler, void *cBuffer, int iByteCount, uint32_t *ErrorNumber);
+int SWI_write(int FileHandler, void const * cBuffer, int iByteCount, uint32_t *ErrorNumber);
+int SWI_close(int FileHandler, uint32_t *ErrorNumber);
+int SWI_flush(int stream, uint32_t *ErrorNumber);
+long SWI_lseek(int FileHandler, uint32_t offset, uint32_t origin, uint32_t *ErrorNumber, uint32_t *ErrorNumber2);
+int SWI_mkdir(const char * cFileName, uint32_t *ErrorNumber);
+int SWI_GetFileAttrib(const char *cFileName, uint8_t *cAttribute, uint32_t *ErrorNumber);
+int SWI_SetFileAttrib(const char *cFileName, uint8_t cAttribute, uint32_t *ErrorNumber);
+int SWI_setfilesize(int FileHandler, uint32_t iNewFileSize, uint32_t *ErrorNumber);
+int SWI_FindFirstFile(DIR_ENTRY *DIRENTRY, const char *mask, uint32_t *ErrorNumber);
+int SWI_FindNextFile(DIR_ENTRY *DIRENTRY,uint32_t *ErrorNumber);
+int SWI_FindClose(DIR_ENTRY *DIRENTRY,uint32_t *ErrorNumber);
+int SWI_fmove(const char * SourceFileName, const char * DestFileName, uint32_t *ErrorNumber);
+int SWI_rmdir(const char * cDirectory, uint32_t *ErrorNumber);
 int SWI_truncate(int FileHandler, int length, int *errornumber);
-int SWI_isdir(const char * cDirectory, unsigned int *ErrorNumber);
-int SWI_GetFileStats(const char *cFileName, FSTATS * StatBuffer, unsigned int *errornumber);
+int SWI_isdir(const char * cDirectory, uint32_t *ErrorNumber);
+int SWI_GetFileStats(const char *cFileName, FSTATS * StatBuffer, uint32_t *errornumber);
+
+/*
+ * Date & Time
+ * */
+typedef struct {
+	uint32_t year;
+	uint8_t month;
+	uint8_t day;
+} TDate;
+
+typedef struct {
+	uint8_t hour;
+	uint8_t min;
+	uint8_t sec;
+	uint32_t millisec;
+} TTime;
+
+void SWI_GetDateTime(TDate *param1, TTime *param2);
+char SWI_GetWeek(TDate *param1);
+int SWI_GetTimeZoneShift(TDate *param1, TTime *param2, int timeZone);

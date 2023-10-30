@@ -9,7 +9,7 @@
 #include <unistd.h>
 #include <cstring>
 
-int SWI_open(const char *path, unsigned int f, unsigned int m, unsigned int *errp) {
+int SWI_open(const char *path, uint32_t f, uint32_t m, uint32_t *errp) {
 	int flags = 0;
 	mode_t mode = S_IRUSR | S_IWUSR;
 	
@@ -56,7 +56,7 @@ int SWI_open(const char *path, unsigned int f, unsigned int m, unsigned int *err
 	return ret;
 }
 
-int SWI_read(int fd, void *buff, int count, unsigned int *errp) {
+int SWI_read(int fd, void *buff, int count, uint32_t *errp) {
 	int ret = read(fd, buff, count);
 	if (ret < 0) {
 		perror("[SWI] read");
@@ -69,7 +69,7 @@ int SWI_read(int fd, void *buff, int count, unsigned int *errp) {
 	return ret;
 }
 
-int SWI_write(int fd, const void *buff, int count, unsigned int *errp) {
+int SWI_write(int fd, const void *buff, int count, uint32_t *errp) {
 	int ret = write(fd, buff, count);
 	if (ret < 0) {
 		perror("[SWI] write");
@@ -82,7 +82,7 @@ int SWI_write(int fd, const void *buff, int count, unsigned int *errp) {
 	return ret;
 }
 
-int SWI_close(int fd, unsigned int *errp) {
+int SWI_close(int fd, uint32_t *errp) {
 	int ret = close(fd);
 	// fprintf(stderr, "close(%d) = %d\n", fd, ret);
 	if (ret < 0) {
@@ -96,7 +96,7 @@ int SWI_close(int fd, unsigned int *errp) {
 	return ret;
 }
 
-int SWI_flush(int fd, unsigned int *errp) {
+int SWI_flush(int fd, uint32_t *errp) {
 	int ret = fsync(fd);
 	if (ret < 0) {
 		perror("[SWI] flush");
@@ -109,61 +109,61 @@ int SWI_flush(int fd, unsigned int *errp) {
 	return ret;
 }
 
-long SWI_lseek(int fd, unsigned int offset, unsigned int origin, unsigned int *errp, unsigned int *errp2) {
+long SWI_lseek(int fd, uint32_t offset, uint32_t origin, uint32_t *errp, uint32_t *errp2) {
 	fprintf(stderr, "%s not implemented!\n", __func__);
 	abort();
 	return 0;
 }
 
-int SWI_mkdir(const char * cFileName, unsigned int *ErrorNumber) {
+int SWI_mkdir(const char * cFileName, uint32_t *ErrorNumber) {
 	fprintf(stderr, "%s not implemented!\n", __func__);
 	abort();
 	return 0;
 }
 
-int SWI_GetFileAttrib(const char *cFileName, unsigned char *cAttribute, unsigned int *ErrorNumber) {
+int SWI_GetFileAttrib(const char *cFileName, uint8_t *cAttribute, uint32_t *ErrorNumber) {
 	fprintf(stderr, "%s not implemented!\n", __func__);
 	abort();
 	return 0;
 }
 
-int SWI_SetFileAttrib(const char *cFileName, unsigned char cAttribute, unsigned int *ErrorNumber) {
+int SWI_SetFileAttrib(const char *cFileName, uint8_t cAttribute, uint32_t *ErrorNumber) {
 	fprintf(stderr, "%s not implemented!\n", __func__);
 	abort();
 	return 0;
 }
 
-int SWI_setfilesize(int FileHandler, unsigned int iNewFileSize, unsigned int *ErrorNumber) {
+int SWI_setfilesize(int FileHandler, uint32_t iNewFileSize, uint32_t *ErrorNumber) {
 	fprintf(stderr, "%s not implemented!\n", __func__);
 	abort();
 	return 0;
 }
 
-int SWI_FindFirstFile(DIR_ENTRY *DIRENTRY, const char *mask,unsigned int *ErrorNumber) {
+int SWI_FindFirstFile(DIR_ENTRY *DIRENTRY, const char *mask,uint32_t *ErrorNumber) {
 	fprintf(stderr, "%s not implemented!\n", __func__);
 	abort();
 	return 0;
 }
 
-int SWI_FindNextFile(DIR_ENTRY *DIRENTRY,unsigned int *ErrorNumber) {
+int SWI_FindNextFile(DIR_ENTRY *DIRENTRY,uint32_t *ErrorNumber) {
 	fprintf(stderr, "%s not implemented!\n", __func__);
 	abort();
 	return 0;
 }
 
-int SWI_FindClose(DIR_ENTRY *DIRENTRY,unsigned int *ErrorNumber) {
+int SWI_FindClose(DIR_ENTRY *DIRENTRY,uint32_t *ErrorNumber) {
 	fprintf(stderr, "%s not implemented!\n", __func__);
 	abort();
 	return 0;
 }
 
-int SWI_fmove(const char * SourceFileName, const char * DestFileName, unsigned int *ErrorNumber) {
+int SWI_fmove(const char * SourceFileName, const char * DestFileName, uint32_t *ErrorNumber) {
 	fprintf(stderr, "%s not implemented!\n", __func__);
 	abort();
 	return 0;
 }
 
-int SWI_rmdir(const char * cDirectory, unsigned int *ErrorNumber) {
+int SWI_rmdir(const char * cDirectory, uint32_t *ErrorNumber) {
 	fprintf(stderr, "%s not implemented!\n", __func__);
 	abort();
 	return 0;
@@ -175,13 +175,13 @@ int SWI_truncate(int FileHandler, int length, int *errornumber) {
 	return 0;
 }
 
-int SWI_isdir(const char * cDirectory, unsigned int *ErrorNumber) {
+int SWI_isdir(const char * cDirectory, uint32_t *ErrorNumber) {
 	fprintf(stderr, "%s not implemented!\n", __func__);
 	abort();
 	return 0;
 }
 
-int SWI_GetFileStats(const char *cFileName, FSTATS * StatBuffer, unsigned int *errornumber) {
+int SWI_GetFileStats(const char *cFileName, FSTATS * StatBuffer, uint32_t *errornumber) {
 	fprintf(stderr, "%s not implemented!\n", __func__);
 	abort();
 	return 0;

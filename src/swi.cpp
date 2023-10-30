@@ -82,6 +82,11 @@ void loader_init_switab() {
 	switab_functions[0x0091]	= (void *) SWI_isdir,
 	switab_functions[0x0084]	= (void *) SWI_GetFileStats,
 	
+	// Date && Time
+	switab_functions[0x00B4]	= (void *) SWI_GetDateTime,
+	switab_functions[0x00B5]	= (void *) SWI_GetWeek,
+	switab_functions[0x0230]	= (void *) SWI_GetTimeZoneShift,
+	
 	switab_functions[0x190]		= (void *) SWI_MutexCreate;
 	switab_functions[0x191]		= (void *) SWI_MutexDestroy;
 	switab_functions[0x2EE]		= (void *) SWI_elfclose;

@@ -24,6 +24,7 @@ add_executable(elfloader3
 	src/swi.cpp
 	src/swi/libc.cpp
 	src/swi/fs.cpp
+	src/swi/time.cpp
 	
 	# vova7890 & Ganster elfloader
 	src/elfloader/debug.c

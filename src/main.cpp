@@ -45,11 +45,11 @@ int main(int argc, char **argv) {
 	
 	std::string library_path_env;
 	if (getenv("SDK_PATH")) {
-		library_path_env = strprintf("%s/lib/NSG;%s/lib", getenv("SDK_PATH"), getenv("SDK_PATH"));
+		library_path_env = strprintf("%s/lib/NSG;%s/lib;%s/lib/legacy", getenv("SDK_PATH"), getenv("SDK_PATH"), getenv("SDK_PATH"));
 	} else if (getenv("EL3_LIBRARY_PATH")) {
 		library_path_env = getenv("EL3_LIBRARY_PATH");
 	} else {
-		library_path_env = self_dir + "/../sdk/lib/NSG;" + self_dir + "/../sdk/lib";
+		library_path_env = self_dir + "/../sdk/lib/NSG;" + self_dir + "/../sdk/lib;" + self_dir + "/../sdk/lib/legacy";
 	}
 	
 	SieFs::mount("0", self_dir + "/rootfs/Data");

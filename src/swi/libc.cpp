@@ -129,6 +129,6 @@ char *SWI_strcpy(char *dest, const char *source) {
 	return strcpy(dest, source);
 }
 
-unsigned int SWI_strlen(const char *param1) {
+uint32_t SWI_strlen(const char *param1) {
 	return strlen(param1);
 }
