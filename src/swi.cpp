@@ -52,9 +52,6 @@ void loader_init_switab() {
 	switab_functions[0x0054]	= (void *) SWI_StrToInt;
 	switab_functions[0x0014]	= (void *) SWI_malloc;
 	switab_functions[0x0015]	= (void *) SWI_free;
-	switab_functions[0x0015]	= (void *) SWI_free;
-	switab_functions[0x8014]	= (void *) SWI_malloc_adr;
-	switab_functions[0x8015]	= (void *) SWI_mfree_adr;
 	switab_functions[0x0016]	= (void *) SWI_sprintf;
 	switab_functions[0x0017]	= (void *) SWI_strcat;
 	switab_functions[0x0018]	= (void *) SWI_strchr;

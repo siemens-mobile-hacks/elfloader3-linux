@@ -69,11 +69,6 @@ int SWI_wstrcmp(WSHDR *ws1, WSHDR *ws2) {
 	return ws1->body->len > ws2->body->len ? -1 : 1;
 }
 
-void SWI_wsRemoveChars(WSHDR *ws, uint16_t from, uint16_t to) {
-	fprintf(stderr, "%s not implemented!\n", __func__);
-	abort();
-}
-
 uint16_t SWI_wstrchr(WSHDR *ws, uint16_t start_pos, uint16_t ch) {
 	assert(ws != nullptr);
 	
@@ -102,9 +97,28 @@ void SWI_wsAppendChar(WSHDR *ws, uint16_t ch) {
 }
 
 int SWI_wsInsertChar(WSHDR *ws, uint16_t ch, uint16_t pos) {
-	fprintf(stderr, "%s not implemented!\n", __func__);
-	abort();
-	return 0;
+	assert(ws != nullptr && pos > 0);
+	pos = pos - 1;
+	
+	assert(pos < ws->maxlen - 1);
+	assert(ws->body->len + 1 <= ws->maxlen - 1);
+	
+	memmove(&ws->body->data[pos + 1], &ws->body->data[pos], (ws->maxlen - 1 - pos) * sizeof(uint16_t));
+	ws->body->data[pos] = ch;
+	ws->body->len++;
+	
+	return ws->body->len;
+}
+
+void SWI_wsRemoveChars(WSHDR *ws, uint16_t pos, uint16_t len) {
+	assert(ws != nullptr && pos > 0);
+	pos = pos - 1;
+	
+	assert(pos < ws->maxlen - 1);
+	assert(pos + len <= ws->maxlen - 1);
+	
+	memmove(&ws->body->data[pos], &ws->body->data[pos + len], (ws->maxlen - 1 - (pos + len)) * sizeof(uint16_t));
+	ws->body->len -= len;
 }
 
 WSHDR *SWI_wstrcpy(WSHDR *ws1, WSHDR *ws2) {

@@ -96,14 +96,6 @@ void SWI_free(void *param1) {
 	return free(param1);
 }
 
-void *SWI_malloc_adr(void) {
-	return (void *) SWI_malloc;
-}
-
-void *SWI_mfree_adr(void) {
-	return (void *) SWI_free;
-}
-
 int SWI_sprintf(char *buffer, const char *format, ...) {
 	va_list arg;
 	int ret;

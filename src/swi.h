@@ -40,8 +40,6 @@ int SWI_strcmpi(const char *s1, const char *s2);
 int SWI_StrToInt(char *s, char **endp);
 void *SWI_malloc(size_t size);
 void SWI_free(void *param1);
-void *SWI_malloc_adr(void);
-void *SWI_mfree_adr(void);
 int SWI_sprintf(char *buffer, const char *format, ...);
 char *SWI_strcat(char *param1, const char *param2);
 char *SWI_strchr(const char *param1, int param2);
