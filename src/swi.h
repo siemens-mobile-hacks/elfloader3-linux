@@ -208,3 +208,19 @@ uint16_t SWI_wstrchr(WSHDR *ws, uint16_t start_pos, uint16_t wchar);
 uint16_t SWI_wstrrchr(WSHDR *ws, uint16_t max_pos, uint16_t wchar);
 void SWI_wsAppendChar(WSHDR *ws, uint16_t wchar);
 int SWI_wsInsertChar(WSHDR *ws, uint16_t wchar, uint16_t pos);
+
+/*
+ * Lock
+ * */
+typedef struct {
+	void *p;
+	int i;
+} MUTEX;
+
+void SWI_LockSched(void);
+void SWI_UnlockSched(void);
+void SWI_MutexCreate(MUTEX *mtx);
+void SWI_MutexDestroy(MUTEX *mtx);
+void SWI_MutexLock(MUTEX *mtx);
+void SWI_MutexLockEx(MUTEX *mtx, int flag);
+void SWI_MutexUnlock(MUTEX *mtx);

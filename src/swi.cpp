@@ -10,14 +10,6 @@ int *loader_library_impl() {
 	return (int *) switab_functions;
 }
 
-void SWI_MutexCreate() {
-	
-}
-
-void SWI_MutexDestroy() {
-	
-}
-
 void SWI_elfclose(Elf32_Exec *ex) {
 	loader_elf_close(ex);
 }
@@ -108,9 +100,16 @@ void loader_init_switab() {
 	switab_functions[0x001D]	= (void *) SWI_wsInsertChar,
 	switab_functions[0x0216]	= (void *) SWI_wstrcatprintf,
 	
+	// Locking
+	switab_functions[0x0146]	= (void *) SWI_LockSched,
+	switab_functions[0x0147]	= (void *) SWI_UnlockSched,
+	switab_functions[0x0190]	= (void *) SWI_MutexCreate,
+	switab_functions[0x0191]	= (void *) SWI_MutexDestroy,
+	switab_functions[0x0192]	= (void *) SWI_MutexLock,
+	switab_functions[0x0193]	= (void *) SWI_MutexLockEx,
+	switab_functions[0x0194]	= (void *) SWI_MutexUnlock,
+	
 	// Other
-	switab_functions[0x190]		= (void *) SWI_MutexCreate;
-	switab_functions[0x191]		= (void *) SWI_MutexDestroy;
 	switab_functions[0x2EE]		= (void *) SWI_elfclose;
 	
 	// RAM
