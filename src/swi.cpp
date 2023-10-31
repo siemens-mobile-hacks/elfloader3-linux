@@ -6,6 +6,11 @@ void loader_swi_stub(int swi) {
 	abort();
 }
 
+void loader_subproc_impl(void *func, void *p1) {
+	fprintf(stderr, "SUBPORC!\n");
+	abort();
+}
+
 int *loader_library_impl() {
 	return (int *) switab_functions;
 }

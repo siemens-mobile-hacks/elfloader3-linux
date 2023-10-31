@@ -7,12 +7,11 @@ set(CMAKE_SYSTEM_VERSION 1)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_C_STANDARD 11)
 
-set(CMAKE_C_COMPILER		arm-linux-gnueabi-gcc${CMAKE_EXECUTABLE_SUFFIX})
-set(CMAKE_CXX_COMPILER		arm-linux-gnueabi-g++${CMAKE_EXECUTABLE_SUFFIX})
+set(CMAKE_C_COMPILER		arm-linux-gnueabihf-gcc${CMAKE_EXECUTABLE_SUFFIX})
+set(CMAKE_CXX_COMPILER		arm-linux-gnueabihf-g++${CMAKE_EXECUTABLE_SUFFIX})
 
-add_compile_options(-mcpu=arm926ej-s -g -mfloat-abi=soft -fno-common -ffunction-sections -fdata-sections)
-
-add_link_options(-static -Wl,-gc-sections -g)
+# add_compile_options(-mcpu=arm926ej-s -g -mfloat-abi=soft -fno-common -ffunction-sections -fdata-sections)
+add_link_options(-static)
 
 add_executable(elfloader3
 	src/main.cpp

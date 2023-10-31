@@ -10,7 +10,7 @@ In this emulator used modified elfloader 3.0 with integrated gdb support.
 # Build
 ```bash
 # Required software
-sudo apt install gcc-arm-linux-gnueabi g++-arm-linux-gnueabi libc6-armel-cross
+sudo apt install crossbuild-essential-armhf libc6-armhf-cross
 
 # Dir with all stuff
 mkdir -p ~/dev/sie
