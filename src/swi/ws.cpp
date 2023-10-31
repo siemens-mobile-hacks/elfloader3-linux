@@ -10,6 +10,8 @@
 #include <codecvt>
 #include <iconv.h>
 
+#include "ws_printf.h"
+
 WSHDR *SWI_AllocWS(uint16_t len) {
 	return SWI_CreateWS(SWI_malloc, SWI_free, len);
 }
@@ -169,15 +171,73 @@ void SWI_CutWSTR(WSHDR *ws, uint16_t len) {
 	ws->body->len = len;
 }
 
-int SWI_wsprintf(WSHDR *param1, const char *format,...) {
-	fprintf(stderr, "%s not implemented!\n", __func__);
-	abort();
-	return 0;
+int SWI_wsprintf(WSHDR *ws, const char *format,...) {
+	assert(ws != nullptr && format != nullptr);
+	
+	size_t ws_maxlen = ws->maxlen - 1;
+	if (!ws_maxlen)
+		return 0;
+	
+	// Convert format from CP1252 to UTF8
+	size_t format_len = strlen(format);
+	char *format_utf8 = new char[format_len * 4 + 1];
+	
+	size_t format_utf8_len = cp1252_to_utf8(format, format_len, format_utf8, format_len * 4);
+	format_utf8[format_utf8_len] = 0;
+	
+	// Temporary UTF-8 buffer for result
+	char *buffer_utf8 = new char[ws_maxlen * 4 + 1];
+	
+	// Do format
+	va_list arg;
+	va_start(arg, format);
+	size_t buffer_len_utf8 = _ws_vsnprintf(buffer_utf8, ws_maxlen * 4 + 1, format_utf8, arg);
+	va_end(arg);
+	
+	// Convert result from UTF-8 to UTF-16
+	ws->body->len = utf8_to_utf16(buffer_utf8, buffer_len_utf8, ws->body->data, ws_maxlen);
+	
+	// Clean temp buffers
+	delete[] format_utf8;
+	delete[] buffer_utf8;
+	
+	return ws->body->len;
+}
+
+void SWI_wstrcatprintf(WSHDR *ws, const char *format,...) {
+	assert(ws != nullptr && format != nullptr);
+	
+	size_t ws_maxlen = ws->maxlen - 1 - ws->body->len;
+	if (!ws_maxlen)
+		return;
+	
+	// Convert format from CP1252 to UTF8
+	size_t format_len = strlen(format);
+	char *format_utf8 = new char[format_len * 4 + 1];
+	
+	size_t format_utf8_len = cp1252_to_utf8(format, format_len, format_utf8, format_len * 4);
+	format_utf8[format_utf8_len] = 0;
+	
+	// Temporary UTF-8 buffer for result
+	char *buffer_utf8 = new char[ws_maxlen * 4 + 1];
+	
+	// Do format
+	va_list arg;
+	va_start(arg, format);
+	size_t buffer_len_utf8 = _ws_vsnprintf(buffer_utf8, ws_maxlen * 4 + 1, format_utf8, arg);
+	va_end(arg);
+	
+	// Convert result from UTF-8 to UTF-16
+	ws->body->len += utf8_to_utf16(buffer_utf8, buffer_len_utf8, &ws->body->data[ws->body->len], ws_maxlen);
+	
+	// Clean temp buffers
+	delete[] format_utf8;
+	delete[] buffer_utf8;
 }
 
 int SWI_str_2ws(WSHDR *ws, const char *buffer, uint16_t max_size) {
 	assert(ws != nullptr && buffer != nullptr && ws->maxlen - 1 >= max_size);
-	ws->body->len = cp1251_to_utf16(buffer, strlen(buffer), ws->body->data, max_size);
+	ws->body->len = cp1252_to_utf16(buffer, strlen(buffer), ws->body->data, max_size);
 	return ws->body->len;
 }
 

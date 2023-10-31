@@ -106,6 +106,7 @@ void loader_init_switab() {
 	switab_functions[0x01DD]	= (void *) SWI_wstrrchr,
 	switab_functions[0x001C]	= (void *) SWI_wsAppendChar,
 	switab_functions[0x001D]	= (void *) SWI_wsInsertChar,
+	switab_functions[0x0216]	= (void *) SWI_wstrcatprintf,
 	
 	// Other
 	switab_functions[0x190]		= (void *) SWI_MutexCreate;

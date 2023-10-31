@@ -192,6 +192,7 @@ WSHDR *SWI_wstrcat(WSHDR *wshdr_d, WSHDR *wshdr_s);
 WSHDR *SWI_wstrncat(WSHDR *wshdr_d, WSHDR *wshdr_s, uint16_t n);
 int SWI_wstrlen(WSHDR *wshdr);
 int SWI_wsprintf(WSHDR* param1, const char *format,...);
+void SWI_wstrcatprintf(WSHDR *param1, const char *format,...);
 WSHDR *SWI_AllocWS(uint16_t len);
 void SWI_CutWSTR(WSHDR *wshdr, uint16_t len);
 WSHDR *SWI_CreateLocalWS(WSHDR *wshdr, uint16_t *wsbody, uint16_t len);
