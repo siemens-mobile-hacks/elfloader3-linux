@@ -1,6 +1,8 @@
 cmake_minimum_required(VERSION 3.15)
 project(elfloader3 LANGUAGES C ASM CXX)
 
+add_subdirectory(host-helper)
+
 set(CMAKE_SYSTEM_NAME Linux)
 set(CMAKE_SYSTEM_VERSION 1)
 
