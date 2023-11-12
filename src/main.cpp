@@ -11,6 +11,7 @@
 #include "log.h"
 #include "utils.h"
 
+#include "gui/Theme.h"
 #include "SieFs.h"
 
 std::string normalizeLibraryPath(const std::string &library_path_env) {
@@ -62,27 +63,33 @@ int main(int argc, char **argv) {
 	loader_setenv("LD_LIBRARY_PATH", library_path_env.c_str(), true);
 	LOGD("EL3_LIBRARY_PATH: %s\n", loader_getenv("LD_LIBRARY_PATH"));
 	
+	Theme::init();
+	CSM_Init();
+	
 	loader_init_switab();
 	loader_set_debug(false);
 	loader_gdb_init();
 	
 	LOGD("Loading ELF: %s\n", filename.c_str());
 	
-	Elf32_Exec *ex = loader_elf_open(filename.c_str());
-	if (!ex) {
-		LOGD("loader_elf_open failed.\n");
-		return 1;
+	for (int i = 0; i < 3; i++) {
+		printf("---------------------------------------------------------\n");
+		Elf32_Exec *ex = loader_elf_open(filename.c_str());
+		if (!ex) {
+			LOGD("loader_elf_open failed.\n");
+			return 1;
+		}
+		
+		LOGD("run INIT array\n");
+		loader_run_INIT_Array(ex);
+		
+		std::string fname = SieFs::path2sie(filename);
+		
+		auto entry = (int (*)(const char *, const char *, const void *)) loader_elf_entry(ex);
+		printf("run entry at %p (fname=%s)\n", entry, fname.c_str());
+		int ret = entry(fname.c_str(), "", nullptr);
+		LOGD("entry ret = %d\n", ret);
 	}
-	
-	LOGD("run INIT array\n");
-	loader_run_INIT_Array(ex);
-	
-	std::string fname = SieFs::path2sie(filename);
-	
-	auto entry = (int (*)(const char *, const char *, const void *)) loader_elf_entry(ex);
-	printf("run entry at %p (fname=%s)\n", entry, fname.c_str());
-	int ret = entry(fname.c_str(), "", nullptr);
-	LOGD("entry ret = %d\n", ret);
 	
 	// loader_elf_close(ex);
 	

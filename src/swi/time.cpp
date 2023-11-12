@@ -6,11 +6,11 @@
 
 static TDateTimeSettings time_settings = { };
 
-TDateTimeSettings *SWI_RamDateTimeSettings(void) {
+TDateTimeSettings *RamDateTimeSettings(void) {
 	return &time_settings;
 }
 
-void SWI_GetDateTime(TDate *d, TTime *t) {
+void GetDateTime(TDate *d, TTime *t) {
 	time_t now = time(NULL);
 	struct tm local_tm = {};
 	
@@ -30,13 +30,13 @@ void SWI_GetDateTime(TDate *d, TTime *t) {
 	}
 }
 
-char SWI_GetWeek(TDate *param1) {
+char GetWeek(TDate *param1) {
 	fprintf(stderr, "%s not implemented!\n", __func__);
 	abort();
 	return 0;
 }
 
-int SWI_GetTimeZoneShift(TDate *d, TTime *t, int timeZone) {
+int GetTimeZoneShift(TDate *d, TTime *t, int timeZone) {
 	struct tm local_tm = {};
 	local_tm.tm_year = d->year - 1900;
 	local_tm.tm_mon = d->month - 1;

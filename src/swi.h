@@ -2,9 +2,23 @@
 
 #include <cstdint>
 #include <cstddef>
+#include <functional>
 
 #define NEWSGOLD 1
-#define SWI_STRACE 0
+#define ELKA 1
+
+#ifdef ELKA
+#define SCREEN_WIDTH	132
+#define SCREEN_HEIGHT	176
+#else
+#define SCREEN_WIDTH	132
+#define SCREEN_HEIGHT	176
+#endif
+
+#define SWI_TRACE 0
+
+typedef void *(*malloc_func_t)(size_t);
+typedef void (*mfree_func_t)(void *);
 
 /*
  * Internals
@@ -13,6 +27,11 @@ extern void *switab_functions[4096];
 
 void loader_init_switab();
 void loader_swi_stub(int swi);
+
+/*
+ * System
+ * */
+int GetFreeRamAvail();
 
 /*
  * libc
@@ -38,8 +57,6 @@ void *SWI_memset(void *s, int c, size_t n);
 void *SWI_calloc(size_t nelem, size_t elsize);
 int SWI_strcmpi(const char *s1, const char *s2);
 int SWI_StrToInt(char *s, char **endp);
-void *SWI_malloc(size_t size);
-void SWI_free(void *param1);
 int SWI_sprintf(char *buffer, const char *format, ...);
 char *SWI_strcat(char *param1, const char *param2);
 char *SWI_strchr(const char *param1, int param2);
@@ -117,24 +134,24 @@ typedef struct {
   int file_attr;
 } FSTATS;
 
-int SWI_open(const char *cFileName, uint32_t iFileFlags, uint32_t iFileMode, uint32_t *ErrorNumber);
-int SWI_read(int FileHandler, void *cBuffer, int iByteCount, uint32_t *ErrorNumber);
-int SWI_write(int FileHandler, void const * cBuffer, int iByteCount, uint32_t *ErrorNumber);
-int SWI_close(int FileHandler, uint32_t *ErrorNumber);
-int SWI_flush(int stream, uint32_t *ErrorNumber);
-long SWI_lseek(int FileHandler, uint32_t offset, uint32_t origin, uint32_t *ErrorNumber, uint32_t *ErrorNumber2);
-int SWI_mkdir(const char * cFileName, uint32_t *ErrorNumber);
-int SWI_GetFileAttrib(const char *cFileName, uint8_t *cAttribute, uint32_t *ErrorNumber);
-int SWI_SetFileAttrib(const char *cFileName, uint8_t cAttribute, uint32_t *ErrorNumber);
-int SWI_setfilesize(int FileHandler, uint32_t iNewFileSize, uint32_t *ErrorNumber);
-int SWI_FindFirstFile(DIR_ENTRY *DIRENTRY, const char *mask, uint32_t *ErrorNumber);
-int SWI_FindNextFile(DIR_ENTRY *DIRENTRY,uint32_t *ErrorNumber);
-int SWI_FindClose(DIR_ENTRY *DIRENTRY,uint32_t *ErrorNumber);
-int SWI_fmove(const char * SourceFileName, const char * DestFileName, uint32_t *ErrorNumber);
-int SWI_rmdir(const char * cDirectory, uint32_t *ErrorNumber);
-int SWI_truncate(int FileHandler, int length, int *errornumber);
-int SWI_isdir(const char * cDirectory, uint32_t *ErrorNumber);
-int SWI_GetFileStats(const char *cFileName, FSTATS * StatBuffer, uint32_t *errornumber);
+int FS_open(const char *cFileName, uint32_t iFileFlags, uint32_t iFileMode, uint32_t *ErrorNumber);
+int FS_read(int FileHandler, void *cBuffer, int iByteCount, uint32_t *ErrorNumber);
+int FS_write(int FileHandler, void const * cBuffer, int iByteCount, uint32_t *ErrorNumber);
+int FS_close(int FileHandler, uint32_t *ErrorNumber);
+int FS_flush(int stream, uint32_t *ErrorNumber);
+long FS_lseek(int FileHandler, uint32_t offset, uint32_t origin, uint32_t *ErrorNumber, uint32_t *ErrorNumber2);
+int FS_mkdir(const char * cFileName, uint32_t *ErrorNumber);
+int FS_GetFileAttrib(const char *cFileName, uint8_t *cAttribute, uint32_t *ErrorNumber);
+int FS_SetFileAttrib(const char *cFileName, uint8_t cAttribute, uint32_t *ErrorNumber);
+int FS_setfilesize(int FileHandler, uint32_t iNewFileSize, uint32_t *ErrorNumber);
+int FS_FindFirstFile(DIR_ENTRY *DIRENTRY, const char *mask, uint32_t *ErrorNumber);
+int FS_FindNextFile(DIR_ENTRY *DIRENTRY,uint32_t *ErrorNumber);
+int FS_FindClose(DIR_ENTRY *DIRENTRY,uint32_t *ErrorNumber);
+int FS_fmove(const char * SourceFileName, const char * DestFileName, uint32_t *ErrorNumber);
+int FS_rmdir(const char * cDirectory, uint32_t *ErrorNumber);
+int FS_truncate(int FileHandler, int length, int *errornumber);
+int FS_isdir(const char * cDirectory, uint32_t *ErrorNumber);
+int FS_GetFileStats(const char *cFileName, FSTATS * StatBuffer, uint32_t *errornumber);
 
 /*
  * Date & Time
@@ -161,10 +178,10 @@ typedef struct {
   int8_t isAutoTime2;
 } TDateTimeSettings;
 
-void SWI_GetDateTime(TDate *param1, TTime *param2);
-char SWI_GetWeek(TDate *param1);
-int SWI_GetTimeZoneShift(TDate *param1, TTime *param2, int timeZone);
-TDateTimeSettings *SWI_RamDateTimeSettings(void);
+void GetDateTime(TDate *param1, TTime *param2);
+char GetWeek(TDate *param1);
+int GetTimeZoneShift(TDate *param1, TTime *param2, int timeZone);
+TDateTimeSettings *RamDateTimeSettings();
 
 /*
  * Wide String
@@ -186,28 +203,28 @@ typedef struct {
 	uint16_t unk1;
 } WSHDR;
 
-WSHDR *SWI_wstrcpy(WSHDR *wshdr_d, WSHDR *wshdr_s);
-WSHDR *SWI_wstrncpy(WSHDR *param1, WSHDR * param2, uint16_t param3);
-WSHDR *SWI_wstrcat(WSHDR *wshdr_d, WSHDR *wshdr_s);
-WSHDR *SWI_wstrncat(WSHDR *wshdr_d, WSHDR *wshdr_s, uint16_t n);
-int SWI_wstrlen(WSHDR *wshdr);
-int SWI_wsprintf(WSHDR* param1, const char *format,...);
-void SWI_wstrcatprintf(WSHDR *param1, const char *format,...);
-WSHDR *SWI_AllocWS(uint16_t len);
-void SWI_CutWSTR(WSHDR *wshdr, uint16_t len);
-WSHDR *SWI_CreateLocalWS(WSHDR *wshdr, uint16_t *wsbody, uint16_t len);
-WSHDR *SWI_CreateWS(void *(*ws_malloc)(size_t), void (*ws_mfree)(void *), uint16_t len);
-void SWI_FreeWS(WSHDR *wshdr);
-int SWI_str_2ws(WSHDR *ws, const char *str, uint16_t size);
-int SWI_wstrcmp(WSHDR *ws1, WSHDR *ws2);
-void SWI_wstrcpybypos(WSHDR *dest, WSHDR *src, uint16_t from, uint16_t len);
-void SWI_wsRemoveChars(WSHDR *ws, uint16_t from, uint16_t to);
-int SWI_ws_2utf8( WSHDR *from, char *to, int *result_length, uint16_t max_len);
-int SWI_utf8_2ws(WSHDR *ws, const char *utf8_str, uint16_t maxLen);
-uint16_t SWI_wstrchr(WSHDR *ws, uint16_t start_pos, uint16_t wchar);
-uint16_t SWI_wstrrchr(WSHDR *ws, uint16_t max_pos, uint16_t wchar);
-void SWI_wsAppendChar(WSHDR *ws, uint16_t wchar);
-int SWI_wsInsertChar(WSHDR *ws, uint16_t wchar, uint16_t pos);
+WSHDR *wstrcpy(WSHDR *wshdr_d, WSHDR *wshdr_s);
+WSHDR *wstrncpy(WSHDR *param1, WSHDR * param2, uint16_t param3);
+WSHDR *wstrcat(WSHDR *wshdr_d, WSHDR *wshdr_s);
+WSHDR *wstrncat(WSHDR *wshdr_d, WSHDR *wshdr_s, uint16_t n);
+int wstrlen(WSHDR *wshdr);
+int wsprintf(WSHDR* param1, const char *format,...);
+void wstrcatprintf(WSHDR *param1, const char *format,...);
+WSHDR *AllocWS(uint16_t len);
+void CutWSTR(WSHDR *wshdr, uint16_t len);
+WSHDR *CreateLocalWS(WSHDR *wshdr, uint16_t *wsbody, uint16_t len);
+WSHDR *CreateWS(void *(*ws_malloc)(size_t), void (*ws_mfree)(void *), uint16_t len);
+void FreeWS(WSHDR *wshdr);
+int str_2ws(WSHDR *ws, const char *str, uint16_t size);
+int wstrcmp(WSHDR *ws1, WSHDR *ws2);
+void wstrcpybypos(WSHDR *dest, WSHDR *src, uint16_t from, uint16_t len);
+void wsRemoveChars(WSHDR *ws, uint16_t from, uint16_t to);
+int ws_2utf8( WSHDR *from, char *to, int *result_length, uint16_t max_len);
+int utf8_2ws(WSHDR *ws, const char *utf8_str, uint16_t maxLen);
+uint16_t wstrchr(WSHDR *ws, uint16_t start_pos, uint16_t wchar);
+uint16_t wstrrchr(WSHDR *ws, uint16_t max_pos, uint16_t wchar);
+void wsAppendChar(WSHDR *ws, uint16_t wchar);
+int wsInsertChar(WSHDR *ws, uint16_t wchar, uint16_t pos);
 
 /*
  * Lock
@@ -217,10 +234,260 @@ typedef struct {
 	int i;
 } MUTEX;
 
-void SWI_LockSched(void);
-void SWI_UnlockSched(void);
-void SWI_MutexCreate(MUTEX *mtx);
-void SWI_MutexDestroy(MUTEX *mtx);
-void SWI_MutexLock(MUTEX *mtx);
-void SWI_MutexLockEx(MUTEX *mtx, int flag);
-void SWI_MutexUnlock(MUTEX *mtx);
+void LockSched();
+void UnlockSched();
+void MutexCreate(MUTEX *mtx);
+void MutexDestroy(MUTEX *mtx);
+void MutexLock(MUTEX *mtx);
+void MutexLockEx(MUTEX *mtx, int flag);
+void MutexUnlock(MUTEX *mtx);
+
+/*
+ * GBS
+ * */
+typedef struct {
+#ifdef NEWSGOLD
+  int pid_from;
+  int msg;
+#else
+  short pid_from;
+  short msg;
+#endif
+  int submess;
+  void *data0;
+  void *data1;
+} GBS_MSG;
+
+/*
+ * LinkedList
+ * */
+typedef struct {
+	void *first;
+	void *last;
+	void (*data_mfree)(void *);
+} LLQ;
+
+typedef struct {
+	void *next;
+	void *prev;
+} LLIST;
+
+// Non-SWI methods
+void linked_list_init(LLQ *q);
+void linked_list_push(LLQ *head, void *item);
+	
+/*
+ * CSM
+ * */
+typedef struct CSM_DESC CSM_DESC;
+typedef struct CSM_RAM CSM_RAM;
+
+struct CSM_RAM {
+	CSM_RAM *next;
+	CSM_RAM *prev;
+	const CSM_DESC *desc;
+	int id;
+	int state;
+	int unk1;
+	int unk2;
+	LLQ gui_ll;
+};
+
+struct CSM_DESC {
+	int (*onMessage)(CSM_RAM *, GBS_MSG *);
+	void (*onCreate)(CSM_RAM *);
+#ifdef NEWSGOLD
+	int zero1;
+	int zero2;
+	int zero3;
+	int zero4;
+#endif
+	void (*onClose)(CSM_RAM *);
+	int datasize;
+	int statesize;
+	const int *states;
+};
+
+#ifdef NEWSGOLD
+typedef struct {
+	int id;
+	CSM_RAM *current_msg_processing_csm;
+	LLQ csm;
+	LLQ cmd;
+	LLQ csm_background;
+} CSMQ;
+#else
+typedef struct {
+	int id;
+	CSM_RAM *current_msg_processing_csm;
+	LLQ csm;
+	LLQ cmd;
+	int unk;
+	int unk1;
+	void *methods;
+	int unk2;
+	void *tmr;
+	short cepid;
+} CSMQ;
+#endif
+
+typedef struct {
+	int under_idle_id;
+	int idle_id;
+	CSMQ *csm_q;
+} CSMROOT;
+
+CSMROOT *CSM_root();
+int CreateCSM(const CSM_DESC *desc, const void *default_value, int param3);
+CSM_RAM *FindCSMbyID(int id);
+void DoIDLE();
+CSM_RAM *FindCSM(CSMQ *q, int id);
+void CloseCSM(int id);
+
+// Non-SWI methods
+void CSM_Init();
+CSM_RAM *CSM_Current();
+
+/*
+ * GUI
+ * */
+enum {
+	CSM_GUI_STATE_CLOSED		= 0,
+	CSM_GUI_STATE_UNFOCUSED		= 1,
+	CSM_GUI_STATE_FOCUSED		= 2,
+};
+
+typedef struct {
+	short x;
+	short y;
+	short x2;
+	short y2;
+} RECT;
+
+typedef struct GUI GUI;
+
+typedef struct {
+	char zero;
+	char unk1;
+	short keys;
+	GBS_MSG *gbsmsg;
+} GUI_MSG;
+
+typedef struct {
+	void (*onRedraw)(GUI *);
+	void (*onCreate)(GUI *, malloc_func_t);
+	void (*onClose)(GUI *, mfree_func_t);
+	void (*onFocus)(GUI *, malloc_func_t, mfree_func_t);
+	void (*onUnfocus)(GUI *, mfree_func_t);
+	void (*onKey)(GUI *, GUI_MSG *);
+	void *unk0;
+	void (*onDestroy)(GUI *, mfree_func_t);
+	void (*method8)();
+	void (*method9)();
+	void *unk1;
+} GUI_METHODS;
+
+struct GUI_RAM {
+	GUI_RAM *next;
+	GUI_RAM *prev;
+	GUI *gui;
+	int id;
+};
+
+#ifdef NEWSGOLD
+struct GUI {
+	RECT *canvas;
+	GUI_METHODS *methods;
+	void *definition;
+	char state;
+	char unk2;
+	char unk3;
+	char unk4;
+	int color1;
+	int color2;
+	LLQ item_ll;
+	int unk5;
+	char unk6;
+	char unk7;
+	char unk8;
+	char unk9;
+	int unk10;
+	int flag30;
+};
+#else
+struct GUI {
+	RECT *canvas;
+	GUI_METHODS *methods;
+	void *definition;
+	char state;
+	char unk2;
+	char unk3;
+	char unk4;
+	int color1;
+	int color2;
+	LLQ item_ll;
+	int unk5;
+	char unk6;
+	char unk7;
+	char unk8;
+	char unk9;
+	int unk10;
+	int flag30;
+};
+#endif
+
+enum {
+	DRAW_RECT_FLAG_DOTTED		= 0 << 1,
+	DRAW_RECT_FLAG_NO_BORDER	= 0 << 2,
+};
+
+void GUI_Init();
+
+void GUI_WalkRenderTree(const std::function<bool(GUI_RAM *)> &callback, bool reverse = false);
+void GUI_SyncStates();
+
+GUI *GUI_GetFocusedTop();
+int GUI_GetTopID();
+bool GUI_IsOnTop(int id);
+
+void GUI_DoFocus(int id);
+void GUI_DoUnFocus(int id);
+
+GUI_RAM *GUI_GetById(int id);
+GUI_RAM *GUI_GetPrev(int id);
+GUI_RAM *GUI_GetNext(int id);
+
+int GUI_Create_ID(GUI *gui, int id);
+int GUI_Create(GUI *gui);
+int GUI_Create_30or2(GUI *gui);
+int GUI_CreateWithDummyCSM(GUI *gui, int flag);
+int GUI_CreateWithDummyCSM_30or2(GUI *gui, int flag);
+
+void GeneralFuncF1(int cmd);
+void GeneralFuncF0(int cmd);
+void GeneralFunc_flag1(int id, int cmd);
+void GeneralFunc_flag0(int id, int cmd);
+
+void GUI_DirectRedrawGUI();
+void GUI_DirectRedrawGUI_ID(int id);
+void GUI_PendedRedrawGUI();
+
+void DrawString(WSHDR *wshdr, int x1, int y1, int x2, int y2, int font, int text_attribute, const char *Pen, const char *Brush);
+void DrawRoundedFrame(int x1, int y1, int x2, int y2, int x_round, int y_round, int flags, const char *pen, const char *brush);
+
+char *GUI_GetPaletteAdrByColorIndex(int index);
+void GUI_GetRGBcolor(int index, char *dest);
+void GUI_GetRGBbyPaletteAdr(char *addr, char *dest);
+void GUI_SetColor(int a, int r, int g, int b, char *dest);
+
+int GUI_ScreenW();
+int GUI_ScreenH();
+int GUI_HeaderH();
+int GUI_SoftkeyH();
+
+void GUI_SetIDLETMR(int time_ms, int msg);
+void GUI_RestartIDLETMR();
+void GUI_DisableIDLETMR();
+
+void GUI_DisableIconBar(int disable);
+void GUI_AddIconToIconBar(int pic, short *num);

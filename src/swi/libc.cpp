@@ -88,14 +88,6 @@ int SWI_StrToInt(char *s, char **endp) {
 	return strtol(s, endp, 10);
 }
 
-void *SWI_malloc(size_t size) {
-	return malloc(size);
-}
-
-void SWI_free(void *param1) {
-	return free(param1);
-}
-
 int SWI_sprintf(char *buffer, const char *format, ...) {
 	va_list arg;
 	int ret;

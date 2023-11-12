@@ -7,39 +7,11 @@ Currently implemented only a few sets of Siemens Mobile firmware functions. Most
 
 In this emulator used modified elfloader 3.0 with integrated gdb support.
 
-# Prepare for building (Debian / Ubuntu)
-1. Create file `/etc/apt/sources.list.d/arm.list` with following content (only for Ubuntu):
-```bash
-# Change mantic to your distro name
-deb [arch=armhf] http://ports.ubuntu.com/ubuntu-ports mantic main universe
-```
-
-2. Add `[arch=amd64,i386]` for all other sources in the all `/etc/apt/sources.list` and `/etc/apt/sources.list.d/*.list` files (only for Ubuntu).
-```bash
-# Example
-
-# Before
-deb https://ppa.launchpadcontent.net/mozillateam/ppa/ubuntu/ mantic main
-deb-src https://ppa.launchpadcontent.net/mozillateam/ppa/ubuntu/ mantic main
-
-# After
-deb [arch=amd64,i386] https://ppa.launchpadcontent.net/mozillateam/ppa/ubuntu/ mantic main
-deb-src [arch=amd64,i386] https://ppa.launchpadcontent.net/mozillateam/ppa/ubuntu/ lunar main
-```
-
-3. Add foreign architecture and update cache:
-```bash
-sudo apt update
-sudo dpkg --add-architecture armhf
-```
-
-4. Install packages:
-```
-sudo apt install crossbuild-essential-armhf libc6-armhf-cross libc6:armhf
-```
-
 # Build
 ```bash
+# Required software
+sudo apt install crossbuild-essential-armhf libc6-armhf-cross
+
 # Dir with all stuff
 mkdir -p ~/dev/sie
 cd ~/dev/sie

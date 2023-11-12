@@ -1,6 +1,6 @@
-#include "../swi.h"
-#include "../SieFs.h"
-#include "../utils.h"
+#include "swi.h"
+#include "SieFs.h"
+#include "utils.h"
 
 #include <cstdio>
 #include <cstdlib>
@@ -26,7 +26,7 @@ static void _set_errno(int ret, uint32_t *errp) {
 	}
 }
 
-int SWI_open(const char *path, uint32_t f, uint32_t m, uint32_t *errp) {
+int FS_open(const char *path, uint32_t f, uint32_t m, uint32_t *errp) {
 	int flags = 0;
 	mode_t mode = S_IRUSR | S_IWUSR;
 	
@@ -60,7 +60,7 @@ int SWI_open(const char *path, uint32_t f, uint32_t m, uint32_t *errp) {
 		ret = open(SieFs::sie2path(path).c_str(), flags, mode);
 	}
 	
-	if (SWI_STRACE) {
+	if (SWI_TRACE) {
 		fprintf(stderr, "[strace] open(%s, %d, %d) = %d\n", SieFs::sie2path(path).c_str(), flags, mode, ret);
 	}
 	
@@ -68,70 +68,70 @@ int SWI_open(const char *path, uint32_t f, uint32_t m, uint32_t *errp) {
 	return ret;
 }
 
-int SWI_read(int fd, void *buff, int count, uint32_t *errp) {
+int FS_read(int fd, void *buff, int count, uint32_t *errp) {
 	int ret = read(fd, buff, count);
-	if (SWI_STRACE) {
+	if (SWI_TRACE) {
 		fprintf(stderr, "[strace] read(%d, %p, %d) = %d\n", fd, buff, count, ret);
 	}
 	_set_errno(ret, errp);
 	return ret;
 }
 
-int SWI_write(int fd, const void *buff, int count, uint32_t *errp) {
+int FS_write(int fd, const void *buff, int count, uint32_t *errp) {
 	int ret = write(fd, buff, count);
-	if (SWI_STRACE) {
+	if (SWI_TRACE) {
 		fprintf(stderr, "[strace] write(%d, %p, %d) = %d\n", fd, buff, count, ret);
 	}
 	_set_errno(ret, errp);
 	return ret;
 }
 
-int SWI_close(int fd, uint32_t *errp) {
+int FS_close(int fd, uint32_t *errp) {
 	int ret = close(fd);
-	if (SWI_STRACE) {
+	if (SWI_TRACE) {
 		fprintf(stderr, "[strace] close(%d) = %d\n", fd, ret);
 	}
 	_set_errno(ret, errp);
 	return ret;
 }
 
-int SWI_flush(int fd, uint32_t *errp) {
+int FS_flush(int fd, uint32_t *errp) {
 	int ret = fsync(fd);
-	if (SWI_STRACE) {
+	if (SWI_TRACE) {
 		fprintf(stderr, "[strace] fsync(%d) = %d\n", fd, ret);
 	}
 	_set_errno(ret, errp);
 	return ret;
 }
 
-long SWI_lseek(int fd, uint32_t offset, uint32_t origin, uint32_t *errp, uint32_t *errp2) {
+long FS_lseek(int fd, uint32_t offset, uint32_t origin, uint32_t *errp, uint32_t *errp2) {
 	fprintf(stderr, "%s not implemented!\n", __func__);
 	abort();
 	return 0;
 }
 
-int SWI_mkdir(const char *pathname, uint32_t *errp) {
+int FS_mkdir(const char *pathname, uint32_t *errp) {
 	int ret = mkdir(SieFs::sie2path(pathname).c_str(), 0755);
-	if (SWI_STRACE) {
+	if (SWI_TRACE) {
 		fprintf(stderr, "[strace] mkdir(%s) = %d\n", SieFs::sie2path(pathname).c_str(), ret);
 	}
 	_set_errno(ret, errp);
 	return ret;
 }
 
-int SWI_GetFileAttrib(const char *cFileName, uint8_t *cAttribute, uint32_t *ErrorNumber) {
+int FS_GetFileAttrib(const char *cFileName, uint8_t *cAttribute, uint32_t *ErrorNumber) {
 	fprintf(stderr, "%s not implemented!\n", __func__);
 	abort();
 	return 0;
 }
 
-int SWI_SetFileAttrib(const char *cFileName, uint8_t cAttribute, uint32_t *ErrorNumber) {
+int FS_SetFileAttrib(const char *cFileName, uint8_t cAttribute, uint32_t *ErrorNumber) {
 	fprintf(stderr, "%s not implemented!\n", __func__);
 	abort();
 	return 0;
 }
 
-int SWI_setfilesize(int FileHandler, uint32_t iNewFileSize, uint32_t *ErrorNumber) {
+int FS_setfilesize(int FileHandler, uint32_t iNewFileSize, uint32_t *ErrorNumber) {
 	fprintf(stderr, "%s not implemented!\n", __func__);
 	abort();
 	return 0;
@@ -160,7 +160,7 @@ static void _fillDirEntry(DIR_ENTRY *de, const std::string &file) {
 	}
 }
 
-int SWI_FindFirstFile(DIR_ENTRY *de, const char *pattern, uint32_t *errp) {
+int FS_FindFirstFile(DIR_ENTRY *de, const char *pattern, uint32_t *errp) {
 	FileSearchCtx *ctx = new FileSearchCtx;
 	
 	std::string unix_path = SieFs::sie2path(pattern);
@@ -194,7 +194,7 @@ int SWI_FindFirstFile(DIR_ENTRY *de, const char *pattern, uint32_t *errp) {
 	}
 }
 
-int SWI_FindNextFile(DIR_ENTRY *de, uint32_t *errp) {
+int FS_FindNextFile(DIR_ENTRY *de, uint32_t *errp) {
 	FileSearchCtx *ctx = reinterpret_cast<FileSearchCtx *>(de->priv);
 	if (ctx) {
 		if (errp)
@@ -213,7 +213,7 @@ int SWI_FindNextFile(DIR_ENTRY *de, uint32_t *errp) {
 	}
 }
 
-int SWI_FindClose(DIR_ENTRY *de, uint32_t *errp) {
+int FS_FindClose(DIR_ENTRY *de, uint32_t *errp) {
 	FileSearchCtx *ctx = reinterpret_cast<FileSearchCtx *>(de->priv);
 	if (ctx) {
 		if (errp)
@@ -229,31 +229,31 @@ int SWI_FindClose(DIR_ENTRY *de, uint32_t *errp) {
 	}
 }
 
-int SWI_fmove(const char * SourceFileName, const char * DestFileName, uint32_t *ErrorNumber) {
+int FS_fmove(const char * SourceFileName, const char * DestFileName, uint32_t *ErrorNumber) {
 	fprintf(stderr, "%s not implemented!\n", __func__);
 	abort();
 	return 0;
 }
 
-int SWI_rmdir(const char * cDirectory, uint32_t *ErrorNumber) {
+int FS_rmdir(const char * cDirectory, uint32_t *ErrorNumber) {
 	fprintf(stderr, "%s not implemented!\n", __func__);
 	abort();
 	return 0;
 }
 
-int SWI_truncate(int FileHandler, int length, int *errornumber) {
+int FS_truncate(int FileHandler, int length, int *errornumber) {
 	fprintf(stderr, "%s not implemented!\n", __func__);
 	abort();
 	return 0;
 }
 
-int SWI_isdir(const char * cDirectory, uint32_t *ErrorNumber) {
+int FS_isdir(const char * cDirectory, uint32_t *ErrorNumber) {
 	fprintf(stderr, "%s not implemented!\n", __func__);
 	abort();
 	return 0;
 }
 
-int SWI_GetFileStats(const char *siemens_file, FSTATS *out_st, uint32_t *errp) {
+int FS_GetFileStats(const char *siemens_file, FSTATS *out_st, uint32_t *errp) {
 	std::string file = SieFs::sie2path(siemens_file);
 	struct stat st;
 	if (lstat(file.c_str(), &st) == 0) {

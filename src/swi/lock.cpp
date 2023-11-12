@@ -3,30 +3,30 @@
 #include <cstdio>
 #include <cstdlib>
 
-void SWI_LockSched(void) {
+void LockSched(void) {
 	fprintf(stderr, "%s not implemented!\n", __func__);
 }
 
-void SWI_UnlockSched(void) {
+void UnlockSched(void) {
 	fprintf(stderr, "%s not implemented!\n", __func__);
 }
 
-void SWI_MutexCreate(MUTEX *mtx) {
+void MutexCreate(MUTEX *mtx) {
 	fprintf(stderr, "%s not implemented!\n", __func__);
 }
 
-void SWI_MutexDestroy(MUTEX *mtx) {
+void MutexDestroy(MUTEX *mtx) {
 	fprintf(stderr, "%s not implemented!\n", __func__);
 }
 
-void SWI_MutexLock(MUTEX *mtx) {
+void MutexLock(MUTEX *mtx) {
 	fprintf(stderr, "%s not implemented!\n", __func__);
 }
 
-void SWI_MutexLockEx(MUTEX *mtx, int flag) {
+void MutexLockEx(MUTEX *mtx, int flag) {
 	fprintf(stderr, "%s not implemented!\n", __func__);
 }
 
-void SWI_MutexUnlock(MUTEX *mtx) {
+void MutexUnlock(MUTEX *mtx) {
 	fprintf(stderr, "%s not implemented!\n", __func__);
 }

@@ -1,5 +1,5 @@
-#include "../swi.h"
-#include "../charset.h"
+#include "swi.h"
+#include "charset.h"
 
 #include <algorithm>
 #include <cstdio>
@@ -12,11 +12,11 @@
 
 #include "ws_printf.h"
 
-WSHDR *SWI_AllocWS(uint16_t len) {
-	return SWI_CreateWS(SWI_malloc, SWI_free, len);
+WSHDR *AllocWS(uint16_t len) {
+	return CreateWS(malloc, free, len);
 }
 
-WSHDR *SWI_CreateLocalWS(WSHDR *ws, uint16_t *wsbody, uint16_t maxlen) {
+WSHDR *CreateLocalWS(WSHDR *ws, uint16_t *wsbody, uint16_t maxlen) {
 	assert(ws != nullptr && wsbody != nullptr && maxlen >= 1);
 	
 	ws->ws_malloc = nullptr;
@@ -29,7 +29,7 @@ WSHDR *SWI_CreateLocalWS(WSHDR *ws, uint16_t *wsbody, uint16_t maxlen) {
 	return ws;
 }
 
-WSHDR *SWI_CreateWS(void *(*ws_malloc)(size_t), void (*ws_mfree)(void *), uint16_t len) {
+WSHDR *CreateWS(void *(*ws_malloc)(size_t), void (*ws_mfree)(void *), uint16_t len) {
 	assert(ws_malloc != nullptr && ws_mfree != nullptr);
 	
 	WSHDR *ws = reinterpret_cast<WSHDR *>(ws_malloc(sizeof(WSHDR)));
@@ -43,7 +43,7 @@ WSHDR *SWI_CreateWS(void *(*ws_malloc)(size_t), void (*ws_mfree)(void *), uint16
 	return ws;
 }
 
-void SWI_FreeWS(WSHDR *ws) {
+void FreeWS(WSHDR *ws) {
 	assert(ws != nullptr && ws->ws_mfree != nullptr);
 	
 	auto ws_free = ws->ws_mfree;
@@ -52,12 +52,12 @@ void SWI_FreeWS(WSHDR *ws) {
 	ws_free(ws);
 }
 
-int SWI_wstrlen(WSHDR *ws) {
+int wstrlen(WSHDR *ws) {
 	assert(ws != nullptr);
 	return ws->wsbody[0];
 }
 
-int SWI_wstrcmp(WSHDR *ws1, WSHDR *ws2) {
+int wstrcmp(WSHDR *ws1, WSHDR *ws2) {
 	assert(ws1 != nullptr && ws2 != nullptr);
 	
 	size_t len = std::min(ws1->body->len, ws2->body->len);
@@ -71,7 +71,7 @@ int SWI_wstrcmp(WSHDR *ws1, WSHDR *ws2) {
 	return ws1->body->len > ws2->body->len ? -1 : 1;
 }
 
-uint16_t SWI_wstrchr(WSHDR *ws, uint16_t start_pos, uint16_t ch) {
+uint16_t wstrchr(WSHDR *ws, uint16_t start_pos, uint16_t ch) {
 	assert(ws != nullptr);
 	
 	for (size_t i = start_pos; i < ws->body->len; i++) {
@@ -81,7 +81,7 @@ uint16_t SWI_wstrchr(WSHDR *ws, uint16_t start_pos, uint16_t ch) {
 	return 0xFFFF;
 }
 
-uint16_t SWI_wstrrchr(WSHDR *ws, uint16_t max_pos, uint16_t ch) {
+uint16_t wstrrchr(WSHDR *ws, uint16_t max_pos, uint16_t ch) {
 	assert(ws != nullptr && max_pos <= ws->body->len - 1);
 	
 	for (int i = max_pos; i >= 0; i--) {
@@ -91,14 +91,14 @@ uint16_t SWI_wstrrchr(WSHDR *ws, uint16_t max_pos, uint16_t ch) {
 	return 0xFFFF;
 }
 
-void SWI_wsAppendChar(WSHDR *ws, uint16_t ch) {
+void wsAppendChar(WSHDR *ws, uint16_t ch) {
 	assert(ws != nullptr);
 	assert(ws->body->len < ws->maxlen - 1);
 	
 	ws->body->data[ws->body->len++] = ch;
 }
 
-int SWI_wsInsertChar(WSHDR *ws, uint16_t ch, uint16_t pos) {
+int wsInsertChar(WSHDR *ws, uint16_t ch, uint16_t pos) {
 	assert(ws != nullptr && pos > 0);
 	pos = pos - 1;
 	
@@ -112,7 +112,7 @@ int SWI_wsInsertChar(WSHDR *ws, uint16_t ch, uint16_t pos) {
 	return ws->body->len;
 }
 
-void SWI_wsRemoveChars(WSHDR *ws, uint16_t pos, uint16_t len) {
+void wsRemoveChars(WSHDR *ws, uint16_t pos, uint16_t len) {
 	assert(ws != nullptr && pos > 0);
 	pos = pos - 1;
 	
@@ -123,12 +123,12 @@ void SWI_wsRemoveChars(WSHDR *ws, uint16_t pos, uint16_t len) {
 	ws->body->len -= len;
 }
 
-WSHDR *SWI_wstrcpy(WSHDR *ws1, WSHDR *ws2) {
+WSHDR *wstrcpy(WSHDR *ws1, WSHDR *ws2) {
 	assert(ws1 != nullptr && ws2 != nullptr);
-	return SWI_wstrncpy(ws1, ws2, ws2->body->len);
+	return wstrncpy(ws1, ws2, ws2->body->len);
 }
 
-WSHDR *SWI_wstrncpy(WSHDR *ws1, WSHDR *ws2, uint16_t n) {
+WSHDR *wstrncpy(WSHDR *ws1, WSHDR *ws2, uint16_t n) {
 	assert(ws1 != nullptr && ws2 != nullptr);
 	
 	size_t copy_n = std::min(n, ws2->body->len);
@@ -139,7 +139,7 @@ WSHDR *SWI_wstrncpy(WSHDR *ws1, WSHDR *ws2, uint16_t n) {
 	return ws1;
 }
 
-void SWI_wstrcpybypos(WSHDR *ws1, WSHDR *ws2, uint16_t from, uint16_t n) {
+void wstrcpybypos(WSHDR *ws1, WSHDR *ws2, uint16_t from, uint16_t n) {
 	assert(ws1 != nullptr && ws2 != nullptr);
 	
 	size_t copy_n = std::min(n, ws2->body->len);
@@ -150,12 +150,12 @@ void SWI_wstrcpybypos(WSHDR *ws1, WSHDR *ws2, uint16_t from, uint16_t n) {
 	memcpy(&ws1->body->data[from], ws2->body->data, copy_n * sizeof(uint16_t));
 }
 
-WSHDR *SWI_wstrcat(WSHDR *ws1, WSHDR *ws2) {
+WSHDR *wstrcat(WSHDR *ws1, WSHDR *ws2) {
 	assert(ws1 != nullptr && ws2 != nullptr);
-	return SWI_wstrncat(ws1, ws2, ws2->body->len);
+	return wstrncat(ws1, ws2, ws2->body->len);
 }
 
-WSHDR *SWI_wstrncat(WSHDR *ws1, WSHDR *ws2, uint16_t n) {
+WSHDR *wstrncat(WSHDR *ws1, WSHDR *ws2, uint16_t n) {
 	size_t copy_n = std::min(n, ws2->body->len);
 	
 	assert(ws1 != nullptr && ws2 != nullptr);
@@ -166,12 +166,12 @@ WSHDR *SWI_wstrncat(WSHDR *ws1, WSHDR *ws2, uint16_t n) {
 	return ws1;
 }
 
-void SWI_CutWSTR(WSHDR *ws, uint16_t len) {
+void CutWSTR(WSHDR *ws, uint16_t len) {
 	assert(ws != nullptr && len <= ws->body->len);
 	ws->body->len = len;
 }
 
-int SWI_wsprintf(WSHDR *ws, const char *format,...) {
+int wsprintf(WSHDR *ws, const char *format,...) {
 	assert(ws != nullptr && format != nullptr);
 	
 	size_t ws_maxlen = ws->maxlen - 1;
@@ -204,7 +204,7 @@ int SWI_wsprintf(WSHDR *ws, const char *format,...) {
 	return ws->body->len;
 }
 
-void SWI_wstrcatprintf(WSHDR *ws, const char *format,...) {
+void wstrcatprintf(WSHDR *ws, const char *format,...) {
 	assert(ws != nullptr && format != nullptr);
 	
 	size_t ws_maxlen = ws->maxlen - 1 - ws->body->len;
@@ -235,13 +235,13 @@ void SWI_wstrcatprintf(WSHDR *ws, const char *format,...) {
 	delete[] buffer_utf8;
 }
 
-int SWI_str_2ws(WSHDR *ws, const char *buffer, uint16_t max_size) {
+int str_2ws(WSHDR *ws, const char *buffer, uint16_t max_size) {
 	assert(ws != nullptr && buffer != nullptr && ws->maxlen - 1 >= max_size);
 	ws->body->len = cp1252_to_utf16(buffer, strlen(buffer), ws->body->data, max_size);
 	return ws->body->len;
 }
 
-int SWI_ws_2utf8(WSHDR *ws, char *buffer, int *result_length, uint16_t max_size) {
+int ws_2utf8(WSHDR *ws, char *buffer, int *result_length, uint16_t max_size) {
 	assert(ws != nullptr && buffer != nullptr && max_size > 0);
 	
 	size_t new_len = utf16_to_utf8(ws->body->data, ws->body->len, buffer, max_size - 1);
@@ -252,7 +252,7 @@ int SWI_ws_2utf8(WSHDR *ws, char *buffer, int *result_length, uint16_t max_size)
 	return new_len;
 }
 
-int SWI_utf8_2ws(WSHDR *ws, const char *buffer, uint16_t max_size) {
+int utf8_2ws(WSHDR *ws, const char *buffer, uint16_t max_size) {
 	assert(ws != nullptr && buffer != nullptr && ws->maxlen - 1 >= max_size);
 	ws->body->len = utf8_to_utf16(buffer, strlen(buffer), ws->body->data, max_size);
 	return ws->body->len;
