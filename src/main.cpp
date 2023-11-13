@@ -65,6 +65,7 @@ int main(int argc, char **argv) {
 	
 	Theme::init();
 	CSM_Init();
+	GUI_Init();
 	
 	loader_init_switab();
 	loader_set_debug(false);
@@ -72,7 +73,7 @@ int main(int argc, char **argv) {
 	
 	LOGD("Loading ELF: %s\n", filename.c_str());
 	
-	for (int i = 0; i < 3; i++) {
+	for (int i = 0; i < 1; i++) {
 		printf("---------------------------------------------------------\n");
 		Elf32_Exec *ex = loader_elf_open(filename.c_str());
 		if (!ex) {

@@ -5,11 +5,11 @@
 #include <functional>
 
 #define NEWSGOLD 1
-#define ELKA 1
+// #define ELKA 1
 
 #ifdef ELKA
-#define SCREEN_WIDTH	132
-#define SCREEN_HEIGHT	176
+#define SCREEN_WIDTH	240
+#define SCREEN_HEIGHT	320
 #else
 #define SCREEN_WIDTH	132
 #define SCREEN_HEIGHT	176
@@ -479,6 +479,7 @@ char *GUI_GetPaletteAdrByColorIndex(int index);
 void GUI_GetRGBcolor(int index, char *dest);
 void GUI_GetRGBbyPaletteAdr(char *addr, char *dest);
 void GUI_SetColor(int a, int r, int g, int b, char *dest);
+uint32_t GUI_Color2Int(const char *color);
 
 int GUI_ScreenW();
 int GUI_ScreenH();

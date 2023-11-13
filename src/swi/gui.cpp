@@ -1,7 +1,7 @@
 #include "swi.h"
 #include "utils.h"
 #include "log.h"
-// #include "gui/Painter.h"
+#include "gui/Painter.h"
 #include "gui/Theme.h"
 
 #include <map>
@@ -14,11 +14,12 @@
 static std::map<int, GUI_RAM *> id2gui = {};
 static std::map<int, size_t> id2gui_index = {};
 static std::vector<GUI_RAM *> sorted_gui_list = {};
+static Painter *painter = nullptr;
 
 static int global_gui_id = 1;
 
 void GUI_Init() {
-	
+	painter = new Painter(SCREEN_WIDTH, SCREEN_HEIGHT);
 }
 
 void GUI_WalkRenderTree(const std::function<bool(GUI_RAM *)> &callback, bool reverse) {
@@ -95,7 +96,6 @@ int GUI_Create_ID(GUI *gui, int id) {
 	int prev_top_gui = GUI_GetTopID();
 	
 	assert(csm != nullptr);
-//	assert(gui2painter.find(id) == gui2painter.end());
 	
 	GUI_RAM *gui_ram = (GUI_RAM *) malloc(sizeof(GUI_RAM));
 	memset(gui_ram, 0, sizeof(gui_ram));
@@ -105,8 +105,6 @@ int GUI_Create_ID(GUI *gui, int id) {
 	
 	linked_list_push(&csm->gui_ll, gui_ram);
 	
-//	gui2painter[id] = new Painter(SCREEN_WIDTH, SCREEN_HEIGHT);
-	
 	GUI_SyncStates();
 	
 	if (prev_top_gui >= 0)
@@ -115,9 +113,6 @@ int GUI_Create_ID(GUI *gui, int id) {
 	gui->methods->onCreate(gui, malloc);
 	
 	GUI_DirectRedrawGUI();
-	
-	
-//	gui2painter[id]->save();
 	
 	return id;
 }
@@ -218,6 +213,8 @@ void GUI_DirectRedrawGUI_ID(int id) {
 	LOGD("[GUI:%d] onRedraw\n", gui_ram->id);
 	gui_ram->gui->methods->onRedraw(gui_ram->gui);
 	
+	painter->save();
+	
 	if (!GUI_IsOnTop(id))
 		GUI_DoUnFocus(id);
 }
@@ -232,16 +229,13 @@ void DrawString(WSHDR *wshdr, int x1, int y1, int x2, int y2, int font, int text
 }
 
 void DrawRoundedFrame(int x1, int y1, int x2, int y2, int x_round, int y_round, int flags, const char *pen, const char *brush) {
-	/*
-	auto painter = gui2painter[GetTopGUI_ID()];
-	if ((flags & DRAW_RECT_FLAG_NO_BORDER)) {
-		painter->drawRoundedRect(x1, y1, x2, y2, x_round, y_round, 0, Painter::toRGBA(pen), Painter::toRGBA(brush));
-	} else if ((flags & DRAW_RECT_FLAG_DOTTED)) {
-		painter->drawRoundedRectDotted(x1, y1, x2, y2, x_round, y_round, 1, Painter::toRGBA(pen), Painter::toRGBA(brush));
-	} else {
-		painter->drawRoundedRect(x1, y1, x2, y2, x_round, y_round, 1, Painter::toRGBA(pen), Painter::toRGBA(brush));
-	}
-	*/
+	painter->drawRoundedRect(x1, y1, x2, y2, x_round, y_round, GUI_Color2Int(brush), GUI_Color2Int(pen));
+}
+
+uint32_t GUI_Color2Int(const char *color) {
+	const uint8_t *u8 = reinterpret_cast<const uint8_t *>(color);
+	uint32_t a = static_cast<uint32_t>(u8[3]) * 0xFF / 0x64;
+	return (a << 24) | (u8[0] << 16) | (u8[1] << 8) | u8[2]; // RGBA
 }
 
 char *GUI_GetPaletteAdrByColorIndex(int index) {
