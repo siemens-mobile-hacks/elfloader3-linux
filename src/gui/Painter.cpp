@@ -36,7 +36,6 @@ Painter::Painter(int width, int height) {
 	m_width = width;
 	m_height = height;
 	m_buffer = new uint32_t[m_width * m_height];
-	m_tmp_buffer = new uint32_t[m_width * m_height];
 	clear(0xFFFF00FF);
 }
 
@@ -52,12 +51,6 @@ void Painter::drawPixel(int x, int y, uint32_t color) {
 		printf("ignored pixel %d x %d\n", x, y);
 		return;
 	}
-	
-	//printf("drawPixel(%d, %d, %08X)\n", x, y, color);
-	
-	if (m_buffer[(m_height - y - 1) * m_width + x] != 0xFFFF00FF && color != 0xFFFF00FF)
-		color = 0xFF0000FF;
-	
 	m_buffer[(m_height - y - 1) * m_width + x] = color; // TODO: alpha!
 }
 
@@ -71,277 +64,70 @@ void Painter::drawVLine(int x, int y, int height, uint32_t color) {
 		drawPixel(x, y + i, color);
 }
 
-// From u8g2
-void Painter::drawEllipseSectionHelper(int x, int y, int x0, int y0, uint8_t option, uint32_t color) {
-	/* upper right */
-	if ((option & CIRCLE_DRAW_UPPER_RIGHT))
-		drawPixel(x0 + x, y0 - y, color);
-	
-	/* upper left */
-	if ((option & CIRCLE_DRAW_UPPER_LEFT))
-		drawPixel(x0 - x, y0 - y, color);
-	
-	/* lower right */
-	if ((option & CIRCLE_DRAW_LOWER_RIGHT))
-		drawPixel(x0 + x, y0 + y, color);
-	
-	/* lower left */
-	if ((option & CIRCLE_DRAW_LOWER_LEFT))
-		drawPixel(x0 - x, y0 + y, color);
-}
-
-// From u8g2
-void Painter::drawEllipseHelper(int x0, int y0, int rx, int ry, uint8_t option, uint32_t color) {
-	int x, y;
-	int64_t xchg, ychg;
-	int64_t err;
-	int64_t rxrx2;
-	int64_t ryry2;
-	int64_t stopx, stopy;
-	
-	rxrx2 = rx;
-	rxrx2 *= rx;
-	rxrx2 *= 2;
-	
-	ryry2 = ry;
-	ryry2 *= ry;
-	ryry2 *= 2;
-	
-	x = rx;
-	y = 0;
-	
-	xchg = 1;
-	xchg -= rx;
-	xchg -= rx;
-	xchg *= ry;
-	xchg *= ry;
-	
-	ychg = rx;
-	ychg *= rx;
-	
-	err = 0;
-	
-	stopx = ryry2;
-	stopx *= rx;
-	stopy = 0;
-	
-	while (stopx >= stopy) {
-		drawEllipseSectionHelper(x, y, x0, y0, option, color);
-		y++;
-		stopy += rxrx2;
-		err += ychg;
-		ychg += rxrx2;
-		
-		if (2 * err + xchg > 0) {
-			x--;
-			stopx -= ryry2;
-			err += xchg;
-			xchg += ryry2;      
-		}
-	}
-	
-	x = 0;
-	y = ry;
-	
-	xchg = ry;
-	xchg *= ry;
-	
-	ychg = 1;
-	ychg -= ry;
-	ychg -= ry;
-	ychg *= rx;
-	ychg *= rx;
-	
-	err = 0;
-	
-	stopx = 0;
-	
-	stopy = rxrx2;
-	stopy *= ry;
-	
-	while (stopx <= stopy) {
-		drawEllipseSectionHelper(x, y, x0, y0, option, color);
-		x++;
-		stopx += ryry2;
-		err += xchg;
-		xchg += ryry2;
-		
-		if (2 * err + ychg > 0) {
-			y--;
-			stopy -= rxrx2;
-			err += ychg;
-			ychg += rxrx2;
+void Painter::drawMask(const uint8_t *mask, int x, int y, int w, int h, const uint32_t *colors) {
+	for (int mask_y = 0; mask_y < h; mask_y++) {
+		int line_start = mask_y * w;
+		for (int mask_x = 0; mask_x < w; mask_x++) {
+			uint8_t pixel = mask[line_start + mask_x];
+			if (pixel)
+				drawPixel(x + mask_x, y + mask_y, colors[pixel]);
 		}
 	}
 }
 
-// From u8g2
-void Painter::drawCircleSectionHelper(int x, int y, int x0, int y0, uint8_t option, uint32_t color) {
-	/* upper right */
-	if ((option & CIRCLE_DRAW_UPPER_RIGHT)) {
-		drawPixel(x0 + x, y0 - y, color);
-		drawPixel(x0 + y, y0 - x, color);
-	}
-	
-	/* upper left */
-	if ((option & CIRCLE_DRAW_UPPER_LEFT)) {
-		drawPixel(x0 - x, y0 - y, color);
-		drawPixel(x0 - y, y0 - x, color);
-	}
-	
-	/* lower right */
-	if ((option & CIRCLE_DRAW_LOWER_RIGHT)) {
-		drawPixel(x0 + x, y0 + y, color);
-		drawPixel(x0 + y, y0 + x, color);
-	}
-	
-	/* lower left */
-	if ((option & CIRCLE_DRAW_LOWER_LEFT)) {
-		drawPixel(x0 - x, y0 + y, color);
-		drawPixel(x0 - y, y0 + x, color);
-	}
-}
-
-// From u8g2
-void Painter::drawCircleHelper(int x0, int y0, int rad, uint8_t option, uint32_t color) {
-	int f;
-	int ddF_x;
-	int ddF_y;
-	int x;
-	int y;
-	
-	f = 1;
-	f -= rad;
-	ddF_x = 1;
-	ddF_y = 0;
-	ddF_y -= rad;
-	ddF_y *= 2;
-	x = 0;
-	y = rad;
-	
-	drawCircleSectionHelper(x, y, x0, y0, option, color);
-	
-	while (x < y) {
-		if (f >= 0) {
-			y--;
-			ddF_y += 2;
-			f += ddF_y;
-		}
-		x++;
-		ddF_x += 2;
-		f += ddF_x;
-		
-		drawCircleSectionHelper(x, y, x0, y0, option, color);    
-	}
-}
-
-// From u8g2
 void Painter::drawRect(int x, int y, int x2, int y2, uint32_t fill_color, uint32_t stroke_color) {
 	int w = x2 - x + 1;
 	int h = y2 - y + 1;
 	
-	int xtmp = x;
+	if (w <= 0 || h <= 0)
+		return;
 	
-	drawHLine(x, y, w, stroke_color);
+	bool is_fill_transparent = (fill_color & 0xFF000000) == 0;
+	bool is_stroke_transparent = (stroke_color & 0xFF000000) == 0;
+	
+	if (is_fill_transparent && is_stroke_transparent)
+		return;
+	
+	if (!is_stroke_transparent)
+		drawHLine(x, y, w, stroke_color);
 	
 	if (h >= 2) {
-		h -= 2;
-		y++;
-		
-		if (h > 0) {
-			drawVLine(x, y, h, stroke_color);
-			x += w;
-			x--;
-			drawVLine(x, y, h, stroke_color);
-			y += h;
+		if (!is_stroke_transparent) {
+			drawHLine(x, y + h - 1, w, stroke_color);
+			drawVLine(x, y + 1, h - 2, stroke_color);
+			drawVLine(x + w - 1, y + 1, h - 2, stroke_color);
 		}
 		
-		drawHLine(xtmp, y, w, stroke_color);
+		if (!is_fill_transparent) {
+			for (int i = 0; i < h - 2; i++)
+				drawHLine(x + 1, y + 1 + i, w - 2, fill_color);
+		}
 	}
 }
 
-// From u8g2
 void Painter::drawRoundedRect(int x, int y, int x2, int y2, int x_radius, int y_radius, uint32_t fill_color, uint32_t stroke_color) {
-	int xl, yu;
-	
-	if (x_radius <= 0 || y_radius <= 0) {
-		drawRect(x, y, x2, y2, fill_color, stroke_color);
-		return;
-	}
-	
-	printf("drawRoundedRect %d %d %d %d\n", x, y, x2, y2);
-	
 	int w = x2 - x + 1;
 	int h = y2 - y + 1;
 	
-	auto limitRadius = [](int r, int size) -> int {
-		if (size <= 3) {
-			return 0;
-		} else if (size <= 7) {
-			return std::min(r, 1);
-		} else if (size <= 9) {
-			return std::min(r, 3);
-		}
-		return std::min(r, size / 2);
-	};
+	if (w <= 0 || h <= 0)
+		return;
 	
-	x_radius = limitRadius(x_radius, w);
-	y_radius = limitRadius(y_radius, h);
+	bool is_fill_transparent = (fill_color & 0xFF000000) == 0;
+	bool is_stroke_transparent = (stroke_color & 0xFF000000) == 0;
 	
-	xl = x;
-	xl += x_radius;
-	yu = y;
-	yu += y_radius;
+	if (is_fill_transparent && is_stroke_transparent)
+		return;
 	
-	int yl, xr;
+	m_mask.setCanvasSize(w, h);
 	
-	xr = x;
-	xr += w;
-	xr -= x_radius;
-	xr -= 1;
+	if (!is_fill_transparent)
+		m_mask.fillRoundedRect(0, 0, w, h, x_radius, y_radius, 1);
 	
-	yl = y;
-	yl += h;
-	yl -= y_radius; 
-	yl -= 1;
+	if (!is_stroke_transparent)
+		m_mask.drawRoundedRect(0, 0, w, h, x_radius, y_radius, 2);
 	
-	if (!x_radius || !y_radius) {
-		drawCircleHelper(xl, yu, 0, CIRCLE_DRAW_UPPER_LEFT, stroke_color);
-		drawCircleHelper(xr, yu, 0, CIRCLE_DRAW_UPPER_RIGHT, stroke_color);
-		drawCircleHelper(xl, yl, 0, CIRCLE_DRAW_LOWER_LEFT, stroke_color);
-		drawCircleHelper(xr, yl, 0, CIRCLE_DRAW_LOWER_RIGHT, stroke_color);
-	} else {
-		drawEllipseHelper(xl, yu, x_radius, y_radius, CIRCLE_DRAW_UPPER_LEFT, stroke_color);
-		drawEllipseHelper(xr, yu, x_radius, y_radius, CIRCLE_DRAW_UPPER_RIGHT, stroke_color);
-		drawEllipseHelper(xl, yl, x_radius, y_radius, CIRCLE_DRAW_LOWER_LEFT, stroke_color);
-		drawEllipseHelper(xr, yl, x_radius, y_radius, CIRCLE_DRAW_LOWER_RIGHT, stroke_color);
-	}
-	
-	int ww, hh;
-
-	ww = w;
-	ww -= x_radius;
-	ww -= x_radius;
-	hh = h;
-	hh -= y_radius;
-	hh -= y_radius;
-
-	xl++;
-	yu++;
-
-	if (ww >= 3) {
-		ww -= 2;
-		h--;
-		drawHLine(xl, y, ww, stroke_color);
-		drawHLine(xl, y + h, ww, stroke_color);
-	}
-
-	if (hh >= 3) {
-		hh -= 2;
-		w--;
-		drawVLine(x, yu, hh, stroke_color);
-		drawVLine(x + w, yu, hh, stroke_color);
-	}
+	uint32_t colors[] = { 0, fill_color, stroke_color };
+	drawMask(m_mask.data(), x, y, m_mask.width(), m_mask.height(), colors);
 }
 
 void Painter::save() {
@@ -350,7 +136,6 @@ void Painter::save() {
 
 Painter::~Painter() {
 	delete m_buffer;
-	delete m_tmp_buffer;
 }
 
 static void _writeBMP(const char *filename, const uint32_t *pixels, int width, int height) {
@@ -385,5 +170,76 @@ static void _writeBMP(const char *filename, const uint32_t *pixels, int width, i
 		file.write(reinterpret_cast<const char *>(&header), sizeof(BMPHeader));
 		file.write(reinterpret_cast<const char *>(pixels), header.dataSize);
 		file.close();
+	}
+}
+
+// From u8g2
+void Painter::drawLine(int x1, int y1, int x2, int y2, uint32_t color) {
+	if (x1 == x2) {
+		drawVLine(x1, y1, y2 - y1 + 1, color);
+		return;
+	} else if (y1 == y2) {
+		drawHLine(x1, y1, x2 - x1 + 1, color);
+		return;
+	}
+	
+	int tmp;
+	int x,y;
+	int dx, dy;
+	int err;
+	int ystep;
+	
+	uint8_t swapxy = 0;
+	
+	if (x1 > x2) {
+		dx = x1 - x2;
+	} else {
+		dx = x2 - x1;
+	}
+	
+	if (y1 > y2) {
+		dy = y1 - y2;
+	} else {
+		dy = y2 - y1;
+	}
+	
+	if (dy > dx) {
+		swapxy = 1;
+		tmp = dx; dx = dy; dy = tmp;
+		tmp = x1; x1 = y1; y1 = tmp;
+		tmp = x2; x2 = y2; y2 = tmp;
+	}
+	
+	if (x1 > x2) {
+		tmp = x1; x1 =x2; x2 = tmp;
+		tmp = y1; y1 =y2; y2 = tmp;
+	}
+	
+	err = dx >> 1;
+	
+	if (y2 > y1) {
+		ystep = 1;
+	} else {
+		ystep = -1;
+	}
+	
+	y = y1;
+	
+	if (x2 == 0xffff)
+		x2--;
+	
+	for (x = x1; x <= x2; x++) {
+		if (swapxy == 0) {
+			drawPixel(x, y, color);
+		} else {
+			drawPixel(y, x, color);
+		}
+		
+		err -= dy;
+		
+		if (err < 0) {
+			y += ystep;
+			err += dx;
+		}
 	}
 }

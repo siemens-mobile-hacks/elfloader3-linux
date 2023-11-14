@@ -21,7 +21,8 @@ add_executable(elfloader3
 	src/SieFs.cpp
 	
 	src/gui/Theme.cpp
-#	src/gui/Painter.cpp
+	src/gui/Painter.cpp
+	src/gui/MaskPainter.cpp
 	
 	# SWI
 	src/swi.cpp

@@ -472,8 +472,10 @@ void GUI_DirectRedrawGUI();
 void GUI_DirectRedrawGUI_ID(int id);
 void GUI_PendedRedrawGUI();
 
-void DrawString(WSHDR *wshdr, int x1, int y1, int x2, int y2, int font, int text_attribute, const char *Pen, const char *Brush);
-void DrawRoundedFrame(int x1, int y1, int x2, int y2, int x_round, int y_round, int flags, const char *pen, const char *brush);
+void GUI_DrawString(WSHDR *wshdr, int x1, int y1, int x2, int y2, int font, int text_attribute, const char *pen, const char *brush);
+void GUI_DrawRoundedFrame(int x1, int y1, int x2, int y2, int x_round, int y_round, int flags, const char *pen, const char *brush);
+void GUI_DrawLine(int x, int y, int x2, int y2, int flags, const char *pen);
+void GUI_DrawRectangle(int x, int y, int x2, int y2, int flags, const char *pen, const char *brush);
 
 char *GUI_GetPaletteAdrByColorIndex(int index);
 void GUI_GetRGBcolor(int index, char *dest);

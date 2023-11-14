@@ -224,12 +224,20 @@ void GUI_PendedRedrawGUI() {
 	GUI_DirectRedrawGUI_ID(GUI_GetTopID());
 }
 
-void DrawString(WSHDR *wshdr, int x1, int y1, int x2, int y2, int font, int text_attribute, const char *Pen, const char *Brush) {
+void GUI_DrawString(WSHDR *wshdr, int x1, int y1, int x2, int y2, int font, int text_attribute, const char *Pen, const char *Brush) {
 	fprintf(stderr, "%s not implemented!\n", __func__);
 }
 
-void DrawRoundedFrame(int x1, int y1, int x2, int y2, int x_round, int y_round, int flags, const char *pen, const char *brush) {
+void GUI_DrawRoundedFrame(int x1, int y1, int x2, int y2, int x_round, int y_round, int flags, const char *pen, const char *brush) {
 	painter->drawRoundedRect(x1, y1, x2, y2, x_round, y_round, GUI_Color2Int(brush), GUI_Color2Int(pen));
+}
+
+void GUI_DrawLine(int x, int y, int x2, int y2, int type, const char *pen) {
+	painter->drawLine(x, y, x2, y2, GUI_Color2Int(pen));
+}
+
+void GUI_DrawRectangle(int x, int y, int x2, int y2, int flags, const char *pen, const char *brush) {
+	painter->drawRect(x, y, x2, y2, GUI_Color2Int(brush), GUI_Color2Int(pen));
 }
 
 uint32_t GUI_Color2Int(const char *color) {

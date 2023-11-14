@@ -150,8 +150,10 @@ void loader_init_switab() {
 	switab_functions[0x013F]	= (void *) GUI_DirectRedrawGUI;
 	switab_functions[0x0140]	= (void *) GUI_DirectRedrawGUI_ID;
 	switab_functions[0x0141]	= (void *) GUI_PendedRedrawGUI;
-	switab_functions[0x014C]	= (void *) DrawString;
-	switab_functions[0x0150]	= (void *) DrawRoundedFrame;
+	switab_functions[0x014C]	= (void *) GUI_DrawString;
+	switab_functions[0x0150]	= (void *) GUI_DrawRoundedFrame;
+	switab_functions[0x01B3]	= (void *) GUI_DrawLine;
+	switab_functions[0x01B4]	= (void *) GUI_DrawRectangle;
 	switab_functions[0x012E]	= (void *) GUI_GetPaletteAdrByColorIndex;
 	switab_functions[0x012F]	= (void *) GUI_GetRGBcolor;
 	switab_functions[0x0130]	= (void *) GUI_GetRGBbyPaletteAdr;
