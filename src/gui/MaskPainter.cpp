@@ -421,6 +421,8 @@ void MaskPainter::fillEllipseSectionHelper(int x, int y, int x0, int y0, uint8_t
 		if ((option & CIRCLE_DRAW_LOWER_RIGHT))
 			drawVLine(x0 + x, y0, y + 1, color);
 	} else { // slow
+		drawPixel(x0, y0, color);
+		
 		for (int i = 0; i < y + 1; i++) {
 			/* upper right */
 			if ((option & CIRCLE_DRAW_UPPER_RIGHT) && isInEllipseRange(x, y - i, start, end))
