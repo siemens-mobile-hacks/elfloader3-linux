@@ -245,7 +245,7 @@ void GUI_DrawRoundedFrame(int x1, int y1, int x2, int y2, int x_round, int y_rou
 }
 
 void GUI_DrawTriangle(int x1, int y1, int x2, int y2, int x3, int y3, int flags, char *pen, char *brush) {
-	fprintf(stderr, "%s not implemented!\n", __func__);
+	painter->drawTriangle(x1, y1, x2, y2, x3, y3, GUI_Color2Int(brush), GUI_Color2Int(pen));
 }
 
 void GUI_DrawArc(int x1, int y1, int x2, int y2, int start, int end, int flags, char *pen, char *brush) {

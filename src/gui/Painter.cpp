@@ -152,23 +152,11 @@ void Painter::drawLine(int x1, int y1, int x2, int y2, uint32_t color) {
 	}
 	
 	if (!dy) {
-		drawVLine(x1, y1, dx, color);
+		drawHLine(x1, y1, dx, color);
 		return;
 	} else if (!dx) {
-		drawHLine(x1, y1, dy, color);
+		drawVLine(x1, y1, dy, color);
 		return;
-	}
-	
-	if (x1 > x2) {
-		dx = x1 - x2;
-	} else {
-		dx = x2 - x1;
-	}
-	
-	if (y1 > y2) {
-		dy = y1 - y2;
-	} else {
-		dy = y2 - y1;
 	}
 	
 	if (dy > dx) {
@@ -451,6 +439,82 @@ void Painter::drawRoundedRect(int x, int y, int w, int h, int x_radius, int y_ra
 	if ((stroke_color & 0xFF000000) != 0 && stroke_color != fill_color) {
 		startPerfectDrawing(stroke_color);
 		strokeRoundedRect(x, y, w, h, x_radius, y_radius, stroke_color);
+		stopPerfectDrawing();
+	}
+}
+
+/*
+ * Triangle
+ * */
+
+void Painter::strokeTriangle(int x1, int y1, int x2, int y2, int x3, int y3, uint32_t color) {
+	// Sort vertices based on y-coordinate
+	if (y1 > y2) {
+		std::swap(x1, x2);
+		std::swap(y1, y2);
+	}
+	
+	if (y1 > y3) {
+		std::swap(x1, x3);
+		std::swap(y1, y3);
+	}
+	
+	if (y2 > y3) {
+		std::swap(x2, x3);
+		std::swap(y2, y3);
+	}
+	
+	drawLine(x1, y1, x2, y2, color);
+	drawLine(x2, y2, x3, y3, color);
+	drawLine(x3, y3, x1, y1, color);
+}
+
+// By ChatGPT, lol
+void Painter::fillTriangle(int x1, int y1, int x2, int y2, int x3, int y3, uint32_t color) {
+	// Sort vertices based on y-coordinate
+	if (y1 > y2) {
+		std::swap(x1, x2);
+		std::swap(y1, y2);
+	}
+	
+	if (y1 > y3) {
+		std::swap(x1, x3);
+		std::swap(y1, y3);
+	}
+	
+	if (y2 > y3) {
+		std::swap(x2, x3);
+		std::swap(y2, y3);
+	}
+	
+	// Draw upper part of the triangle
+	for (int scanlineY = y1; scanlineY <= y2; ++scanlineY) {
+		int xL = x1 + ((x2 - x1) * (scanlineY - y1)) / (y2 - y1);
+		int xR = x1 + ((x3 - x1) * (scanlineY - y1)) / (y3 - y1);
+		for (int x = xL; x <= xR; ++x)
+			drawPixel(x, scanlineY, color);
+	}
+	
+	// Draw lower part of the triangle
+	for (int scanlineY = y2 + 1; scanlineY <= y3; ++scanlineY) {
+		int xL = x2 + ((x3 - x2) * (scanlineY - y2)) / (y3 - y2);
+		int xR = x1 + ((x3 - x1) * (scanlineY - y1)) / (y3 - y1);
+		for (int x = xL; x <= xR; ++x)
+			drawPixel(x, scanlineY, color);
+	}
+}
+
+void Painter::drawTriangle(int x1, int y1, int x2, int y2, int x3, int y3, uint32_t fill_color, uint32_t stroke_color) {
+	if ((fill_color & 0xFF000000) != 0) {
+		startPerfectDrawing(fill_color);
+		strokeTriangle(x1, y1, x2, y2, x3, y3, fill_color);
+		fillTriangle(x1, y1, x2, y2, x3, y3, fill_color);
+		stopPerfectDrawing();
+	}
+	
+	if ((stroke_color & 0xFF000000) != 0 && stroke_color != fill_color) {
+		startPerfectDrawing(stroke_color);
+		strokeTriangle(x1, y1, x2, y2, x3, y3, stroke_color);
 		stopPerfectDrawing();
 	}
 }

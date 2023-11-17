@@ -60,6 +60,10 @@ class Painter {
 		void fillArc(int x, int y, int w, int h, int start_angle, int sweep_angle, uint32_t color);
 		void drawArc(int x, int y, int w, int h, int start, int end, uint32_t fill_color, uint32_t stroke_color);
 		
+		void strokeTriangle(int x1, int y1, int x2, int y2, int x3, int y3, uint32_t color);
+		void fillTriangle(int x1, int y1, int x2, int y2, int x3, int y3, uint32_t color);
+		void drawTriangle(int x1, int y1, int x2, int y2, int x3, int y3, uint32_t fill_color, uint32_t stroke_color);
+		
 		void clear(uint32_t color);
 		
 		void drawMask(const uint8_t *mask, int x, int y, int w, int h, const uint32_t *colors);
