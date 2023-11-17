@@ -105,9 +105,10 @@ int FS_flush(int fd, uint32_t *errp) {
 }
 
 long FS_lseek(int fd, uint32_t offset, uint32_t origin, uint32_t *errp, uint32_t *errp2) {
-	fprintf(stderr, "%s not implemented!\n", __func__);
-	abort();
-	return 0;
+	int ret = lseek(fd, offset, origin);
+	_set_errno(ret, errp);
+	_set_errno(ret, errp2);
+	return ret;
 }
 
 int FS_mkdir(const char *pathname, uint32_t *errp) {

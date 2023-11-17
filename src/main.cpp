@@ -51,7 +51,7 @@ int main(int argc, char **argv) {
 	} else if (getenv("EL3_LIBRARY_PATH")) {
 		library_path_env = getenv("EL3_LIBRARY_PATH");
 	} else {
-		library_path_env = self_dir + "/../sdk/lib/NSG;" + self_dir + "/../sdk/lib;" + self_dir + "/../sdk/lib/legacy";
+		library_path_env = self_dir + "/../sdk/lib/NSG;" + self_dir + "/../sdk/lib;" + self_dir + "/../sdk/lib/legacy;" + self_dir + "/rootfs/Data/ZBin/lib";
 	}
 	
 	SieFs::mount("0", self_dir + "/rootfs/Data");
