@@ -26,7 +26,7 @@ struct BMPHeader {
 	// BI_BITFIELDS
 	uint32_t mask[4];
 	uint32_t colorSpaceType;
-	uint8_t colorSpace[0x24];
+	uint32_t colorSpace[0x24];
 	uint32_t gamma[3];
 };
 #pragma pack(pop)
@@ -36,17 +36,25 @@ static void _writeBMP(const char *filename, const uint32_t *pixels, int width, i
 Painter::Painter(int width, int height) {
 	m_width = width;
 	m_height = height;
-	m_buffer = new uint32_t[m_width * m_height];
+	m_buffer.resize(m_width * m_height);
+	m_mask.resize(m_width * m_height);
 	clear(0xFFFFFFFF);
 }
 
-void Painter::clear(uint32_t color) {
-	for (int x = 0; x < m_width; x++) {
-		for (int y = 0; y < m_height; y++)
-			drawPixel(x, y, color);
-	}
+void Painter::startPerfectDrawing(uint32_t color) {
+	if ((color & 0xFF000000) == 0xFF000000)
+		return;
+	m_perfect_drawing = true;
+	std::fill(m_mask.begin(), m_mask.end(), false);
 }
 
+void Painter::stopPerfectDrawing() {
+	m_perfect_drawing = false;
+}
+
+void Painter::clear(uint32_t color) {
+	std::fill(m_buffer.begin(), m_buffer.end(), color);
+}
 
 uint32_t Painter::blendColors(uint32_t old_color, uint32_t new_color) {
 	uint32_t alpha = (new_color >> 24) & 0xFF;
@@ -73,6 +81,26 @@ uint32_t Painter::blendColors(uint32_t old_color, uint32_t new_color) {
 	return 0xFF000000 | (result_r << 16) | (result_g << 8) | result_b;
 }
 
+void Painter::drawMask(const uint8_t *mask, int x, int y, int w, int h, const uint32_t *colors) {
+	for (int mask_y = 0; mask_y < h; mask_y++) {
+		int line_start = mask_y * w;
+		for (int mask_x = 0; mask_x < w; mask_x++) {
+			if (m_perfect_drawing) {
+				if (m_mask[line_start + mask_x])
+					continue;
+				m_mask[line_start + mask_x] = 1;
+			}
+			
+			uint8_t pixel = mask[line_start + mask_x];
+			if (pixel)
+				drawPixel(x + mask_x, y + mask_y, colors[pixel]);
+		}
+	}
+}
+
+/*
+ * Lines
+ * */
 void Painter::drawPixel(int x, int y, uint32_t color) {
 	if (x < 0 || y < 0 || x >= m_width || y >= m_height) {
 		printf("ignored pixel %d x %d\n", x, y);
@@ -81,6 +109,12 @@ void Painter::drawPixel(int x, int y, uint32_t color) {
 	
 	uint32_t index = (m_height - y - 1) * m_width + x;
 	uint32_t old_color = m_buffer[index];
+	
+	if (m_perfect_drawing) {
+		if (m_mask[index])
+			return;
+		m_mask[index] = 1;
+	}
 	
 	m_buffer[index] = blendColors(old_color, color);
 }
@@ -95,235 +129,680 @@ void Painter::drawVLine(int x, int y, int height, uint32_t color) {
 		drawPixel(x, y + i, color);
 }
 
-void Painter::drawMask(const uint8_t *mask, int x, int y, int w, int h, const uint32_t *colors) {
-	for (int mask_y = 0; mask_y < h; mask_y++) {
-		int line_start = mask_y * w;
-		for (int mask_x = 0; mask_x < w; mask_x++) {
-			uint8_t pixel = mask[line_start + mask_x];
-			if (pixel)
-				drawPixel(x + mask_x, y + mask_y, colors[pixel]);
-		}
+// From u8g2
+void Painter::drawLine(int x1, int y1, int x2, int y2, uint32_t color) {
+	int tmp;
+	int x,y;
+	int dx, dy;
+	int err;
+	int ystep;
+	
+	uint8_t swapxy = 0;
+	
+	if (x1 > x2) {
+		dx = x1 - x2;
+	} else {
+		dx = x2 - x1;
 	}
-}
-
-void Painter::drawRect(int x, int y, int x2, int y2, uint32_t fill_color, uint32_t stroke_color) {
-	int w = x2 - x + 1;
-	int h = y2 - y + 1;
 	
-	if (w <= 0 || h <= 0)
+	if (y1 > y2) {
+		dy = y1 - y2;
+	} else {
+		dy = y2 - y1;
+	}
+	
+	if (!dy) {
+		drawVLine(x1, y1, dx, color);
 		return;
-	
-	bool is_fill_transparent = (fill_color & 0xFF000000) == 0;
-	bool is_stroke_transparent = (stroke_color & 0xFF000000) == 0;
-	
-	if (is_fill_transparent && is_stroke_transparent)
+	} else if (!dx) {
+		drawHLine(x1, y1, dy, color);
 		return;
+	}
 	
-	if (!is_stroke_transparent)
-		drawHLine(x, y, w, stroke_color);
+	if (x1 > x2) {
+		dx = x1 - x2;
+	} else {
+		dx = x2 - x1;
+	}
 	
-	if (h >= 2) {
-		if (!is_stroke_transparent) {
-			drawHLine(x, y + h - 1, w, stroke_color);
-			drawVLine(x, y + 1, h - 2, stroke_color);
-			drawVLine(x + w - 1, y + 1, h - 2, stroke_color);
+	if (y1 > y2) {
+		dy = y1 - y2;
+	} else {
+		dy = y2 - y1;
+	}
+	
+	if (dy > dx) {
+		swapxy = 1;
+		tmp = dx; dx = dy; dy = tmp;
+		tmp = x1; x1 = y1; y1 = tmp;
+		tmp = x2; x2 = y2; y2 = tmp;
+	}
+	
+	if (x1 > x2) {
+		tmp = x1; x1 =x2; x2 = tmp;
+		tmp = y1; y1 =y2; y2 = tmp;
+	}
+	
+	err = dx >> 1;
+	
+	if (y2 > y1) {
+		ystep = 1;
+	} else {
+		ystep = -1;
+	}
+	
+	y = y1;
+	
+	if (x2 == 0xffff)
+		x2--;
+	
+	for (x = x1; x <= x2; x++) {
+		if (swapxy == 0) {
+			drawPixel(x, y, color);
+		} else {
+			drawPixel(y, x, color);
 		}
 		
-		if (!is_fill_transparent) {
-			for (int i = 0; i < h - 2; i++)
-				drawHLine(x + 1, y + 1 + i, w - 2, fill_color);
+		err -= dy;
+		
+		if (err < 0) {
+			y += ystep;
+			err += dx;
 		}
 	}
 }
 
-void Painter::drawRoundedRect(int x, int y, int x2, int y2, int x_radius, int y_radius, uint32_t fill_color, uint32_t stroke_color) {
-	int w = x2 - x + 1;
-	int h = y2 - y + 1;
+/*
+ * ARC
+ * */
+void Painter::strokeArc(int x, int y, int w, int h, int start_angle, int sweep_angle, uint32_t color) {
+	int end_angle = start_angle + sweep_angle;
 	
+	int x_radius = w / 2;
+	int y_radius = h / 2;
+	
+	int xl = x + x_radius;
+	int yu = y + y_radius;
+	
+	int xr = x + w - x_radius - 1;
+	int yl = y + h - y_radius - 1;
+	
+	const auto drawArcHelper = [&](int x0, int y0, uint8_t option, int section_angle) {
+		auto [part_angle_start, part_angle_end] = getEllipseSectionRegion(start_angle, end_angle, section_angle, section_angle + 90);
+		if (part_angle_start != -1) {
+			if (part_angle_end - part_angle_start == 90) {
+				strokeEllipseHelper(x0, y0, x_radius, y_radius, option, color, -1, -1);
+			} else {
+				strokeEllipseHelper(x0, y0, x_radius, y_radius, option, color, part_angle_start, part_angle_end);
+			}
+		}
+	};
+	
+	drawArcHelper(xr, yu, CIRCLE_DRAW_UPPER_RIGHT, 0);
+	drawArcHelper(xl, yu, CIRCLE_DRAW_UPPER_LEFT, 90);
+	drawArcHelper(xl, yl, CIRCLE_DRAW_LOWER_LEFT, 180);
+	drawArcHelper(xr, yl, CIRCLE_DRAW_LOWER_RIGHT, 270);
+}
+
+void Painter::fillArc(int x, int y, int w, int h, int start_angle, int sweep_angle, uint32_t color) {
+	int end_angle = start_angle + sweep_angle;
+	
+	int x_radius = w / 2;
+	int y_radius = h / 2;
+	
+	int xl = x + x_radius;
+	int yu = y + y_radius;
+	
+	int xr = x + w - x_radius - 1;
+	int yl = y + h - y_radius - 1;
+	
+	const auto fillArcHelper = [&](int x0, int y0, uint8_t option, int section_angle) {
+		auto [part_angle_start, part_angle_end] = getEllipseSectionRegion(start_angle, end_angle, section_angle, section_angle + 90);
+		if (part_angle_start != -1) {
+			if (part_angle_end - part_angle_start == 90) {
+				fillEllipseHelper(x0, y0, x_radius, y_radius, option, color, -1, -1);
+			} else {
+				fillEllipseHelper(x0, y0, x_radius, y_radius, option, color, part_angle_start, part_angle_end);
+			}
+		}
+	};
+	
+	fillArcHelper(xr, yu, CIRCLE_DRAW_UPPER_RIGHT, 0);
+	fillArcHelper(xl, yu, CIRCLE_DRAW_UPPER_LEFT, 90);
+	fillArcHelper(xl, yl, CIRCLE_DRAW_LOWER_LEFT, 180);
+	fillArcHelper(xr, yl, CIRCLE_DRAW_LOWER_RIGHT, 270);
+}
+
+void Painter::drawArc(int x, int y, int w, int h, int start, int end, uint32_t fill_color, uint32_t stroke_color) {
 	if (w <= 0 || h <= 0)
 		return;
 	
-	bool is_fill_transparent = (fill_color & 0xFF000000) == 0;
-	bool is_stroke_transparent = (stroke_color & 0xFF000000) == 0;
+	if ((fill_color & 0xFF000000) != 0) {
+		startPerfectDrawing(fill_color);
+		fillArc(x, y, w, h, start, end, fill_color);
+		stopPerfectDrawing();
+	}
 	
-	if (is_fill_transparent && is_stroke_transparent)
-		return;
-	
-	m_mask.setCanvasSize(w, h);
-	
-	if (!is_fill_transparent)
-		m_mask.fillRoundedRect(0, 0, w, h, x_radius, y_radius, 1);
-	
-	if (!is_stroke_transparent)
-		m_mask.drawRoundedRect(0, 0, w, h, x_radius, y_radius, 2);
-	
-	uint32_t colors[] = { 0, fill_color, stroke_color };
-	drawMask(m_mask.data(), x, y, m_mask.width(), m_mask.height(), colors);
+	if ((fill_color & 0xFF000000) != 0 && stroke_color != fill_color) {
+		startPerfectDrawing(stroke_color);
+		strokeArc(x, y, w, h, start, end, stroke_color);
+		stopPerfectDrawing();
+	}
 }
 
-void Painter::drawArc(int x, int y, int x2, int y2, int start, int end, uint32_t fill_color, uint32_t stroke_color) {
-	int w = x2 - x + 1;
-	int h = y2 - y + 1;
+/*
+ * Rect
+ * */
+void Painter::strokeRect(int x, int y, int w, int h, uint32_t color) {
+	drawHLine(x, y, w, color);
 	
+	if (h >= 2) {
+		drawHLine(x, y + h - 1, w, color);
+		drawVLine(x, y + 1, h - 2, color);
+		drawVLine(x + w - 1, y + 1, h - 2, color);
+	}
+}
+
+void Painter::fillRect(int x, int y, int w, int h, uint32_t color) {
+	for (int i = 0; i < h; i++)
+		drawHLine(x, y + i, w, color);
+}
+
+void Painter::drawRect(int x, int y, int w, int h, uint32_t fill_color, uint32_t stroke_color) {
 	if (w <= 0 || h <= 0)
 		return;
 	
-	uint32_t colors[] = { 0, fill_color, stroke_color };
+	if ((fill_color & 0xFF000000) != 0)
+		fillRect(x, y, w, h, fill_color);
 	
-	m_mask.setCanvasSize(w, h);
-	m_mask.fillArc(0, 0, w, h, start, end, 1);
-	drawMask(m_mask.data(), x, y, m_mask.width(), m_mask.height(), colors);
-	
-	m_mask.setCanvasSize(w, h);
-	m_mask.drawArc(0, 0, w, h, start, end, 2);
-	drawMask(m_mask.data(), x, y, m_mask.width(), m_mask.height(), colors);
+	if ((stroke_color & 0xFF000000) != 0 && stroke_color != fill_color)
+		strokeRect(x, y, w, h, stroke_color);
 }
 
-// From libgd2
-void Painter::drawLine(int x1, int y1, int x2, int y2, uint32_t color) {
-	int dx, dy, incr1, incr2, d, x, y, xend, yend, xdirflag, ydirflag;
-	int wid;
-	int w, wstart;
-	int thick = 1;
-	
-	dx = abs(x2 - x1);
-	dy = abs(y2 - y1);
-
-	if (dx == 0) {
-		drawVLine(x1, y1, dy + 1, color);
-		return;
-	} else if (dy == 0) {
-		drawHLine(x1, y1, dx + 1, color);
+/*
+ * Rounded Rect
+ * */
+void Painter::strokeRoundedRect(int x, int y, int w, int h, int x_radius, int y_radius, uint32_t color) {
+	if (x_radius <= 0 || y_radius <= 0) {
+		strokeRect(x, y, w, h, color);
 		return;
 	}
-
-	if (dy <= dx) {
-		/* More-or-less horizontal. use wid for vertical stroke */
-		/* Doug Claar: watch out for NaN in atan2 (2.0.5) */
-
-		/* 2.0.12: Michael Schwartz: divide rather than multiply;
-			  TBB: but watch out for /0! */
-		double ac = cos(atan2(dy, dx));
-		if (ac != 0) {
-			wid = thick / ac;
-		} else {
-			wid = 1;
+	
+	auto limitRadius = [](int r, int size) -> int {
+		if (size <= 3) {
+			return 0;
+		} else if (size <= 7) {
+			return std::min(r, 1);
+		} else if (size <= 9) {
+			return std::min(r, 3);
 		}
-		if (wid == 0) {
-			wid = 1;
-		}
-		d = 2 * dy - dx;
-		incr1 = 2 * dy;
-		incr2 = 2 * (dy - dx);
-		if (x1 > x2) {
-			x = x2;
-			y = y2;
-			ydirflag = (-1);
-			xend = x1;
-		} else {
-			x = x1;
-			y = y1;
-			ydirflag = 1;
-			xend = x2;
-		}
-
-		/* Set up line thickness */
-		wstart = y - wid / 2;
-		for (w = wstart; w < wstart + wid; w++)
-			drawPixel(x, w, color);
-
-		if (((y2 - y1) * ydirflag) > 0) {
-			while (x < xend) {
-				x++;
-				if (d < 0) {
-					d += incr1;
-				} else {
-					y++;
-					d += incr2;
-				}
-				wstart = y - wid / 2;
-				for (w = wstart; w < wstart + wid; w++)
-					drawPixel(x, w, color);
-			}
-		} else {
-			while (x < xend) {
-				x++;
-				if (d < 0) {
-					d += incr1;
-				} else {
-					y--;
-					d += incr2;
-				}
-				wstart = y - wid / 2;
-				for (w = wstart; w < wstart + wid; w++)
-					drawPixel(x, w, color);
-			}
-		}
+		return std::min(r, size / 2);
+	};
+	
+	x_radius = limitRadius(x_radius, w);
+	y_radius = limitRadius(y_radius, h);
+	
+	int xl = x + x_radius;
+	int yu = y + y_radius;
+	
+	int xr = x + w - x_radius - 1;
+	int yl = y + h - y_radius - 1;
+	
+	if (!x_radius || !y_radius) {
+		strokeCircleHelper(xl, yu, 0, CIRCLE_DRAW_UPPER_LEFT, color);
+		strokeCircleHelper(xr, yu, 0, CIRCLE_DRAW_UPPER_RIGHT, color);
+		strokeCircleHelper(xl, yl, 0, CIRCLE_DRAW_LOWER_LEFT, color);
+		strokeCircleHelper(xr, yl, 0, CIRCLE_DRAW_LOWER_RIGHT, color);
 	} else {
-		/* More-or-less vertical. use wid for horizontal stroke */
-		/* 2.0.12: Michael Schwartz: divide rather than multiply;
-		   TBB: but watch out for /0! */
-		double as = sin(atan2(dy, dx));
-		if (as != 0) {
-			wid = thick / as;
-		} else {
-			wid = 1;
+		strokeEllipseHelper(xl, yu, x_radius, y_radius, CIRCLE_DRAW_UPPER_LEFT, color);
+		strokeEllipseHelper(xr, yu, x_radius, y_radius, CIRCLE_DRAW_UPPER_RIGHT, color);
+		strokeEllipseHelper(xl, yl, x_radius, y_radius, CIRCLE_DRAW_LOWER_LEFT, color);
+		strokeEllipseHelper(xr, yl, x_radius, y_radius, CIRCLE_DRAW_LOWER_RIGHT, color);
+	}
+	
+	int ww = w - x_radius * 2;
+	int hh = h - y_radius * 2;
+
+	xl++;
+	yu++;
+
+	if (ww >= 3) {
+		ww -= 2;
+		h--;
+		drawHLine(xl, y, ww, color);
+		drawHLine(xl, y + h, ww, color);
+	}
+
+	if (hh >= 3) {
+		hh -= 2;
+		w--;
+		drawVLine(x, yu, hh, color);
+		drawVLine(x + w, yu, hh, color);
+	}
+}
+	
+void Painter::fillRoundedRect(int x, int y, int w, int h, int x_radius, int y_radius, uint32_t color) {
+	if (x_radius <= 0 || y_radius <= 0) {
+		fillRect(x, y, w, h, color);
+		return;
+	}
+	
+	auto limitRadius = [](int r, int size) -> int {
+		if (size <= 3) {
+			return 0;
+		} else if (size <= 7) {
+			return std::min(r, 1);
+		} else if (size <= 9) {
+			return std::min(r, 3);
 		}
-		if (wid == 0)
-			wid = 1;
+		return std::min(r, size / 2);
+	};
+	
+	x_radius = limitRadius(x_radius, w);
+	y_radius = limitRadius(y_radius, h);
+	
+	int xl = x + x_radius;
+	int yu = y + y_radius;
+	
+	int xr = x + w - x_radius - 1;
+	int yl = y + h - y_radius - 1;
+	
+	if (!x_radius || !y_radius) {
+		fillCircleHelper(xl, yu, 0, CIRCLE_DRAW_UPPER_LEFT, color);
+		fillCircleHelper(xr, yu, 0, CIRCLE_DRAW_UPPER_RIGHT, color);
+		fillCircleHelper(xl, yl, 0, CIRCLE_DRAW_LOWER_LEFT, color);
+		fillCircleHelper(xr, yl, 0, CIRCLE_DRAW_LOWER_RIGHT, color);
+	} else {
+		fillEllipseHelper(xl, yu, x_radius, y_radius, CIRCLE_DRAW_UPPER_LEFT, color);
+		fillEllipseHelper(xr, yu, x_radius, y_radius, CIRCLE_DRAW_UPPER_RIGHT, color);
+		fillEllipseHelper(xl, yl, x_radius, y_radius, CIRCLE_DRAW_LOWER_LEFT, color);
+		fillEllipseHelper(xr, yl, x_radius, y_radius, CIRCLE_DRAW_LOWER_RIGHT, color);
+	}
+	
+	int ww = w - x_radius * 2;
+	xl++;
+	yu++;
+	
+	if (ww >= 3) {
+		ww -= 2;
+		fillRect(xl, y, ww, y_radius + 1, color);
+		fillRect(xl, yl, ww, y_radius + 1, color);
+	}
+	
+	int hh = h - y_radius * 2;
+	//h--;
+	
+	if (hh >= 3) {
+		hh -= 2;
+		fillRect(x, yu, w, hh, color);
+	}
+}
 
-		d = 2 * dx - dy;
-		incr1 = 2 * dx;
-		incr2 = 2 * (dx - dy);
-		if (y1 > y2) {
-			y = y2;
-			x = x2;
-			yend = y1;
-			xdirflag = (-1);
-		} else {
-			y = y1;
-			x = x1;
-			yend = y2;
-			xdirflag = 1;
+void Painter::drawRoundedRect(int x, int y, int w, int h, int x_radius, int y_radius, uint32_t fill_color, uint32_t stroke_color) {
+	if (w <= 0 || h <= 0)
+		return;
+	
+	if ((fill_color & 0xFF000000) != 0) {
+		startPerfectDrawing(fill_color);
+		fillRoundedRect(x, y, w, h, x_radius, y_radius, fill_color);
+		stopPerfectDrawing();
+	}
+	
+	if ((stroke_color & 0xFF000000) != 0 && stroke_color != fill_color) {
+		startPerfectDrawing(stroke_color);
+		strokeRoundedRect(x, y, w, h, x_radius, y_radius, stroke_color);
+		stopPerfectDrawing();
+	}
+}
+
+/*
+ * Helpers
+ * */
+
+// From u8g2
+void Painter::strokeCircleSectionHelper(int x, int y, int x0, int y0, uint8_t option, uint32_t color) {
+	/* upper right */
+	if ((option & CIRCLE_DRAW_UPPER_RIGHT)) {
+		drawPixel(x0 + x, y0 - y, color);
+		drawPixel(x0 + y, y0 - x, color);
+	}
+	
+	/* upper left */
+	if ((option & CIRCLE_DRAW_UPPER_LEFT)) {
+		drawPixel(x0 - x, y0 - y, color);
+		drawPixel(x0 - y, y0 - x, color);
+	}
+	
+	/* lower right */
+	if ((option & CIRCLE_DRAW_LOWER_RIGHT)) {
+		drawPixel(x0 + x, y0 + y, color);
+		drawPixel(x0 + y, y0 + x, color);
+	}
+	
+	/* lower left */
+	if ((option & CIRCLE_DRAW_LOWER_LEFT)) {
+		drawPixel(x0 - x, y0 + y, color);
+		drawPixel(x0 - y, y0 + x, color);
+	}
+}
+
+// From u8g2
+void Painter::strokeCircleHelper(int x0, int y0, int rad, uint8_t option, uint32_t color) {
+	int f;
+	int ddF_x;
+	int ddF_y;
+	int x;
+	int y;
+	
+	f = 1;
+	f -= rad;
+	ddF_x = 1;
+	ddF_y = 0;
+	ddF_y -= rad;
+	ddF_y *= 2;
+	x = 0;
+	y = rad;
+	
+	strokeCircleSectionHelper(x, y, x0, y0, option, color);
+	
+	while (x < y) {
+		if (f >= 0) {
+			y--;
+			ddF_y += 2;
+			f += ddF_y;
 		}
+		x++;
+		ddF_x += 2;
+		f += ddF_x;
+		
+		strokeCircleSectionHelper(x, y, x0, y0, option, color);    
+	}
+}
 
-		/* Set up line thickness */
-		wstart = x - wid / 2;
-		for (w = wstart; w < wstart + wid; w++)
-			drawPixel(w, y, color);
+// From u8g2
+void Painter::fillCircleSectionHelper(int x, int y, int x0, int y0, uint8_t option, uint32_t color) {
+	/* upper right */
+	if ((option & CIRCLE_DRAW_UPPER_RIGHT)) {
+		drawVLine(x0 + x, y0 - y, y + 1, color);
+		drawVLine(x0 + y, y0 - x, x + 1, color);
+	}
+	
+	/* upper left */
+	if ((option & CIRCLE_DRAW_UPPER_LEFT)) {
+		drawVLine(x0 - x, y0 - y, y + 1, color);
+		drawVLine(x0 - y, y0 - x, x + 1, color);
+	}
 
-		if (((x2 - x1) * xdirflag) > 0) {
-			while (y < yend) {
-				y++;
-				if (d < 0) {
-					d += incr1;
-				} else {
-					x++;
-					d += incr2;
-				}
-				wstart = x - wid / 2;
-				for (w = wstart; w < wstart + wid; w++)
-					drawPixel(w, y, color);
-			}
-		} else {
-			while (y < yend) {
-				y++;
-				if (d < 0) {
-					d += incr1;
-				} else {
-					x--;
-					d += incr2;
-				}
-				wstart = x - wid / 2;
-				for (w = wstart; w < wstart + wid; w++)
-					drawPixel(w, y, color);
-			}
+	/* lower right */
+	if ((option & CIRCLE_DRAW_LOWER_RIGHT)) {
+		drawVLine(x0 + x, y0, y + 1, color);
+		drawVLine(x0 + y, y0, x + 1, color);
+	}
+
+	/* lower left */
+	if ((option & CIRCLE_DRAW_LOWER_LEFT)) {
+		drawVLine(x0 - x, y0, y + 1, color);
+		drawVLine(x0 - y, y0, x + 1, color);
+	}
+}
+
+// From u8g2
+void Painter::fillCircleHelper(int x0, int y0, int rad, uint8_t option, uint32_t color) {
+	int f;
+	int ddF_x;
+	int ddF_y;
+	int x;
+	int y;
+
+	f = 1;
+	f -= rad;
+	ddF_x = 1;
+	ddF_y = 0;
+	ddF_y -= rad;
+	ddF_y *= 2;
+	x = 0;
+	y = rad;
+
+	fillCircleSectionHelper(x, y, x0, y0, option, color);
+	
+	while (x < y) {
+		if (f >= 0) {
+			y--;
+			ddF_y += 2;
+			f += ddF_y;
+		}
+		
+		x++;
+		ddF_x += 2;
+		f += ddF_x;
+		
+		fillCircleSectionHelper(x, y, x0, y0, option, color);
+	}
+}
+
+// From u8g2
+void Painter::strokeEllipseSectionHelper(int x, int y, int x0, int y0, uint8_t option, uint32_t color, int start, int end) {
+	if (start == -1) { // fast
+		/* upper right */
+		if ((option & CIRCLE_DRAW_UPPER_RIGHT))
+			drawPixel(x0 + x, y0 - y, color);
+		
+		/* upper left */
+		if ((option & CIRCLE_DRAW_UPPER_LEFT))
+			drawPixel(x0 - x, y0 - y, color);
+		
+		/* lower left */
+		if ((option & CIRCLE_DRAW_LOWER_LEFT))
+			drawPixel(x0 - x, y0 + y, color);
+		
+		/* lower right */
+		if ((option & CIRCLE_DRAW_LOWER_RIGHT))
+			drawPixel(x0 + x, y0 + y, color);
+	} else { // slow
+		/* upper right */
+		if ((option & CIRCLE_DRAW_UPPER_RIGHT) && isInEllipseRange(x, y, start, end))
+			drawPixel(x0 + x, y0 - y, color);
+		
+		/* upper left */
+		if ((option & CIRCLE_DRAW_UPPER_LEFT) && isInEllipseRange(-x, y, start, end))
+			drawPixel(x0 - x, y0 - y, color);
+		
+		/* lower left */
+		if ((option & CIRCLE_DRAW_LOWER_LEFT) && isInEllipseRange(-x, -y, start, end))
+			drawPixel(x0 - x, y0 + y, color);
+		
+		/* lower right */
+		if ((option & CIRCLE_DRAW_LOWER_RIGHT) && isInEllipseRange(x, -y, start, end))
+			drawPixel(x0 + x, y0 + y, color);
+	}
+}
+
+// From u8g2
+void Painter::strokeEllipseHelper(int x0, int y0, int rx, int ry, uint8_t option, uint32_t color, int start, int end) {
+	int64_t rxrx2 = rx * rx * 2;
+	int64_t ryry2 = ry * ry * 2;
+	
+	int x = rx;
+	int y = 0;
+	
+	int64_t xchg = (1 - rx - rx) * ry * ry;
+	int64_t ychg = rx * rx;
+	
+	int64_t err = 0;
+	
+	int64_t stopx = ryry2 * rx;
+	int64_t stopy = 0;
+	
+	while (stopx >= stopy) {
+		strokeEllipseSectionHelper(x, y, x0, y0, option, color, start, end);
+		
+		y++;
+		stopy += rxrx2;
+		err += ychg;
+		ychg += rxrx2;
+		
+		if (2 * err + xchg > 0) {
+			x--;
+			stopx -= ryry2;
+			err += xchg;
+			xchg += ryry2;      
 		}
 	}
+	
+	x = 0;
+	y = ry;
+	
+	xchg = ry * ry;
+	ychg = (1 - ry - ry) * rx * rx;
+	
+	err = 0;
+	
+	stopx = 0;
+	stopy = rxrx2 * ry;
+	
+	while (stopx <= stopy) {
+		strokeEllipseSectionHelper(x, y, x0, y0, option, color, start, end);
+		
+		x++;
+		stopx += ryry2;
+		err += xchg;
+		xchg += ryry2;
+		
+		if (2 * err + ychg > 0) {
+			y--;
+			stopy -= rxrx2;
+			err += ychg;
+			ychg += rxrx2;
+		}
+	}
+}
+
+// From u8g2
+void Painter::fillEllipseSectionHelper(int x, int y, int x0, int y0, uint8_t option, uint32_t color, int start, int end) {
+	if (start == -1) { // fast
+		/* upper right */
+		if ((option & CIRCLE_DRAW_UPPER_RIGHT))
+			drawVLine(x0 + x, y0 - y, y + 1, color);
+		
+		/* upper left */
+		if ((option & CIRCLE_DRAW_UPPER_LEFT))
+			drawVLine(x0 - x, y0 - y, y + 1, color);
+		
+		/* lower left */
+		if ((option & CIRCLE_DRAW_LOWER_LEFT))
+			drawVLine(x0 - x, y0, y + 1, color);
+		
+		/* lower right */
+		if ((option & CIRCLE_DRAW_LOWER_RIGHT))
+			drawVLine(x0 + x, y0, y + 1, color);
+	} else { // slow
+		drawPixel(x0, y0, color);
+		
+		for (int i = 0; i < y + 1; i++) {
+			/* upper right */
+			if ((option & CIRCLE_DRAW_UPPER_RIGHT) && isInEllipseRange(x, y - i, start, end))
+				drawPixel(x0 + x, y0 - y + i, color);
+			
+			/* upper left */
+			if ((option & CIRCLE_DRAW_UPPER_LEFT) && isInEllipseRange(-x, y - i, start, end))
+				drawPixel(x0 - x, y0 - y + i, color);
+			
+			/* lower left */
+			if ((option & CIRCLE_DRAW_LOWER_LEFT) && isInEllipseRange(-x, -y + i, start, end))
+				drawPixel(x0 - x, y0 + y - i, color);
+			
+			/* lower right */
+			if ((option & CIRCLE_DRAW_LOWER_RIGHT) && isInEllipseRange(x, -y + i, start, end))
+				drawPixel(x0 + x, y0 + y - i, color);
+		}
+	}
+}
+
+// From u8g2
+void Painter::fillEllipseHelper(int x0, int y0, int rx, int ry, uint8_t option, uint32_t color, int start, int end) {
+	int64_t rxrx2 = rx * rx * 2;
+	int64_t ryry2 = ry * ry * 2;
+	
+	int x = rx;
+	int y = 0;
+	
+	int64_t xchg = (1 - rx - rx) * ry * ry;
+	int64_t ychg = rx * rx;
+	
+	int64_t err = 0;
+	
+	int64_t stopx = ryry2 * rx;
+	int64_t stopy = 0;
+	
+	while (stopx >= stopy) {
+		fillEllipseSectionHelper(x, y, x0, y0, option, color, start, end);
+		y++;
+		stopy += rxrx2;
+		err += ychg;
+		ychg += rxrx2;
+		if (2 * err + xchg > 0) {
+			x--;
+			stopx -= ryry2;
+			err += xchg;
+			xchg += ryry2;      
+		}
+	}
+
+	x = 0;
+	y = ry;
+	
+	xchg = ry * ry;
+	
+	ychg = (1 - ry - ry) * rx * rx;
+	
+	err = 0;
+	
+	stopx = 0;
+	stopy = rxrx2 * ry;
+	
+	while (stopx <= stopy) {
+		fillEllipseSectionHelper(x, y, x0, y0, option, color, start, end);
+		x++;
+		stopx += ryry2;
+		err += xchg;
+		xchg += ryry2;
+		
+		if (2 * err + ychg > 0) {
+			y--;
+			stopy -= rxrx2;
+			err += ychg;
+			ychg += rxrx2;
+		}
+	}
+}
+
+/*
+ * Utils
+ * */
+bool Painter::isInEllipseRange(int x, int y, int start, int end) {
+	int angle = round(atan2(y, x) * (180 / M_PI));
+	if (angle < 0)
+		angle = 360 + angle;
+	return angle >= start && angle <= end;
+}
+
+std::tuple<int, int> Painter::getEllipseSectionRegion(int x1, int x2, int y1, int y2) {
+	int from = std::max(x1, y1);
+	int to = std::min(x2, y2);
+	if (from < to)
+		return { from, to };
+	
+	if (x2 > 360) {
+		x1 = 0;
+		x2 = x2 % 360;
+		return getEllipseSectionRegion(x1, x2, y1, y2);
+	}
+	
+	return { -1, -1 };
 }
 
 void Painter::save() {
-	_writeBMP("/tmp/sie.bmp", m_buffer, m_width, m_height);
+	_writeBMP("/tmp/sie.bmp", &m_buffer[0], m_width, m_height);
 }
 
 static void _writeBMP(const char *filename, const uint32_t *pixels, int width, int height) {
@@ -351,8 +830,6 @@ static void _writeBMP(const char *filename, const uint32_t *pixels, int width, i
 	header.mask[3] = 0xFF000000;
 	header.colorSpaceType = 0x57696E20;
 	
-	printf("BMPHeader %d\n", sizeof(BMPHeader));
-	
 	std::ofstream file(filename, std::ios::binary);
 	if (file) {
 		file.write(reinterpret_cast<const char *>(&header), sizeof(BMPHeader));
@@ -362,5 +839,5 @@ static void _writeBMP(const char *filename, const uint32_t *pixels, int width, i
 }
 
 Painter::~Painter() {
-	delete m_buffer;
+	
 }
