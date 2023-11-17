@@ -18,6 +18,20 @@ class MaskPainter {
 		int m_width;
 		int m_height;
 		
+		static bool isInEllipseRange(int x, int y, int start, int end);
+		static std::tuple<int, int> getEllipseSectionRegion(int x1, int x2, int y1, int y2);
+		
+		void drawCircleSectionHelper(int x, int y, int x0, int y0, uint8_t option, uint8_t color);
+		void drawCircleHelper(int x0, int y0, int rad, uint8_t option, uint8_t color);
+		
+		void fillCircleSectionHelper(int x, int y, int x0, int y0, uint8_t option, uint8_t color);
+		void fillCircleHelper(int x0, int y0, int rad, uint8_t option, uint8_t color);
+		
+		void drawEllipseSectionHelper(int x, int y, int x0, int y0, uint8_t option, uint8_t color, int start = -1, int end = -1);
+		void drawEllipseHelper(int x0, int y0, int rx, int ry, uint8_t option, uint8_t color, int start = -1, int end = -1);
+		
+		void fillEllipseSectionHelper(int x, int y, int x0, int y0, uint8_t option, uint8_t color, int start = -1, int end = -1);
+		void fillEllipseHelper(int x0, int y0, int rx, int ry, uint8_t option, uint8_t color, int start = -1, int end = -1);
 	public:
 		void setCanvasSize(int width, int height);
 		
@@ -28,20 +42,13 @@ class MaskPainter {
 		void drawRoundedRect(int x, int y, int w, int h, int x_radius, int y_radius, uint8_t color);
 		void fillRoundedRect(int x, int y, int w, int h, int x_radius, int y_radius, uint8_t color);
 		
-		void drawCircleSectionHelper(int x, int y, int x0, int y0, uint8_t option, uint8_t color);
-		void drawCircleHelper(int x0, int y0, int rad, uint8_t option, uint8_t color);
-		
-		void fillCircleSectionHelper(int x, int y, int x0, int y0, uint8_t option, uint8_t color);
-		void fillCircleHelper(int x0, int y0, int rad, uint8_t option, uint8_t color);
-		
-		void drawEllipseSectionHelper(int x, int y, int x0, int y0, uint8_t option, uint8_t color);
-		void drawEllipseHelper(int x0, int y0, int rx, int ry, uint8_t option, uint8_t color);
-		
-		void fillEllipseSectionHelper(int x, int y, int x0, int y0, uint8_t option, uint8_t color);
-		void fillEllipseHelper(int x0, int y0, int rx, int ry, uint8_t option, uint8_t color);
-		
 		void drawRect(int x, int y, int w, int h, uint8_t color);
 		void fillRect(int x, int y, int w, int h, uint8_t color);
+		
+		void drawArc(int x, int y, int w, int h, int start, int end, uint8_t color);
+		void fillArc(int x, int y, int w, int h, int start, int end, uint8_t color);
+		
+		void drawLine(int x1, int y1, int x2, int y2, uint8_t color);
 		
 		inline int width() {
 			return m_width;

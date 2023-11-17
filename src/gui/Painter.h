@@ -21,6 +21,8 @@ class Painter {
 	public:
 		Painter(int width, int height);
 		
+		uint32_t blendColors(uint32_t old_color, uint32_t new_color);
+		
 		void drawPixel(int x, int y, uint32_t color);
 		void drawHLine(int x, int y, int width, uint32_t color);
 		void drawVLine(int x, int y, int height, uint32_t color);
@@ -28,6 +30,7 @@ class Painter {
 		void drawRoundedRect(int x1, int y1, int x2, int y2, int x_radius, int y_radius, uint32_t fill_color, uint32_t stroke_color);
 		void drawRect(int x, int y, int x2, int y2, uint32_t fill_color, uint32_t stroke_color);
 		void drawLine(int x, int y, int x2, int y2, uint32_t color);
+		void drawArc(int x, int y, int x2, int y2, int start, int end, uint32_t fill_color, uint32_t stroke_color);
 		
 		void clear(uint32_t color);
 		

@@ -477,6 +477,10 @@ void GUI_DrawRoundedFrame(int x1, int y1, int x2, int y2, int x_round, int y_rou
 void GUI_DrawLine(int x, int y, int x2, int y2, int flags, const char *pen);
 void GUI_DrawRectangle(int x, int y, int x2, int y2, int flags, const char *pen, const char *brush);
 
+void GUI_DrawTriangle(int x1, int y1, int x2, int y2, int x3, int y3, int flags, char *pen, char *brush);
+void GUI_DrawPixel(int x, int y, const char *color);
+void GUI_DrawArc(int x1, int y1, int x2, int y2, int start, int end, int flags, char *pen, char *brush);
+
 char *GUI_GetPaletteAdrByColorIndex(int index);
 void GUI_GetRGBcolor(int index, char *dest);
 void GUI_GetRGBbyPaletteAdr(char *addr, char *dest);

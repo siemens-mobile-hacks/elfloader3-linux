@@ -1,5 +1,6 @@
 #include "Painter.h"
 
+#include <cmath>
 #include <new>
 #include <fstream>
 #include <ostream>
@@ -36,7 +37,7 @@ Painter::Painter(int width, int height) {
 	m_width = width;
 	m_height = height;
 	m_buffer = new uint32_t[m_width * m_height];
-	clear(0xFFFF00FF);
+	clear(0xFFFFFFFF);
 }
 
 void Painter::clear(uint32_t color) {
@@ -46,12 +47,42 @@ void Painter::clear(uint32_t color) {
 	}
 }
 
+
+uint32_t Painter::blendColors(uint32_t old_color, uint32_t new_color) {
+	uint32_t alpha = (new_color >> 24) & 0xFF;
+	uint32_t inv_alpha = 0xFF - alpha;
+	
+	if (alpha == 0)
+		return old_color;
+	
+	if (alpha == 0xFF)
+		return new_color;
+	
+	uint32_t new_r = (new_color >> 16) & 0xFF;
+	uint32_t new_g = (new_color >> 8) & 0xFF;
+	uint32_t new_b = new_color & 0xFF;
+	
+	uint32_t old_r = (old_color >> 16) & 0xFF;
+	uint32_t old_g = (old_color >> 8) & 0xFF;
+	uint32_t old_b = old_color & 0xFF;
+	
+	uint32_t result_r = ((old_r * inv_alpha) >> 8) + ((new_r * alpha) >> 8);
+	uint32_t result_g = ((old_g * inv_alpha) >> 8) + ((new_g * alpha) >> 8);
+	uint32_t result_b = ((old_b * inv_alpha) >> 8) + ((new_b * alpha) >> 8);
+	
+	return 0xFF000000 | (result_r << 16) | (result_g << 8) | result_b;
+}
+
 void Painter::drawPixel(int x, int y, uint32_t color) {
 	if (x < 0 || y < 0 || x >= m_width || y >= m_height) {
 		printf("ignored pixel %d x %d\n", x, y);
 		return;
 	}
-	m_buffer[(m_height - y - 1) * m_width + x] = color; // TODO: alpha!
+	
+	uint32_t index = (m_height - y - 1) * m_width + x;
+	uint32_t old_color = m_buffer[index];
+	
+	m_buffer[index] = blendColors(old_color, color);
 }
 
 void Painter::drawHLine(int x, int y, int width, uint32_t color) {
@@ -130,12 +161,169 @@ void Painter::drawRoundedRect(int x, int y, int x2, int y2, int x_radius, int y_
 	drawMask(m_mask.data(), x, y, m_mask.width(), m_mask.height(), colors);
 }
 
-void Painter::save() {
-	_writeBMP("/tmp/sie.bmp", m_buffer, m_width, m_height);
+void Painter::drawArc(int x, int y, int x2, int y2, int start, int end, uint32_t fill_color, uint32_t stroke_color) {
+	int w = x2 - x + 1;
+	int h = y2 - y + 1;
+	
+	if (w <= 0 || h <= 0)
+		return;
+	
+	uint32_t colors[] = { 0, fill_color, stroke_color };
+	
+	m_mask.setCanvasSize(w, h);
+	m_mask.fillArc(0, 0, w, h, start, end, 1);
+	drawMask(m_mask.data(), x, y, m_mask.width(), m_mask.height(), colors);
+	
+	m_mask.setCanvasSize(w, h);
+	m_mask.drawArc(0, 0, w, h, start, end, 2);
+	drawMask(m_mask.data(), x, y, m_mask.width(), m_mask.height(), colors);
 }
 
-Painter::~Painter() {
-	delete m_buffer;
+// From libgd2
+void Painter::drawLine(int x1, int y1, int x2, int y2, uint32_t color) {
+	int dx, dy, incr1, incr2, d, x, y, xend, yend, xdirflag, ydirflag;
+	int wid;
+	int w, wstart;
+	int thick = 1;
+	
+	dx = abs(x2 - x1);
+	dy = abs(y2 - y1);
+
+	if (dx == 0) {
+		drawVLine(x1, y1, dy + 1, color);
+		return;
+	} else if (dy == 0) {
+		drawHLine(x1, y1, dx + 1, color);
+		return;
+	}
+
+	if (dy <= dx) {
+		/* More-or-less horizontal. use wid for vertical stroke */
+		/* Doug Claar: watch out for NaN in atan2 (2.0.5) */
+
+		/* 2.0.12: Michael Schwartz: divide rather than multiply;
+			  TBB: but watch out for /0! */
+		double ac = cos(atan2(dy, dx));
+		if (ac != 0) {
+			wid = thick / ac;
+		} else {
+			wid = 1;
+		}
+		if (wid == 0) {
+			wid = 1;
+		}
+		d = 2 * dy - dx;
+		incr1 = 2 * dy;
+		incr2 = 2 * (dy - dx);
+		if (x1 > x2) {
+			x = x2;
+			y = y2;
+			ydirflag = (-1);
+			xend = x1;
+		} else {
+			x = x1;
+			y = y1;
+			ydirflag = 1;
+			xend = x2;
+		}
+
+		/* Set up line thickness */
+		wstart = y - wid / 2;
+		for (w = wstart; w < wstart + wid; w++)
+			drawPixel(x, w, color);
+
+		if (((y2 - y1) * ydirflag) > 0) {
+			while (x < xend) {
+				x++;
+				if (d < 0) {
+					d += incr1;
+				} else {
+					y++;
+					d += incr2;
+				}
+				wstart = y - wid / 2;
+				for (w = wstart; w < wstart + wid; w++)
+					drawPixel(x, w, color);
+			}
+		} else {
+			while (x < xend) {
+				x++;
+				if (d < 0) {
+					d += incr1;
+				} else {
+					y--;
+					d += incr2;
+				}
+				wstart = y - wid / 2;
+				for (w = wstart; w < wstart + wid; w++)
+					drawPixel(x, w, color);
+			}
+		}
+	} else {
+		/* More-or-less vertical. use wid for horizontal stroke */
+		/* 2.0.12: Michael Schwartz: divide rather than multiply;
+		   TBB: but watch out for /0! */
+		double as = sin(atan2(dy, dx));
+		if (as != 0) {
+			wid = thick / as;
+		} else {
+			wid = 1;
+		}
+		if (wid == 0)
+			wid = 1;
+
+		d = 2 * dx - dy;
+		incr1 = 2 * dx;
+		incr2 = 2 * (dx - dy);
+		if (y1 > y2) {
+			y = y2;
+			x = x2;
+			yend = y1;
+			xdirflag = (-1);
+		} else {
+			y = y1;
+			x = x1;
+			yend = y2;
+			xdirflag = 1;
+		}
+
+		/* Set up line thickness */
+		wstart = x - wid / 2;
+		for (w = wstart; w < wstart + wid; w++)
+			drawPixel(w, y, color);
+
+		if (((x2 - x1) * xdirflag) > 0) {
+			while (y < yend) {
+				y++;
+				if (d < 0) {
+					d += incr1;
+				} else {
+					x++;
+					d += incr2;
+				}
+				wstart = x - wid / 2;
+				for (w = wstart; w < wstart + wid; w++)
+					drawPixel(w, y, color);
+			}
+		} else {
+			while (y < yend) {
+				y++;
+				if (d < 0) {
+					d += incr1;
+				} else {
+					x--;
+					d += incr2;
+				}
+				wstart = x - wid / 2;
+				for (w = wstart; w < wstart + wid; w++)
+					drawPixel(w, y, color);
+			}
+		}
+	}
+}
+
+void Painter::save() {
+	_writeBMP("/tmp/sie.bmp", m_buffer, m_width, m_height);
 }
 
 static void _writeBMP(const char *filename, const uint32_t *pixels, int width, int height) {
@@ -173,73 +361,6 @@ static void _writeBMP(const char *filename, const uint32_t *pixels, int width, i
 	}
 }
 
-// From u8g2
-void Painter::drawLine(int x1, int y1, int x2, int y2, uint32_t color) {
-	if (x1 == x2) {
-		drawVLine(x1, y1, y2 - y1 + 1, color);
-		return;
-	} else if (y1 == y2) {
-		drawHLine(x1, y1, x2 - x1 + 1, color);
-		return;
-	}
-	
-	int tmp;
-	int x,y;
-	int dx, dy;
-	int err;
-	int ystep;
-	
-	uint8_t swapxy = 0;
-	
-	if (x1 > x2) {
-		dx = x1 - x2;
-	} else {
-		dx = x2 - x1;
-	}
-	
-	if (y1 > y2) {
-		dy = y1 - y2;
-	} else {
-		dy = y2 - y1;
-	}
-	
-	if (dy > dx) {
-		swapxy = 1;
-		tmp = dx; dx = dy; dy = tmp;
-		tmp = x1; x1 = y1; y1 = tmp;
-		tmp = x2; x2 = y2; y2 = tmp;
-	}
-	
-	if (x1 > x2) {
-		tmp = x1; x1 =x2; x2 = tmp;
-		tmp = y1; y1 =y2; y2 = tmp;
-	}
-	
-	err = dx >> 1;
-	
-	if (y2 > y1) {
-		ystep = 1;
-	} else {
-		ystep = -1;
-	}
-	
-	y = y1;
-	
-	if (x2 == 0xffff)
-		x2--;
-	
-	for (x = x1; x <= x2; x++) {
-		if (swapxy == 0) {
-			drawPixel(x, y, color);
-		} else {
-			drawPixel(y, x, color);
-		}
-		
-		err -= dy;
-		
-		if (err < 0) {
-			y += ystep;
-			err += dx;
-		}
-	}
+Painter::~Painter() {
+	delete m_buffer;
 }
