@@ -241,10 +241,16 @@ int str_2ws(WSHDR *ws, const char *buffer, uint16_t max_size) {
 	return ws->body->len;
 }
 
+void ws_2str(WSHDR *ws, char *buffer, uint16_t max_size) {
+	assert(ws != nullptr && buffer != nullptr && max_size > 0);
+	size_t new_len = utf16_to_utf8(ws->body->data, ws->body->len, buffer, max_size);
+	buffer[new_len] = 0;
+}
+
 int ws_2utf8(WSHDR *ws, char *buffer, int *result_length, uint16_t max_size) {
 	assert(ws != nullptr && buffer != nullptr && max_size > 0);
 	
-	size_t new_len = utf16_to_utf8(ws->body->data, ws->body->len, buffer, max_size - 1);
+	size_t new_len = utf16_to_utf8(ws->body->data, ws->body->len, buffer, max_size);
 	buffer[new_len] = 0;
 	
 	if (result_length)
@@ -256,4 +262,12 @@ int utf8_2ws(WSHDR *ws, const char *buffer, uint16_t max_size) {
 	assert(ws != nullptr && buffer != nullptr && ws->maxlen - 1 >= max_size);
 	ws->body->len = utf8_to_utf16(buffer, strlen(buffer), ws->body->data, max_size);
 	return ws->body->len;
+}
+
+std::string ws2string(WSHDR *ws) {
+	std::string result;
+	result.resize(ws->body->len * 4);
+	int new_len = ws_2utf8(ws, &result[0], nullptr, result.size() + 1);
+	result.resize(new_len);
+	return result;
 }

@@ -3,9 +3,10 @@
 #include <cstdint>
 #include <cstddef>
 #include <functional>
+#include <string>
 
 #define NEWSGOLD 1
-// #define ELKA 1
+#define ELKA 1
 
 #ifdef ELKA
 #define SCREEN_WIDTH	240
@@ -36,8 +37,6 @@ int GetFreeRamAvail();
 /*
  * libc
  * */
-typedef int _jmp_buf[11];
-
 char *SWI_strpbrk(const char *s1, const char *s2);
 size_t SWI_strcspn(const char *s1, const char *s2);
 char *SWI_strncat(char *dest, const char *substr, size_t maxSubLen);
@@ -51,10 +50,9 @@ int SWI_memcmp(const void *m1, const void *m2, size_t n);
 void SWI_zeromem(void *dest, int n);
 void *SWI_memcpy(void *dest, const void *source, size_t cnt);
 void *SWI_memmove(void *dest, const void *source, size_t cnt);
-int SWI_setjmp(_jmp_buf env);
+int SWI_setjmp(int *env);
 int SWI_snprintf(char * param1, int n, const char *format, ...);
 void *SWI_memset(void *s, int c, size_t n);
-void *SWI_calloc(size_t nelem, size_t elsize);
 int SWI_strcmpi(const char *s1, const char *s2);
 int SWI_StrToInt(char *s, char **endp);
 int SWI_sprintf(char *buffer, const char *format, ...);
@@ -216,6 +214,7 @@ WSHDR *CreateLocalWS(WSHDR *wshdr, uint16_t *wsbody, uint16_t len);
 WSHDR *CreateWS(void *(*ws_malloc)(size_t), void (*ws_mfree)(void *), uint16_t len);
 void FreeWS(WSHDR *wshdr);
 int str_2ws(WSHDR *ws, const char *str, uint16_t size);
+void ws_2str(WSHDR *ws, char *str, uint16_t size);
 int wstrcmp(WSHDR *ws1, WSHDR *ws2);
 void wstrcpybypos(WSHDR *dest, WSHDR *src, uint16_t from, uint16_t len);
 void wsRemoveChars(WSHDR *ws, uint16_t from, uint16_t to);
@@ -225,6 +224,7 @@ uint16_t wstrchr(WSHDR *ws, uint16_t start_pos, uint16_t wchar);
 uint16_t wstrrchr(WSHDR *ws, uint16_t max_pos, uint16_t wchar);
 void wsAppendChar(WSHDR *ws, uint16_t wchar);
 int wsInsertChar(WSHDR *ws, uint16_t wchar, uint16_t pos);
+std::string ws2string(WSHDR *ws); // internal
 
 /*
  * Lock
@@ -498,3 +498,103 @@ void GUI_DisableIDLETMR();
 
 void GUI_DisableIconBar(int disable);
 void GUI_AddIconToIconBar(int pic, short *num);
+
+/*
+ * SettingsAE
+ * */
+int SettingsAE_Update_ws(WSHDR * param1, int set, char *entry, char *keyword);
+int SettingsAE_Read_ws(WSHDR * param1, int set, char *entry, char *keyword);
+int SettingsAE_SetFlag(int val,int set, char *entry, char *keyword);
+int SettingsAE_GetFlag(int *res, int set, char *entry, char *keyword);
+int SettingsAE_Update(int val, int set, char *entry, char *keyword);
+int SettingsAE_Read(int *res, int set, char *entry, char *keyword);
+void *SettingsAE_GetEntryList(int set);
+int SettingsAE_RemoveEntry(int set, char *entry, int flag);
+
+/*
+ * Obs
+ * */
+typedef int HObj;
+
+typedef struct {
+#ifdef ELKA
+	uint16_t w;
+	uint16_t h;
+	int bpnum; //For BW=1, 8bit=5, 16bit=8, 0x80 - packed
+#else
+	uint8_t w;
+	uint8_t h;
+	uint16_t bpnum; //For BW=1, 8bit=5, 16bit=8, 0x80 - packed
+#endif
+	uint8_t *bitmap;
+} IMGHDR;
+
+typedef struct {
+	int type;
+	void *func;
+} OBSevent;
+
+int CalcBitmapSize(short w,short h, char typy);
+HObj Obs_CreateObject(int uid_in, int uid_out, int prio, int msg_callback, int emb4, int sync, unsigned int *ErrorNumber);
+int Obs_DestroyObject(HObj hObj);
+int Obs_SetInput_File(HObj hObj, int unk_zero, WSHDR *path);
+int Obs_GetInputImageSize(HObj hObj, short *w, short *h);
+int Obs_SetOutputImageSize(HObj hObj, short w, short h);
+int Obs_Start(HObj hObj);
+int Obs_Output_GetPictstruct(HObj hObj, IMGHDR **img);
+int Obs_Graphics_SetClipping(HObj hObj, short x, short y, short w, short h);
+int Obs_SetRotation(HObj hObj, int angle);
+int Obs_GetInfo(HObj hObj, int unk_0or1);
+int Obs_SetScaling(HObj hObj, int unk5);
+int Obs_TranslateMessageGBS(GBS_MSG *msg, OBSevent *event_handler);
+int Obs_Pause(HObj hObj);
+int Obs_Resume(HObj hObj);
+int Obs_Stop(HObj hObj);
+int Obs_Prepare(HObj hObj);
+int Obs_SetRenderOffset(HObj hObj, short x, short y);
+int Obs_SetPosition(HObj hObj, int ms);
+int Obs_Mam_SetPurpose(HObj hObj, char purpose);
+int Obs_Sound_SetVolumeEx(HObj hObj, char vol, char delta);
+int Obs_Sound_GetVolume(HObj hObj, char *vol);
+int Obs_Sound_SetPurpose(HObj hObj, int purpose);
+
+/*
+ * Explorer
+ * */
+#ifndef NEWSGOLD
+#define UID_PLAY_SOUND 0x30
+#else
+#define UID_PLAY_SOUND 0x34
+#endif
+#define UID_ZOOM_PIC 0x2d
+
+#define UID_MP3  0x03
+#define UID_M3U  0x04
+#define UID_JAR  0x12
+#define UID_JAD  0x13
+#define UID_MID  0x18
+#define UID_AMR  0x19
+#define UID_IMY  0x1A
+#define UID_SRT  0x1C
+#define UID_AAC  0x1D
+#define UID_WAV  0x1E
+#define UID_JTS  0x20
+#define UID_XMF  0x21
+#define UID_M4A  0x22
+#define UID_BMX  0x23
+#define UID_WBMP 0x24
+#define UID_BMP  0x25
+#define UID_JPG  0x26
+#define UID_PNG  0x27
+#define UID_GIF  0x28
+#define UID_SVG  0x2B
+#define UID_3GP  0x32
+#define UID_MP4  0x33
+#define UID_SDP  0x3E
+#define UID_PVX  0x3F
+#define UID_SDT  0x40
+#define UID_LDB  0x44
+#define UID_TXT  0x57
+#define UID_URL  0x58
+
+int GetExtUidByFileName_ws(WSHDR *fn);

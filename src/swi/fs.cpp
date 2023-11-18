@@ -106,6 +106,9 @@ int FS_flush(int fd, uint32_t *errp) {
 
 long FS_lseek(int fd, uint32_t offset, uint32_t origin, uint32_t *errp, uint32_t *errp2) {
 	int ret = lseek(fd, offset, origin);
+	if (SWI_TRACE) {
+		fprintf(stderr, "[strace] lseek(%d, %d, %d) = %d\n", fd, offset, origin, ret);
+	}
 	_set_errno(ret, errp);
 	_set_errno(ret, errp2);
 	return ret;

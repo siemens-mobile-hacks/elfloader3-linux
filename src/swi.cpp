@@ -39,7 +39,7 @@ void loader_init_switab() {
 	switab_functions[0x0148]	= (void *) Sie_ShowMSG;
 	
 	// System
-	switab_functions[0x005F]	= (void *) GetFreeRamAvail,
+	switab_functions[0x005F]	= (void *) GetFreeRamAvail;
 	
 	// LIBC
 	switab_functions[0x0113]	= (void *) SWI_strpbrk;
@@ -58,9 +58,10 @@ void loader_init_switab() {
 	switab_functions[0x0162]	= (void *) SWI_setjmp;
 	switab_functions[0x011B]	= (void *) SWI_snprintf;
 	switab_functions[0x00BB]	= (void *) SWI_memset;
-	switab_functions[0x0092]	= (void *) SWI_calloc;
 	switab_functions[0x0085]	= (void *) SWI_strcmpi;
 	switab_functions[0x0054]	= (void *) SWI_StrToInt;
+	switab_functions[0x0092]	= (void *) calloc;
+	switab_functions[0x00BA]	= (void *) realloc;
 	switab_functions[0x0014]	= (void *) malloc;
 	switab_functions[0x0015]	= (void *) free;
 	switab_functions[0x0016]	= (void *) SWI_sprintf;
@@ -108,6 +109,7 @@ void loader_init_switab() {
 	switab_functions[0x0128]	= (void *) CreateWS;
 	switab_functions[0x0129]	= (void *) FreeWS;
 	switab_functions[0x016C]	= (void *) str_2ws;
+	switab_functions[0x00A3]	= (void *) ws_2str;
 	switab_functions[0x02E2]	= (void *) wstrcmp;
 	switab_functions[0x0214]	= (void *) wstrcpybypos;
 	switab_functions[0x0215]	= (void *) wsRemoveChars;
@@ -154,18 +156,56 @@ void loader_init_switab() {
 	switab_functions[0x0150]	= (void *) GUI_DrawRoundedFrame;
 	switab_functions[0x01B3]	= (void *) GUI_DrawLine;
 	switab_functions[0x01B4]	= (void *) GUI_DrawRectangle;
-	switab_functions[0x0202]	= (void *) GUI_DrawTriangle,
-	switab_functions[0x0203]	= (void *) GUI_DrawPixel,
-	switab_functions[0x0204]	= (void *) GUI_DrawArc,
+	switab_functions[0x0202]	= (void *) GUI_DrawTriangle;
+	switab_functions[0x0203]	= (void *) GUI_DrawPixel;
+	switab_functions[0x0204]	= (void *) GUI_DrawArc;
 	switab_functions[0x012E]	= (void *) GUI_GetPaletteAdrByColorIndex;
 	switab_functions[0x012F]	= (void *) GUI_GetRGBcolor;
 	switab_functions[0x0130]	= (void *) GUI_GetRGBbyPaletteAdr;
 	switab_functions[0x0131]	= (void *) GUI_SetColor;
-	switab_functions[0x017D]	= (void *) GUI_SetIDLETMR,
-	switab_functions[0x017E]	= (void *) GUI_RestartIDLETMR,
-	switab_functions[0x017F]	= (void *) GUI_DisableIDLETMR,
-	switab_functions[0x023B]	= (void *) GUI_DisableIconBar,
-	switab_functions[0x0027]	= (void *) GUI_AddIconToIconBar,
+	switab_functions[0x017D]	= (void *) GUI_SetIDLETMR;
+	switab_functions[0x017E]	= (void *) GUI_RestartIDLETMR;
+	switab_functions[0x017F]	= (void *) GUI_DisableIDLETMR;
+	switab_functions[0x023B]	= (void *) GUI_DisableIconBar;
+	switab_functions[0x0027]	= (void *) GUI_AddIconToIconBar;
+	
+	// SettingsAE
+	switab_functions[0x02E4]	= (void *) SettingsAE_Update_ws;
+	switab_functions[0x02E5]	= (void *) SettingsAE_Read_ws;
+	switab_functions[0x02E6]	= (void *) SettingsAE_SetFlag;
+	switab_functions[0x02E7]	= (void *) SettingsAE_GetFlag;
+	switab_functions[0x02E8]	= (void *) SettingsAE_Update;
+	switab_functions[0x02E9]	= (void *) SettingsAE_Read;
+	switab_functions[0x02EA]	= (void *) SettingsAE_GetEntryList;
+	switab_functions[0x02EB]	= (void *) SettingsAE_RemoveEntry;
+	
+	// Obs
+	switab_functions[0x0258]	= (void *) CalcBitmapSize;
+	switab_functions[0x0259]	= (void *) Obs_CreateObject;
+	switab_functions[0x025A]	= (void *) Obs_DestroyObject;
+	switab_functions[0x025B]	= (void *) Obs_SetInput_File;
+	switab_functions[0x025C]	= (void *) Obs_GetInputImageSize;
+	switab_functions[0x025D]	= (void *) Obs_SetOutputImageSize;
+	switab_functions[0x025E]	= (void *) Obs_Start;
+	switab_functions[0x025F]	= (void *) Obs_Output_GetPictstruct;
+	switab_functions[0x0260]	= (void *) Obs_Graphics_SetClipping;
+	switab_functions[0x0261]	= (void *) Obs_SetRotation;
+	switab_functions[0x0262]	= (void *) Obs_GetInfo;
+	switab_functions[0x0263]	= (void *) Obs_SetScaling;
+	switab_functions[0x0264]	= (void *) Obs_TranslateMessageGBS;
+	switab_functions[0x0265]	= (void *) Obs_Pause;
+	switab_functions[0x0266]	= (void *) Obs_Resume;
+	switab_functions[0x0267]	= (void *) Obs_Stop;
+	switab_functions[0x0268]	= (void *) Obs_Prepare;
+	switab_functions[0x0269]	= (void *) Obs_SetRenderOffset;
+	switab_functions[0x026A]	= (void *) Obs_SetPosition;
+	switab_functions[0x026B]	= (void *) Obs_Mam_SetPurpose;
+	switab_functions[0x026C]	= (void *) Obs_Sound_SetVolumeEx;
+	switab_functions[0x026D]	= (void *) Obs_Sound_GetVolume;
+	switab_functions[0x026E]	= (void *) Obs_Sound_SetPurpose;
+	
+	// Explorer
+	switab_functions[0x02E1]	= (void *) GetExtUidByFileName_ws;
 	
 	// Other
 	switab_functions[0x2EE]		= (void *) Sie_elfclose;

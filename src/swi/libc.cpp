@@ -1,9 +1,13 @@
-#include "../swi.h"
+#include "swi.h"
+#include "log.h"
 
 #include <stdarg.h>
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
+#include <csetjmp>
+
+static std::vector<std::jmp_buf> jmp_buffers;
 
 char *SWI_strpbrk(const char *s1, const char *s2) {
 	return strpbrk(const_cast<char *>(s1), s2);
@@ -57,10 +61,9 @@ void *SWI_memmove(void *dest, const void *source, size_t cnt) {
 	return memmove(dest, source, cnt);
 }
 
-int SWI_setjmp(_jmp_buf env) {
-	fprintf(stderr, "SWI_setjmp wtf\n");
-	abort();
-	return -1;
+int SWI_setjmp(int *env) {
+	LOGD("SWI: setjmp\n");
+	return 0;
 }
 
 int SWI_snprintf(char *buffer, int n, const char *format, ...) {
@@ -74,10 +77,6 @@ int SWI_snprintf(char *buffer, int n, const char *format, ...) {
 
 void *SWI_memset(void *s, int c, size_t n) {
 	return memset(s, c, n);
-}
-
-void *SWI_calloc(size_t nelem, size_t elsize) {
-	return calloc(nelem, elsize);
 }
 
 int SWI_strcmpi(const char *s1, const char *s2) {
