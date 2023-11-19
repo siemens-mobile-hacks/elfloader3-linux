@@ -512,10 +512,8 @@ void *SettingsAE_GetEntryList(int set);
 int SettingsAE_RemoveEntry(int set, char *entry, int flag);
 
 /*
- * Obs
+ * Images
  * */
-typedef int HObj;
-
 typedef struct {
 #ifdef ELKA
 	uint16_t w;
@@ -529,34 +527,49 @@ typedef struct {
 	uint8_t *bitmap;
 } IMGHDR;
 
+enum {
+	IMGHDR_TYPE_WB		= 1,
+	IMGHDR_TYPE_RGB332	= 5,
+	IMGHDR_TYPE_RGB565	= 8,
+	IMGHDR_TYPE_RGB8888	= 10
+};
+
+IMGHDR *IMG_LoadAny(const std::string &path);
+IMGHDR *IMG_CreateIMGHDRFromPngFile(const char *fname, int type);
+int IMG_CalcBitmapSize(short w,short h, char typy);
+
+/*
+ * Obs
+ * */
+struct HObj;
+
 typedef struct {
 	int type;
 	void *func;
 } OBSevent;
 
-int CalcBitmapSize(short w,short h, char typy);
-HObj Obs_CreateObject(int uid_in, int uid_out, int prio, int msg_callback, int emb4, int sync, unsigned int *ErrorNumber);
-int Obs_DestroyObject(HObj hObj);
-int Obs_SetInput_File(HObj hObj, int unk_zero, WSHDR *path);
-int Obs_GetInputImageSize(HObj hObj, short *w, short *h);
-int Obs_SetOutputImageSize(HObj hObj, short w, short h);
-int Obs_Start(HObj hObj);
-int Obs_Output_GetPictstruct(HObj hObj, IMGHDR **img);
-int Obs_Graphics_SetClipping(HObj hObj, short x, short y, short w, short h);
-int Obs_SetRotation(HObj hObj, int angle);
-int Obs_GetInfo(HObj hObj, int unk_0or1);
-int Obs_SetScaling(HObj hObj, int unk5);
+HObj *Obs_CreateObject(int uid_in, int uid_out, int prio, int msg_callback, int emb4, int sync, int *ErrorNumber);
+int Obs_DestroyObject(HObj *hObj);
+int Obs_SetInput_File(HObj *hObj, int unk_zero, WSHDR *path);
+int Obs_GetInputImageSize(HObj *hObj, short *w, short *h);
+int Obs_SetOutputImageSize(HObj *hObj, short w, short h);
+int Obs_Start(HObj *hObj);
+int Obs_Output_GetPictstruct(HObj *hObj, IMGHDR **img);
+int Obs_Graphics_SetClipping(HObj *hObj, short x, short y, short w, short h);
+int Obs_SetRotation(HObj *hObj, int angle);
+int Obs_GetInfo(HObj *hObj, int unk_0or1);
+int Obs_SetScaling(HObj *hObj, int unk5);
 int Obs_TranslateMessageGBS(GBS_MSG *msg, OBSevent *event_handler);
-int Obs_Pause(HObj hObj);
-int Obs_Resume(HObj hObj);
-int Obs_Stop(HObj hObj);
-int Obs_Prepare(HObj hObj);
-int Obs_SetRenderOffset(HObj hObj, short x, short y);
-int Obs_SetPosition(HObj hObj, int ms);
-int Obs_Mam_SetPurpose(HObj hObj, char purpose);
-int Obs_Sound_SetVolumeEx(HObj hObj, char vol, char delta);
-int Obs_Sound_GetVolume(HObj hObj, char *vol);
-int Obs_Sound_SetPurpose(HObj hObj, int purpose);
+int Obs_Pause(HObj *hObj);
+int Obs_Resume(HObj *hObj);
+int Obs_Stop(HObj *hObj);
+int Obs_Prepare(HObj *hObj);
+int Obs_SetRenderOffset(HObj *hObj, short x, short y);
+int Obs_SetPosition(HObj *hObj, int ms);
+int Obs_Mam_SetPurpose(HObj *hObj, char purpose);
+int Obs_Sound_SetVolumeEx(HObj *hObj, char vol, char delta);
+int Obs_Sound_GetVolume(HObj *hObj, char *vol);
+int Obs_Sound_SetPurpose(HObj *hObj, int purpose);
 
 /*
  * Explorer

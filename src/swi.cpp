@@ -180,7 +180,6 @@ void loader_init_switab() {
 	switab_functions[0x02EB]	= (void *) SettingsAE_RemoveEntry;
 	
 	// Obs
-	switab_functions[0x0258]	= (void *) CalcBitmapSize;
 	switab_functions[0x0259]	= (void *) Obs_CreateObject;
 	switab_functions[0x025A]	= (void *) Obs_DestroyObject;
 	switab_functions[0x025B]	= (void *) Obs_SetInput_File;
@@ -203,6 +202,10 @@ void loader_init_switab() {
 	switab_functions[0x026C]	= (void *) Obs_Sound_SetVolumeEx;
 	switab_functions[0x026D]	= (void *) Obs_Sound_GetVolume;
 	switab_functions[0x026E]	= (void *) Obs_Sound_SetPurpose;
+	
+	// Images
+	switab_functions[0x0258]	= (void *) IMG_CalcBitmapSize;
+	switab_functions[0x01E9]	= (void *) IMG_CreateIMGHDRFromPngFile,
 	
 	// Explorer
 	switab_functions[0x02E1]	= (void *) GetExtUidByFileName_ws;

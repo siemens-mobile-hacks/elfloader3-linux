@@ -52,6 +52,8 @@ std::string SieFs::sie2path(const std::string &siemens_path) {
 		
 		if (m_drives.find(drive) != m_drives.end()) {
 			std::string unix_path = m_drives[drive] + "/" + path;
+			if (!isFileExists(unix_path))
+				unix_path = caseInsensitivePath(unix_path);
 			// LOGD("sie2path: %s -> %s\n", siemens_path.c_str(), unix_path.c_str());
 			return unix_path;
 		}
@@ -59,4 +61,34 @@ std::string SieFs::sie2path(const std::string &siemens_path) {
 	LOGE("Invalid siemens path: %s\n", siemens_path.c_str());
 	abort();
 	return "";
+}
+
+std::string SieFs::caseInsensitivePath(const std::string &path) {
+	std::string tmp_path = "";
+	auto parts = strSplit("/", path);
+	int i = 0;
+	for (auto &part: parts) {
+		if (part == "") {
+			i++;
+			continue;
+		}
+		
+		bool resolved = false;
+		for (const auto &entry: std::filesystem::directory_iterator(tmp_path == "" ? "/" : tmp_path)) {
+			if (i < parts.size() - 1 && !entry.is_directory())
+				continue;
+			
+			if (strcasecmp(entry.path().filename().c_str(), part.c_str()) == 0) {
+				tmp_path += "/" + std::string(entry.path().filename().c_str());
+				resolved = true;
+				break;
+			}
+		}
+		
+		if (!resolved)
+			return path;
+		
+		i++;
+	}
+	return tmp_path;
 }

@@ -15,6 +15,7 @@ add_link_options(-static)
 
 add_executable(elfloader3
 	src/main.cpp
+	src/stb.cpp
 	src/stubs.cpp
 	src/utils.cpp
 	src/charset.cpp
@@ -33,6 +34,7 @@ add_executable(elfloader3
 	src/swi/gui.cpp
 	src/swi/csm.cpp
 	src/swi/obs.cpp
+	src/swi/images.cpp
 	src/swi/settings.cpp
 	src/swi/explorer.cpp
 	src/swi/sys.cpp
@@ -48,7 +50,7 @@ add_executable(elfloader3
 	src/elfloader/log.c
 )
 
-target_include_directories(elfloader3 PUBLIC third_party/micro-gl/include)
+target_include_directories(elfloader3 PUBLIC third_party/stb)
 target_include_directories(elfloader3 SYSTEM PUBLIC src)
 
 # target_include_directories(elfloader3 PUBLIC ${SDL2_INCLUDE_DIR})
