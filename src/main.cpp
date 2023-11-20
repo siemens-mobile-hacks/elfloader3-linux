@@ -76,27 +76,29 @@ int main(int argc, char **argv) {
 	loader_set_debug(false);
 	loader_gdb_init();
 	
-	LOGD("Loading ELF: %s\n", filename.c_str());
-	
-	printf("---------------------------------------------------------\n");
-	Elf32_Exec *ex = loader_elf_open(filename.c_str());
-	if (!ex) {
-		LOGD("loader_elf_open failed.\n");
-		return 1;
-	}
-	
-	LOGD("run INIT array\n");
-	loader_run_INIT_Array(ex);
-	
-	std::string fname = SieFs::path2sie(filename);
-	
-	auto entry = (int (*)(const char *, const char *, const void *)) loader_elf_entry(ex);
-	printf("run entry at %p (fname=%s)\n", entry, fname.c_str());
-	int ret = entry(fname.c_str(), "", nullptr);
-	LOGD("entry ret = %d\n", ret);
+	GBS_RunInContext(MMI_CEPID, [=]() {
+		LOGD("Loading ELF: %s\n", filename.c_str());
+		
+		printf("---------------------------------------------------------\n");
+		Elf32_Exec *ex = loader_elf_open(filename.c_str());
+		if (!ex) {
+			LOGE("loader_elf_open failed.\n");
+			return;
+		}
+		
+		LOGD("run INIT array\n");
+		loader_run_INIT_Array(ex);
+		
+		std::string fname = SieFs::path2sie(filename);
+		
+		auto entry = (int (*)(const char *, const char *, const void *)) loader_elf_entry(ex);
+		printf("run entry at %p (fname=%s)\n", entry, fname.c_str());
+		int ret = entry(fname.c_str(), "", nullptr);
+		LOGD("entry ret = %d\n", ret);
+	});
 	
 	LOGD("Running loop...\n");
-	uv_run(loop, UV_RUN_DEFAULT);
+	while (uv_run(loop, UV_RUN_DEFAULT) == 0);
 	
 	return 0;
 }

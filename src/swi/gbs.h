@@ -6,6 +6,7 @@
 #include <semaphore>
 #include <queue>
 #include <thread>
+#include <functional>
 
 class GbsProcess {
 	protected:
@@ -16,6 +17,7 @@ class GbsProcess {
 		std::binary_semaphore m_sem{0};
 		std::mutex m_mutex;
 		std::queue<GBS_MSG *> m_queue;
+		std::queue<std::function<void()>> m_run_queue;
 		bool m_stop = false;
 	
 	public:
@@ -23,6 +25,7 @@ class GbsProcess {
 		~GbsProcess();
 		bool popMessage(GBS_MSG *msg);
 		void sendMessage(GBS_MSG *msg);
+		void runInContext(std::function<void()> callback);
 		std::thread::id threadId();
 		void run();
 		void kill();

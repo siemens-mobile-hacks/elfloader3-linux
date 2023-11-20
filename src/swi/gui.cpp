@@ -22,33 +22,6 @@ void GUI_Init() {
 	painter = new Painter(SCREEN_WIDTH, SCREEN_HEIGHT);
 }
 
-void GUI_WalkRenderTree(const std::function<bool(GUI_RAM *)> &callback, bool reverse) {
-	CSMROOT *root = CSM_root();
-	if (reverse) {
-		CSM_RAM *cursor = (CSM_RAM *) root->csm_q->csm.last;
-		while (cursor) {
-			GUI_RAM *gui_cursor = (GUI_RAM *) cursor->gui_ll.last;
-			while (gui_cursor) {
-				if (!callback(gui_cursor))
-					return;
-				gui_cursor = gui_cursor->prev;
-			}
-			cursor = cursor->prev;
-		}
-	} else {
-		CSM_RAM *cursor = (CSM_RAM *) root->csm_q->csm.first;
-		while (cursor) {
-			GUI_RAM *gui_cursor = (GUI_RAM *) cursor->gui_ll.first;
-			while (gui_cursor) {
-				if (!callback(gui_cursor))
-					return;
-				gui_cursor = gui_cursor->next;
-			}
-			cursor = cursor->next;
-		}
-	}
-}
-
 void GUI_SyncStates() {
 	id2gui.clear();
 	id2gui_index.clear();
@@ -252,6 +225,36 @@ void GUI_DrawArc(int x1, int y1, int x2, int y2, int start, int end, int flags, 
 	painter->drawArc(x1, y1, x2 - x1 + 1, y2 - y1 + 1, start, end, GUI_Color2Int(brush), GUI_Color2Int(pen));
 }
 
+void GUI_DrawObject(DRWOBJ *param1) {
+	fprintf(stderr, "%s not implemented!\n", __func__);
+//	abort();
+}
+
+void GUI_SetPropTo_Obj1(DRWOBJ *drw, void *rect, int rect_flag, WSHDR *wshdr, int font, int text_flag) {
+	fprintf(stderr, "%s not implemented!\n", __func__);
+	abort();
+}
+
+void GUI_FreeDrawObject_subobj(DRWOBJ *drw) {
+	fprintf(stderr, "%s not implemented!\n", __func__);
+	abort();
+}
+
+void GUI_ObjSetColor(DRWOBJ *drw, const char *color1, const char *color2) {
+	fprintf(stderr, "%s not implemented!\n", __func__);
+//	abort();
+}
+
+void GUI_SetProp2ImageOrCanvas(DRWOBJ *drw, RECT *rect, int zero, IMGHDR *img, int bleed_x, int bleed_y) {
+	fprintf(stderr, "%s not implemented!\n", __func__);
+//	abort();
+}
+
+void GUI_SetPropTo_Obj5(DRWOBJ *drw, RECT *rect, int zero, IMGHDR *img) {
+	fprintf(stderr, "%s not implemented!\n", __func__);
+//	abort();
+}
+
 uint32_t GUI_Color2Int(const char *color) {
 	const uint8_t *u8 = reinterpret_cast<const uint8_t *>(color);
 	uint32_t a = static_cast<uint32_t>(u8[3]) * 0xFF / 0x64;
@@ -313,4 +316,18 @@ void GUI_DisableIconBar(int disable) {
 
 void GUI_AddIconToIconBar(int pic, short *num) {
 	// stub
+}
+
+void GUI_StoreXYWHtoRECT(RECT *rect, int x, int y, int w, int h) {
+	rect->x = x;
+	rect->y = y;
+	rect->x2 = x + w - 1;
+	rect->y2 = y + h - 1;
+}
+
+void GUI_StoreXYXYtoRECT(RECT *rect, int x, int y, int x2, int y2) {
+	rect->x = x;
+	rect->y = y;
+	rect->x2 = x2;
+	rect->y2 = y2;
 }

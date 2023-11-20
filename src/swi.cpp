@@ -154,6 +154,12 @@ void loader_init_switab() {
 	switab_functions[0x0202]	= (void *) GUI_DrawTriangle;
 	switab_functions[0x0203]	= (void *) GUI_DrawPixel;
 	switab_functions[0x0204]	= (void *) GUI_DrawArc;
+	switab_functions[0x012A]	= (void *) GUI_DrawObject;
+	switab_functions[0x0149]	= (void *) GUI_SetPropTo_Obj1;
+	switab_functions[0x014A]	= (void *) GUI_FreeDrawObject_subobj;
+	switab_functions[0x014B]	= (void *) GUI_ObjSetColor;
+	switab_functions[0x0201]	= (void *) GUI_SetProp2ImageOrCanvas;
+	switab_functions[0x0151]	= (void *) GUI_SetPropTo_Obj5;
 	switab_functions[0x012E]	= (void *) GUI_GetPaletteAdrByColorIndex;
 	switab_functions[0x012F]	= (void *) GUI_GetRGBcolor;
 	switab_functions[0x0130]	= (void *) GUI_GetRGBbyPaletteAdr;
@@ -163,6 +169,8 @@ void loader_init_switab() {
 	switab_functions[0x017F]	= (void *) GUI_DisableIDLETMR;
 	switab_functions[0x023B]	= (void *) GUI_DisableIconBar;
 	switab_functions[0x0027]	= (void *) GUI_AddIconToIconBar;
+	switab_functions[0x0133]	= (void *) GUI_StoreXYWHtoRECT;
+	switab_functions[0x0134]	= (void *) GUI_StoreXYXYtoRECT;
 	
 	// SettingsAE
 	switab_functions[0x02E4]	= (void *) SettingsAE_Update_ws;
@@ -199,21 +207,21 @@ void loader_init_switab() {
 	switab_functions[0x026E]	= (void *) Obs_Sound_SetPurpose;
 	
 	// GBS
-	switab_functions[0x004D]	= (void *) GBS_StartTimerProc,
-	switab_functions[0x0143]	= (void *) GBS_StartTimer,
-	switab_functions[0x0144]	= (void *) GBS_StopTimer,
-	switab_functions[0x01A6]	= (void *) GBS_IsTimerRunning,
-	switab_functions[0x0105]	= (void *) GBS_CreateProc,
-	switab_functions[0x0145]	= (void *) GBS_GetCurCepid,
-	switab_functions[0x0154]	= (void *) GBS_KillProc,
-	switab_functions[0x0104]	= (void *) GBS_PendMessage,
-	switab_functions[0x0100]	= (void *) GBS_SendMessage,
-	switab_functions[0x0101]	= (void *) GBS_ReciveMessage,
-	switab_functions[0x0102]	= (void *) GBS_AcceptMessage,
-	switab_functions[0x0103]	= (void *) GBS_ClearMessage,
-	switab_functions[0x0153]	= (void *) GBS_RecActDstMessage,
-	switab_functions[0x0185]	= (void *) GBS_WaitForMsg,
-	switab_functions[0x018C]	= (void *) GBS_DelTimer,
+	switab_functions[0x004D]	= (void *) GBS_StartTimerProc;
+	switab_functions[0x0143]	= (void *) GBS_StartTimer;
+	switab_functions[0x0144]	= (void *) GBS_StopTimer;
+	switab_functions[0x01A6]	= (void *) GBS_IsTimerRunning;
+	switab_functions[0x0105]	= (void *) GBS_CreateProc;
+	switab_functions[0x0145]	= (void *) GBS_GetCurCepid;
+	switab_functions[0x0154]	= (void *) GBS_KillProc;
+	switab_functions[0x0104]	= (void *) GBS_PendMessage;
+	switab_functions[0x0100]	= (void *) GBS_SendMessage;
+	switab_functions[0x0101]	= (void *) GBS_ReciveMessage;
+	switab_functions[0x0102]	= (void *) GBS_AcceptMessage;
+	switab_functions[0x0103]	= (void *) GBS_ClearMessage;
+	switab_functions[0x0153]	= (void *) GBS_RecActDstMessage;
+	switab_functions[0x0185]	= (void *) GBS_WaitForMsg;
+	switab_functions[0x018C]	= (void *) GBS_DelTimer;
 	
 	// Images
 	switab_functions[0x0258]	= (void *) IMG_CalcBitmapSize;

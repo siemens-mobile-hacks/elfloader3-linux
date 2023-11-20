@@ -280,10 +280,11 @@ typedef struct {
 typedef void (*GbsProcCallback)(void);
 typedef void (*GbsTimerCallback)(GBSTMR *);
 
-void GBS_StartTimerProc(void *htimer, long ms, GbsTimerCallback callback);
+void GBS_StartTimerProc(GBSTMR *tmr, long ms, GbsTimerCallback callback);
 void GBS_StartTimer(GBSTMR *tmr, int ms, int msg, int unk, int cepid);
 void GBS_StopTimer(GBSTMR *tmr);
 int GBS_IsTimerRunning(GBSTMR * param1);
+void GBS_RunInContext(int cepid, std::function<void()> callback);
 void GBS_CreateProc(int cepid, const char *name, GbsProcCallback on_msg, int prio, int unk_zero);
 int GBS_GetCurCepid(void);
 void GBS_KillProc(int cepid);
@@ -388,6 +389,33 @@ void CSM_Init();
 CSM_RAM *CSM_Current();
 
 /*
+ * Images
+ * */
+typedef struct {
+#ifdef ELKA
+	uint16_t w;
+	uint16_t h;
+	int bpnum; //For BW=1, 8bit=5, 16bit=8, 0x80 - packed
+#else
+	uint8_t w;
+	uint8_t h;
+	uint16_t bpnum; //For BW=1, 8bit=5, 16bit=8, 0x80 - packed
+#endif
+	uint8_t *bitmap;
+} IMGHDR;
+
+enum {
+	IMGHDR_TYPE_WB		= 1,
+	IMGHDR_TYPE_RGB332	= 5,
+	IMGHDR_TYPE_RGB565	= 8,
+	IMGHDR_TYPE_RGB8888	= 10
+};
+
+IMGHDR *IMG_LoadAny(const std::string &path);
+IMGHDR *IMG_CreateIMGHDRFromPngFile(const char *fname, int type);
+int IMG_CalcBitmapSize(short w,short h, char typy);
+
+/*
  * GUI
  * */
 enum {
@@ -402,6 +430,10 @@ typedef struct {
 	short x2;
 	short y2;
 } RECT;
+
+typedef struct {
+	char dummy[0x24];
+} DRWOBJ;
 
 typedef struct GUI GUI;
 
@@ -519,6 +551,13 @@ void GUI_DrawRectangle(int x, int y, int x2, int y2, int flags, const char *pen,
 void GUI_DrawTriangle(int x1, int y1, int x2, int y2, int x3, int y3, int flags, char *pen, char *brush);
 void GUI_DrawPixel(int x, int y, const char *color);
 void GUI_DrawArc(int x1, int y1, int x2, int y2, int start, int end, int flags, char *pen, char *brush);
+void GUI_DrawObject(DRWOBJ *drw);
+
+void GUI_SetPropTo_Obj1(DRWOBJ *drw, void *rect, int rect_flag, WSHDR *wshdr, int font, int text_flag);
+void GUI_FreeDrawObject_subobj(DRWOBJ *drw);
+void GUI_ObjSetColor(DRWOBJ *drw, const char *color1, const char *color2);
+void GUI_SetProp2ImageOrCanvas(DRWOBJ *drw, RECT *rect, int zero, IMGHDR *img, int bleed_x, int bleed_y);
+void GUI_SetPropTo_Obj5(DRWOBJ *drw, RECT *rect, int zero, IMGHDR *img);
 
 char *GUI_GetPaletteAdrByColorIndex(int index);
 void GUI_GetRGBcolor(int index, char *dest);
@@ -538,6 +577,9 @@ void GUI_DisableIDLETMR();
 void GUI_DisableIconBar(int disable);
 void GUI_AddIconToIconBar(int pic, short *num);
 
+void GUI_StoreXYWHtoRECT(RECT *rect, int x, int y, int w, int h);
+void GUI_StoreXYXYtoRECT(RECT *rect, int x, int y, int x2, int y2);
+
 /*
  * SettingsAE
  * */
@@ -549,33 +591,6 @@ int SettingsAE_Update(int val, int set, char *entry, char *keyword);
 int SettingsAE_Read(int *res, int set, char *entry, char *keyword);
 void *SettingsAE_GetEntryList(int set);
 int SettingsAE_RemoveEntry(int set, char *entry, int flag);
-
-/*
- * Images
- * */
-typedef struct {
-#ifdef ELKA
-	uint16_t w;
-	uint16_t h;
-	int bpnum; //For BW=1, 8bit=5, 16bit=8, 0x80 - packed
-#else
-	uint8_t w;
-	uint8_t h;
-	uint16_t bpnum; //For BW=1, 8bit=5, 16bit=8, 0x80 - packed
-#endif
-	uint8_t *bitmap;
-} IMGHDR;
-
-enum {
-	IMGHDR_TYPE_WB		= 1,
-	IMGHDR_TYPE_RGB332	= 5,
-	IMGHDR_TYPE_RGB565	= 8,
-	IMGHDR_TYPE_RGB8888	= 10
-};
-
-IMGHDR *IMG_LoadAny(const std::string &path);
-IMGHDR *IMG_CreateIMGHDRFromPngFile(const char *fname, int type);
-int IMG_CalcBitmapSize(short w,short h, char typy);
 
 /*
  * Obs
