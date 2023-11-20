@@ -176,7 +176,7 @@ int Obs_Prepare(HObj *hObj) {
 	return 0;
 }
 
-int Obs_SetPosition(HObj *hObj,int ms) {
+int Obs_SetPosition(HObj *hObj, int ms) {
 	fprintf(stderr, "%s not implemented!\n", __func__);
 	abort();
 	return 0;

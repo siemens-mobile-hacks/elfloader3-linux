@@ -1,17 +1,12 @@
 cmake_minimum_required(VERSION 3.15)
 
-include(./toolchain.cmake)
+include(${CMAKE_CURRENT_BINARY_DIR}/toolchain.cmake)
+include(${CMAKE_CURRENT_BINARY_DIR}/libuv.cmake)
 
 project(elfloader3 LANGUAGES C ASM CXX)
 
-set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_C_STANDARD 11)
-
-add_compile_options(-Wno-narrowing -g)
-add_link_options(-static)
-
-# find_file(SDL2_INCLUDE_DIR NAME SDL.h HINTS SDL2)
-# find_library(SDL2_LIBRARY NAME SDL2)
 
 add_executable(elfloader3
 	src/main.cpp
@@ -37,6 +32,7 @@ add_executable(elfloader3
 	src/swi/images.cpp
 	src/swi/settings.cpp
 	src/swi/explorer.cpp
+	src/swi/gbs.cpp
 	src/swi/sys.cpp
 	src/swi/ws.cpp
 	src/swi/ws_printf.cpp
@@ -50,8 +46,11 @@ add_executable(elfloader3
 	src/elfloader/log.c
 )
 
+target_compile_options(elfloader3 PUBLIC -Wno-narrowing -g)
+target_link_options(elfloader3 PUBLIC -static)
+
+target_include_directories(elfloader3 PUBLIC third_party/libuv/include)
 target_include_directories(elfloader3 PUBLIC third_party/stb)
 target_include_directories(elfloader3 SYSTEM PUBLIC src)
-
-# target_include_directories(elfloader3 PUBLIC ${SDL2_INCLUDE_DIR})
-# target_link_libraries(elfloader3 ${SDL2_LIBRARY})
+target_link_directories(elfloader3 PUBLIC .)
+target_link_libraries(elfloader3 -luv)

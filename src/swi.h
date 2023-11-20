@@ -245,18 +245,49 @@ void MutexUnlock(MUTEX *mtx);
 /*
  * GBS
  * */
+#define MMI_CEPID 0x4209
+
 typedef struct {
 #ifdef NEWSGOLD
-  int pid_from;
-  int msg;
+	int pid_from;
+	int msg;
 #else
-  short pid_from;
-  short msg;
+	short pid_from;
+	short msg;
 #endif
-  int submess;
-  void *data0;
-  void *data1;
+	int submess;
+	void *data0;
+	void *data1;
 } GBS_MSG;
+
+typedef struct {
+	int param0;
+	int param1;
+	int param2;
+	int param3;
+	int param4;
+	int param5;
+	int param6;
+} GBSTMR;
+
+typedef void (*GbsProcCallback)(void);
+typedef void (*GbsTimerCallback)(GBSTMR *);
+
+void GBS_StartTimerProc(void *htimer, long ms, GbsTimerCallback callback);
+void GBS_StartTimer(GBSTMR *tmr, int ms, int msg, int unk, int cepid);
+void GBS_StopTimer(GBSTMR *tmr);
+int GBS_IsTimerRunning(GBSTMR * param1);
+void GBS_CreateProc(int cepid, const char *name, GbsProcCallback on_msg, int prio, int unk_zero);
+int GBS_GetCurCepid(void);
+void GBS_KillProc(int cepid);
+void GBS_PendMessage(GBS_MSG * param1);
+void GBS_SendMessage(int cepid_to, int msg, int submess, void *data0, void *data1);
+int GBS_ReciveMessage(GBS_MSG * param1);
+void GBS_AcceptMessage(void);
+void GBS_ClearMessage(void);
+int GBS_RecActDstMessage(GBS_MSG * param1);
+int GBS_WaitForMsg(const int *msg_list, int msgs_num, GBS_MSG* param3, int timeout);
+void GBS_DelTimer(GBSTMR * param1);
 
 /*
  * LinkedList
@@ -337,6 +368,7 @@ typedef struct {
 	CSMQ *csm_q;
 } CSMROOT;
 
+void GBS_Init();
 CSMROOT *CSM_root();
 int CreateCSM(const CSM_DESC *desc, const void *default_value, int param3);
 CSM_RAM *FindCSMbyID(int id);

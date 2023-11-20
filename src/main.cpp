@@ -4,6 +4,7 @@
 #include <unistd.h>
 #include <string>
 #include <filesystem>
+#include <uv.h>
 
 #include "elfloader/loader.h"
 #include "elfloader/env.h"
@@ -63,6 +64,9 @@ int main(int argc, char **argv) {
 	loader_setenv("LD_LIBRARY_PATH", library_path_env.c_str(), true);
 	LOGD("EL3_LIBRARY_PATH: %s\n", loader_getenv("LD_LIBRARY_PATH"));
 	
+	auto *loop = uv_default_loop();
+	
+	GBS_Init();
 	Theme::init();
 	CSM_Init();
 	GUI_Init();
@@ -73,26 +77,25 @@ int main(int argc, char **argv) {
 	
 	LOGD("Loading ELF: %s\n", filename.c_str());
 	
-	for (int i = 0; i < 1; i++) {
-		printf("---------------------------------------------------------\n");
-		Elf32_Exec *ex = loader_elf_open(filename.c_str());
-		if (!ex) {
-			LOGD("loader_elf_open failed.\n");
-			return 1;
-		}
-		
-		LOGD("run INIT array\n");
-		loader_run_INIT_Array(ex);
-		
-		std::string fname = SieFs::path2sie(filename);
-		
-		auto entry = (int (*)(const char *, const char *, const void *)) loader_elf_entry(ex);
-		printf("run entry at %p (fname=%s)\n", entry, fname.c_str());
-		int ret = entry(fname.c_str(), "", nullptr);
-		LOGD("entry ret = %d\n", ret);
+	printf("---------------------------------------------------------\n");
+	Elf32_Exec *ex = loader_elf_open(filename.c_str());
+	if (!ex) {
+		LOGD("loader_elf_open failed.\n");
+		return 1;
 	}
 	
-	// loader_elf_close(ex);
+	LOGD("run INIT array\n");
+	loader_run_INIT_Array(ex);
+	
+	std::string fname = SieFs::path2sie(filename);
+	
+	auto entry = (int (*)(const char *, const char *, const void *)) loader_elf_entry(ex);
+	printf("run entry at %p (fname=%s)\n", entry, fname.c_str());
+	int ret = entry(fname.c_str(), "", nullptr);
+	LOGD("entry ret = %d\n", ret);
+	
+	LOGD("Running loop...\n");
+	uv_run(loop, UV_RUN_DEFAULT);
 	
 	return 0;
 }

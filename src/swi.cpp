@@ -203,6 +203,23 @@ void loader_init_switab() {
 	switab_functions[0x026D]	= (void *) Obs_Sound_GetVolume;
 	switab_functions[0x026E]	= (void *) Obs_Sound_SetPurpose;
 	
+	// GBS
+	switab_functions[0x004D]	= (void *) GBS_StartTimerProc,
+	switab_functions[0x0143]	= (void *) GBS_StartTimer,
+	switab_functions[0x0144]	= (void *) GBS_StopTimer,
+	switab_functions[0x01A6]	= (void *) GBS_IsTimerRunning,
+	switab_functions[0x0105]	= (void *) GBS_CreateProc,
+	switab_functions[0x0145]	= (void *) GBS_GetCurCepid,
+	switab_functions[0x0154]	= (void *) GBS_KillProc,
+	switab_functions[0x0104]	= (void *) GBS_PendMessage,
+	switab_functions[0x0100]	= (void *) GBS_SendMessage,
+	switab_functions[0x0101]	= (void *) GBS_ReciveMessage,
+	switab_functions[0x0102]	= (void *) GBS_AcceptMessage,
+	switab_functions[0x0103]	= (void *) GBS_ClearMessage,
+	switab_functions[0x0153]	= (void *) GBS_RecActDstMessage,
+	switab_functions[0x0185]	= (void *) GBS_WaitForMsg,
+	switab_functions[0x018C]	= (void *) GBS_DelTimer,
+	
 	// Images
 	switab_functions[0x0258]	= (void *) IMG_CalcBitmapSize;
 	switab_functions[0x01E9]	= (void *) IMG_CreateIMGHDRFromPngFile,

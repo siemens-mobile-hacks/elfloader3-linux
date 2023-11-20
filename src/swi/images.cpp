@@ -26,10 +26,10 @@ IMGHDR *IMG_LoadAny(const std::string &path) {
 
 int IMG_CalcBitmapSize(short w, short h, char type) {
 	switch (type) {
-		case IMGHDR_TYPE_WB:		return (w * h + 7) / 8; // WB
-		case IMGHDR_TYPE_RGB332:	return w * h; // RGB332
-		case IMGHDR_TYPE_RGB565:	return w * h * 2; // RGB565
-		case IMGHDR_TYPE_RGB8888:	return w * h * 4; // RGB8888
+		case IMGHDR_TYPE_WB:		return (w * h + 7) / 8;
+		case IMGHDR_TYPE_RGB332:	return w * h;
+		case IMGHDR_TYPE_RGB565:	return w * h * 2;
+		case IMGHDR_TYPE_RGB8888:	return w * h * 4;
 	}
 	fprintf(stderr, "%s: unknown bitmap type: %d\n", __func__, type);
 	abort();
