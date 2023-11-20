@@ -67,6 +67,7 @@ int main(int argc, char **argv) {
 	auto *loop = uv_default_loop();
 	
 	GBS_Init();
+	Helper_Init();
 	Theme::init();
 	CSM_Init();
 	GUI_Init();

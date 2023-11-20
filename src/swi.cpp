@@ -8,16 +8,11 @@ void loader_swi_stub(int swi) {
 }
 
 void loader_subproc_impl(void *func, void *p1) {
-	fprintf(stderr, "SUBPORC!\n");
-	abort();
+	SUBPROC(func, (int) p1);
 }
 
 int *loader_library_impl() {
 	return (int *) switab_functions;
-}
-
-void Sie_elfclose(Elf32_Exec *ex) {
-	loader_elf_close(ex);
 }
 
 void Sie_ShowMSG(int flag, int msg_id) {
@@ -227,8 +222,11 @@ void loader_init_switab() {
 	// Explorer
 	switab_functions[0x02E1]	= (void *) GetExtUidByFileName_ws;
 	
+	// Helper
+	switab_functions[0x0171]	= (void *) SUBPROC;
+	
 	// Other
-	switab_functions[0x2EE]		= (void *) Sie_elfclose;
+	switab_functions[0x2EE]		= (void *) loader_elf_close;
 	
 	// RAM
 	switab_functions[0x8106 - 0x8000]	= (void *) CSM_root();

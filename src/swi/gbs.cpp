@@ -77,7 +77,10 @@ void GBS_SendMessage(int cepid, int msg, int submess, void *data0, void *data1) 
 	assert(gbs_processes.find(cepid) != gbs_processes.end());
 	
 	GBS_MSG *gbs_msg = (GBS_MSG *) malloc(sizeof(GBS_MSG));
-	gbs_msg->pid_from = 0;
+	#if NEWSGOLD
+	gbs_msg->unk = 0xA000;
+	#endif
+	gbs_msg->pid_from = GBS_GetCurCepid();
 	gbs_msg->msg = msg;
 	gbs_msg->submess = submess;
 	gbs_msg->data0 = data0;

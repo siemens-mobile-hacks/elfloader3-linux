@@ -32,6 +32,7 @@ add_executable(elfloader3
 	src/swi/images.cpp
 	src/swi/settings.cpp
 	src/swi/explorer.cpp
+	src/swi/helper.cpp
 	src/swi/gbs.cpp
 	src/swi/sys.cpp
 	src/swi/ws.cpp

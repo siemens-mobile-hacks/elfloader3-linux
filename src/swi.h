@@ -247,9 +247,16 @@ void MutexUnlock(MUTEX *mtx);
  * */
 #define MMI_CEPID 0x4209
 
+#ifdef NEWSGOLD
+#define HELPER_CEPID 0x440A
+#else
+#define HELPER_CEPID 0x4407
+#endif
+
 typedef struct {
 #ifdef NEWSGOLD
-	int pid_from;
+	short pid_from;
+	short unk;
 	int msg;
 #else
 	short pid_from;
@@ -643,3 +650,15 @@ int Obs_Sound_SetPurpose(HObj *hObj, int purpose);
 #define UID_URL  0x58
 
 int GetExtUidByFileName_ws(WSHDR *fn);
+
+/*
+ * Helper
+ * */
+#ifdef NEWSGOLD
+#define MSG_HELPER_TRANSLATOR 0xDEAE
+#else
+#define MSG_HELPER_TRANSLATOR 0x3F0
+#endif
+
+void Helper_Init();
+void SUBPROC(void *func, int p2 = 0, void *p1 = nullptr);
