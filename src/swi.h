@@ -5,6 +5,8 @@
 #include <functional>
 #include <string>
 
+#include "gui/Bitmap.h"
+
 #define NEWSGOLD 1
 #define ELKA 1
 
@@ -414,6 +416,7 @@ enum {
 IMGHDR *IMG_LoadAny(const std::string &path);
 IMGHDR *IMG_CreateIMGHDRFromPngFile(const char *fname, int type);
 int IMG_CalcBitmapSize(short w,short h, char typy);
+Bitmap::Type IMG_GetBitmapType(int bpnum);
 
 /*
  * GUI
@@ -431,8 +434,29 @@ typedef struct {
 	short y2;
 } RECT;
 
+enum {
+	DRWOBJ_TYPE_TEXT	= 0x01,
+	DRWOBJ_TYPE_IMG		= 0x05,
+};
+
 typedef struct {
-	char dummy[0x24];
+	uint8_t type; // 05 - img with bleed, 01 - text
+	uint8_t rect_flags;
+	uint8_t unk2;
+	char color1[4];
+	char color2[4];
+	uint8_t unk3;
+	RECT rect;
+	union {
+		IMGHDR *img;
+		WSHDR *ws;
+	};
+	uint8_t font;
+	uint8_t offset_x;
+	uint8_t offset_y;
+	uint8_t unk5;
+	uint16_t flags;
+	uint8_t unk6[6];
 } DRWOBJ;
 
 typedef struct GUI GUI;
@@ -553,11 +577,11 @@ void GUI_DrawPixel(int x, int y, const char *color);
 void GUI_DrawArc(int x1, int y1, int x2, int y2, int start, int end, int flags, char *pen, char *brush);
 void GUI_DrawObject(DRWOBJ *drw);
 
-void GUI_SetPropTo_Obj1(DRWOBJ *drw, void *rect, int rect_flag, WSHDR *wshdr, int font, int text_flag);
+void GUI_SetPropTo_Obj1(DRWOBJ *drw, RECT *rect, int rect_flag, WSHDR *wshdr, int font, int flags);
 void GUI_FreeDrawObject_subobj(DRWOBJ *drw);
 void GUI_ObjSetColor(DRWOBJ *drw, const char *color1, const char *color2);
-void GUI_SetProp2ImageOrCanvas(DRWOBJ *drw, RECT *rect, int zero, IMGHDR *img, int bleed_x, int bleed_y);
-void GUI_SetPropTo_Obj5(DRWOBJ *drw, RECT *rect, int zero, IMGHDR *img);
+void GUI_SetProp2ImageOrCanvas(DRWOBJ *drw, RECT *rect, int flags, IMGHDR *img, int offset_x, int offset_y);
+void GUI_SetPropTo_Obj5(DRWOBJ *drw, RECT *rect, int flags, IMGHDR *img);
 
 char *GUI_GetPaletteAdrByColorIndex(int index);
 void GUI_GetRGBcolor(int index, char *dest);

@@ -5,11 +5,18 @@
 #include <utility>
 #include <vector>
 
+#include "gui/Bitmap.h"
+
 class Painter {
 	protected:
 		int m_width = 0;
 		int m_height = 0;
 		bool m_perfect_drawing = false;
+		
+		int m_window_x = 0;
+		int m_window_y = 0;
+		int m_window_x2 = 0;
+		int m_window_y2 = 0;
 		
 		std::vector<uint32_t> m_buffer;
 		std::vector<bool> m_mask;
@@ -43,10 +50,17 @@ class Painter {
 		
 		uint32_t blendColors(uint32_t old_color, uint32_t new_color);
 		
+		void setWindow(int x, int y, int x2, int y2);
+		inline std::tuple<int, int, int, int> getWindow() {
+			return { m_window_x, m_window_y, m_window_x2, m_window_y2 };
+		}
+		
 		void drawPixel(int x, int y, uint32_t color);
 		void drawHLine(int x, int y, int width, uint32_t color);
 		void drawVLine(int x, int y, int height, uint32_t color);
 		void drawLine(int x, int y, int w, int h, uint32_t color);
+		
+		void drawBitmap(int x, int y, int w, int h, uint8_t *bitmap, Bitmap::Type type, int offset_x = 0, int offset_y = 0);
 		
 		void strokeRect(int x, int y, int w, int h, uint32_t color);
 		void fillRect(int x, int y, int w, int h, uint32_t color);

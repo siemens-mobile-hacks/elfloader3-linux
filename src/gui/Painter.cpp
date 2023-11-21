@@ -38,6 +38,7 @@ Painter::Painter(int width, int height) {
 	m_height = height;
 	m_buffer.resize(m_width * m_height);
 	m_mask.resize(m_width * m_height);
+	setWindow(0, 0, m_width - 1, m_height - 1);
 	clear(0xFFFFFFFF);
 }
 
@@ -50,6 +51,13 @@ void Painter::startPerfectDrawing(uint32_t color) {
 
 void Painter::stopPerfectDrawing() {
 	m_perfect_drawing = false;
+}
+
+void Painter::setWindow(int x, int y, int x2, int y2) {
+	m_window_x = x;
+	m_window_y = y;
+	m_window_x2 = std::min(x2, m_width - 1);
+	m_window_y2 = std::min(y2, m_height - 1);
 }
 
 void Painter::clear(uint32_t color) {
@@ -99,11 +107,49 @@ void Painter::drawMask(const uint8_t *mask, int x, int y, int w, int h, const ui
 }
 
 /*
+ * Bitmap
+ * */
+void Painter::drawBitmap(int x, int y, int w, int h, uint8_t *bitmap, Bitmap::Type type, int offset_x, int offset_y) {
+	int min_img_x = m_window_x + x;
+	int max_img_x = m_window_x + x + w - 1 - offset_x;
+	
+	int min_img_y = m_window_y + y;
+	int max_img_y = m_window_y + y + h - 1 - offset_y;
+	
+	if (min_img_x > m_window_x2 || max_img_x < m_window_x)
+		return;
+	
+	if (min_img_y > m_window_y2 || max_img_y < m_window_y)
+		return;
+	
+	int start_x = offset_x;
+	int start_y = offset_y;
+	int end_x = w - 1;
+	int end_y = h - 1;
+	
+	if (max_img_y - m_window_y2 > 0)
+		end_y -= max_img_y - m_window_y2;
+	
+	if (max_img_x - m_window_x2 > 0)
+		end_x -= max_img_x - m_window_x2;
+	
+	for (int img_y = start_y; img_y <= end_y; img_y++) {
+		for (int img_x = start_x; img_x <= end_x; img_x++) {
+			uint32_t color = Bitmap::getBitmapPixel(type, img_x, img_y, w, h, bitmap);
+			drawPixel(x + img_x - offset_x, y + img_y - offset_y, color);
+		}
+	}
+}
+
+/*
  * Lines
  * */
 void Painter::drawPixel(int x, int y, uint32_t color) {
-	if (x < 0 || y < 0 || x >= m_width || y >= m_height) {
-		printf("ignored pixel %d x %d\n", x, y);
+	x += m_window_x;
+	y += m_window_y;
+	
+	if (x < 0 || y < 0 || x > m_window_x2 || y > m_window_y2) {
+		// printf("ignored pixel %d x %d\n", x, y);
 		return;
 	}
 	

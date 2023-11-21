@@ -11,6 +11,7 @@
 
 struct GbsTimerData {
 	int cepid;
+	int msg;
 	GbsTimerCallback callback;
 	GBSTMR *tmr;
 };
@@ -20,21 +21,33 @@ static std::map<std::thread::id, int> thread2cepid;
 
 static void _gbsTimerCallback(uv_timer_t *ut) {
 	auto *tmr_data = reinterpret_cast<GbsTimerData *>(ut->data);
-	GBSTMR *tmr = tmr_data->tmr;
-	GBS_StopTimer(tmr); // free timer
+	auto callback = tmr_data->callback;
+	int cepid = tmr_data->cepid;
+	int msg = tmr_data->msg;
 	
-	printf("_gbsTimerCallback\n");
+	GBSTMR *tmr = tmr_data->tmr;
+	GBS_DelTimer(tmr); // free timer
+	
+	if (callback) {
+		// Run callback (GBS_StartTimerProc)
+		GBS_RunInContext(cepid, [callback, tmr]() {
+			callback(tmr);
+		});
+	}
+	
+	if (msg) {
+		// Send GBS message (GBS_StartTimer)
+		GBS_SendMessage(cepid, msg, 0, nullptr, tmr);
+	}
 }
 
 void GBS_Init() {
 	GBS_CreateProc(MMI_CEPID, "MMI", +[]() {
 		GBS_MSG msg;
-		LOGD("MMI PROC HANDLER, lol\n");
 		if (GBS_RecActDstMessage(&msg)) {
 			LOGD("got msg\n");
 		}
 	}, 0, 0);
-	GBS_SendMessage(MMI_CEPID, 123, 321, nullptr, nullptr);
 }
 
 void GBS_StartTimerProc(GBSTMR *tmr, long ticks, GbsTimerCallback callback) {
@@ -45,6 +58,7 @@ void GBS_StartTimerProc(GBSTMR *tmr, long ticks, GbsTimerCallback callback) {
 	tmr_data->callback = callback;
 	tmr_data->cepid = GBS_GetCurCepid();
 	tmr_data->tmr = tmr;
+	tmr_data->msg = 0;
 	
 	// Create timer
 	uv_timer_t *ut = new uv_timer_t;
@@ -56,29 +70,26 @@ void GBS_StartTimerProc(GBSTMR *tmr, long ticks, GbsTimerCallback callback) {
 	uv_timer_start(ut, _gbsTimerCallback, (ticks * 1000) / 216, 0);
 }
 
-void GBS_StartTimer(GBSTMR *tmr, int ms, int msg, int unk, int cepid) {
-//	GbsTimerInternal *timer_internal = new GbsTimerInternal();
-//	timer_internal->timer = new uv_timer_t;
-//	timer_internal->callback = callback;
-//	timer_internal->cepid = cepid;
+void GBS_StartTimer(GBSTMR *tmr, int ticks, int msg, int unk, int cepid) {
+	// Create timer payload
+	GbsTimerData *tmr_data = new GbsTimerData;
+	tmr_data->callback = nullptr;
+	tmr_data->cepid = cepid;
+	tmr_data->tmr = tmr;
+	tmr_data->msg = msg;
 	
-	fprintf(stderr, "%s not implemented!\n", __func__);
-	abort();
+	// Create timer
+	uv_timer_t *ut = new uv_timer_t;
+	uv_timer_init(uv_default_loop(), ut);
+	ut->data = reinterpret_cast<void *>(tmr_data);
+	tmr->param0 = reinterpret_cast<int>(ut);
+	
+	// Start timer
+	uv_timer_start(ut, _gbsTimerCallback, (ticks * 1000) / 216, 0);
 }
 
 void GBS_StopTimer(GBSTMR *tmr) {
-	auto *ut = reinterpret_cast<uv_timer_t *>(tmr->param0);
-	assert(ut != nullptr);
-	
-	// Delete timer peyload
-	auto *tmr_data = reinterpret_cast<GbsTimerData *>(ut->data);
-	delete tmr_data;
-	
-	// Detele timer
-	uv_timer_stop(ut);
-	delete ut;
-	
-	tmr->param0 = 0;
+	GBS_DelTimer(tmr);
 }
 
 int GBS_IsTimerRunning(GBSTMR *tmr) {
@@ -87,8 +98,20 @@ int GBS_IsTimerRunning(GBSTMR *tmr) {
 }
 
 void GBS_DelTimer(GBSTMR *tmr) {
-	fprintf(stderr, "%s not implemented!\n", __func__);
-	abort();
+	auto *ut = reinterpret_cast<uv_timer_t *>(tmr->param0);
+	assert(ut != nullptr);
+	
+	// stop
+	uv_timer_stop(ut);
+	
+	// Delete timer payload
+	auto *tmr_data = reinterpret_cast<GbsTimerData *>(ut->data);
+	delete tmr_data;
+	
+	// Detele timer
+	delete ut;
+	
+	tmr->param0 = 0;
 }
 
 void GBS_CreateProc(int cepid, const char *name, GbsProcCallback msg_handler, int prio, int unk_zero) {

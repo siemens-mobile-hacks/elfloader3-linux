@@ -184,9 +184,11 @@ void GUI_DirectRedrawGUI_ID(int id) {
 		GUI_DirectRedrawGUI_ID(prev_gui_ram->id);
 	
 	LOGD("[GUI:%d] onRedraw\n", gui_ram->id);
-	gui_ram->gui->methods->onRedraw(gui_ram->gui);
 	
-	painter->save();
+	RECT *rect = gui_ram->gui->canvas;
+	painter->setWindow(rect->x, rect->y, rect->x2, rect->y2);
+	
+	gui_ram->gui->methods->onRedraw(gui_ram->gui);
 	
 	if (!GUI_IsOnTop(id))
 		GUI_DoUnFocus(id);
@@ -203,56 +205,100 @@ void GUI_DrawString(WSHDR *wshdr, int x1, int y1, int x2, int y2, int font, int 
 
 void GUI_DrawPixel(int x1, int y1, const char *color) {
 	painter->drawPixel(x1, y1, GUI_Color2Int(color));
+	painter->save(); // test
 }
 
 void GUI_DrawLine(int x1, int y1, int x2, int y2, int type, const char *pen) {
 	painter->drawLine(x1, y1, x2, y2, GUI_Color2Int(pen));
+	painter->save(); // test
 }
 
 void GUI_DrawRectangle(int x1, int y1, int x2, int y2, int flags, const char *pen, const char *brush) {
 	painter->drawRect(x1, y1, x2 - x1 + 1, y2 - y1 + 1, GUI_Color2Int(brush), GUI_Color2Int(pen));
+	painter->save(); // test
 }
 
 void GUI_DrawRoundedFrame(int x1, int y1, int x2, int y2, int x_round, int y_round, int flags, const char *pen, const char *brush) {
 	painter->drawRoundedRect(x1, y1, x2 - x1 + 1, y2 - y1 + 1, x_round, y_round, GUI_Color2Int(brush), GUI_Color2Int(pen));
+	painter->save(); // test
 }
 
 void GUI_DrawTriangle(int x1, int y1, int x2, int y2, int x3, int y3, int flags, char *pen, char *brush) {
 	painter->drawTriangle(x1, y1, x2, y2, x3, y3, GUI_Color2Int(brush), GUI_Color2Int(pen));
+	painter->save(); // test
 }
 
 void GUI_DrawArc(int x1, int y1, int x2, int y2, int start, int end, int flags, char *pen, char *brush) {
 	painter->drawArc(x1, y1, x2 - x1 + 1, y2 - y1 + 1, start, end, GUI_Color2Int(brush), GUI_Color2Int(pen));
+	painter->save(); // test
 }
 
-void GUI_DrawObject(DRWOBJ *param1) {
-	fprintf(stderr, "%s not implemented!\n", __func__);
-//	abort();
+void GUI_DrawObject(DRWOBJ *drw) {
+	auto [x1, y1, x2, y2] = painter->getWindow();
+	
+	if (drw->type == DRWOBJ_TYPE_IMG) {
+		painter->setWindow(drw->rect.x, drw->rect.y, drw->rect.x2, drw->rect.y2);
+		painter->drawBitmap(0, 0, drw->img->w, drw->img->h, drw->img->bitmap, IMG_GetBitmapType(drw->img->bpnum), drw->offset_x, drw->offset_y);
+	}
+	
+	painter->setWindow(x1, y1, x2, y2);
+	painter->save();
 }
 
-void GUI_SetPropTo_Obj1(DRWOBJ *drw, void *rect, int rect_flag, WSHDR *wshdr, int font, int text_flag) {
-	fprintf(stderr, "%s not implemented!\n", __func__);
-	abort();
-}
-
-void GUI_FreeDrawObject_subobj(DRWOBJ *drw) {
-	fprintf(stderr, "%s not implemented!\n", __func__);
-	abort();
+void GUI_SetPropTo_Obj1(DRWOBJ *drw, RECT *rect, int rect_flag, WSHDR *wshdr, int font, int flags) {
+	assert(drw != nullptr && rect != nullptr && wshdr != nullptr);
+	
+	drw->type = DRWOBJ_TYPE_TEXT;
+	drw->rect_flags = rect_flag;
+	drw->flags = flags;
+	drw->font = font;
+	memcpy(&drw->rect, rect, sizeof(RECT));
+	
+	// Clone string
+	drw->ws = AllocWS(wshdr->body->len + 1);
+	memcpy(drw->ws->wsbody, wshdr->wsbody, wshdr->body->len + 1);
 }
 
 void GUI_ObjSetColor(DRWOBJ *drw, const char *color1, const char *color2) {
-	fprintf(stderr, "%s not implemented!\n", __func__);
-//	abort();
+	assert(drw != nullptr);
+	
+	if (color1) {
+		memcpy(drw->color1, color1, 4);
+	} else {
+		memset(drw->color1, 0, 4);
+	}
+	
+	if (color2) {
+		memcpy(drw->color2, color2, 4);
+	} else {
+		memset(drw->color2, 0, 4);
+	}
 }
 
-void GUI_SetProp2ImageOrCanvas(DRWOBJ *drw, RECT *rect, int zero, IMGHDR *img, int bleed_x, int bleed_y) {
-	fprintf(stderr, "%s not implemented!\n", __func__);
-//	abort();
+void GUI_SetProp2ImageOrCanvas(DRWOBJ *drw, RECT *rect, int flags, IMGHDR *img, int offset_x, int offset_y) {
+	assert(drw != nullptr && rect != nullptr && img != nullptr);
+	
+	drw->type = DRWOBJ_TYPE_IMG;
+	drw->img = img;
+	drw->rect_flags = 0;
+	drw->flags = flags;
+	drw->offset_x = offset_x;
+	drw->offset_y = offset_y;
+	memcpy(&drw->rect, rect, sizeof(RECT));
 }
 
-void GUI_SetPropTo_Obj5(DRWOBJ *drw, RECT *rect, int zero, IMGHDR *img) {
-	fprintf(stderr, "%s not implemented!\n", __func__);
-//	abort();
+void GUI_SetPropTo_Obj5(DRWOBJ *drw, RECT *rect, int flags, IMGHDR *img) {
+	GUI_SetProp2ImageOrCanvas(drw, rect, flags, img, 0, 0);
+}
+
+void GUI_FreeDrawObject_subobj(DRWOBJ *drw) {
+	assert(drw != nullptr);
+	if (drw->type == DRWOBJ_TYPE_TEXT) {
+		if (drw->ws) {
+			FreeWS(drw->ws);
+			drw->ws = nullptr;
+		}
+	}
 }
 
 uint32_t GUI_Color2Int(const char *color) {
