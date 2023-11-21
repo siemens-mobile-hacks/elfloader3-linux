@@ -377,3 +377,7 @@ void GUI_StoreXYXYtoRECT(RECT *rect, int x, int y, int x2, int y2) {
 	rect->x2 = x2;
 	rect->y2 = y2;
 }
+
+int GUI_GetFontYSIZE(int font) {
+	return 16;
+}

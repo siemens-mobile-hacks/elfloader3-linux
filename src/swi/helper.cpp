@@ -4,6 +4,8 @@
 
 #define MSG_HELPER_RUN 0x0001
 
+static PNGTOP_DESC png_top = {};
+
 void Helper_Init() {
 	GBS_CreateProc(HELPER_CEPID, "HELPER", +[]() {
 		GBS_MSG msg;
@@ -21,4 +23,12 @@ void Helper_Init() {
 
 void SUBPROC(void *func, int p2, void *p1) {
 	GBS_SendMessage(HELPER_CEPID, MSG_HELPER_RUN, p2, func, p1);
+}
+
+PNGTOP_DESC *Helper_PngTop() {
+	return &png_top;
+}
+
+void *Helper_LibTop() {
+	return nullptr;
 }

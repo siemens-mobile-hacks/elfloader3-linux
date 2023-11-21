@@ -1,5 +1,6 @@
 #include "swi.h"
 #include "SieFs.h"
+#include "log.h"
 #include "utils.h"
 
 #include <cstdio>
@@ -13,9 +14,9 @@
 #include <glob.h>
 
 struct FileSearchCtx {
-	glob_t glob;
-	char **found;
-	size_t found_cnt;
+	glob_t glob = {};
+	char **found = nullptr;
+	size_t found_cnt = 0;
 };
 
 static void _set_errno(int ret, uint32_t *errp) {
@@ -169,6 +170,8 @@ int FS_FindFirstFile(DIR_ENTRY *de, const char *pattern, uint32_t *errp) {
 	
 	std::string unix_path = SieFs::sie2path(pattern);
 	
+	de->priv = nullptr;
+	
 	int ret = glob(unix_path.c_str(), 0, NULL, &ctx->glob);
 	if (ret != 0) {
 		if (errp)
@@ -189,9 +192,8 @@ int FS_FindFirstFile(DIR_ENTRY *de, const char *pattern, uint32_t *errp) {
 			ctx->found_cnt--;
 			return 1;
 		} else {
-			de->priv = nullptr;
-			delete ctx;
 			globfree(&ctx->glob);
+			delete ctx;
 		}
 		
 		return 0;

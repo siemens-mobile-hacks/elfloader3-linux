@@ -34,7 +34,7 @@ void loader_init_switab() {
 	switab_functions[0x0148]	= (void *) Sie_ShowMSG;
 	
 	// System
-	switab_functions[0x005F]	= (void *) GetFreeRamAvail;
+	switab_functions[0x005F]	= (void *) SYS_GetFreeRamAvail;
 	
 	// LIBC
 	switab_functions[0x0113]	= (void *) SWI_strpbrk;
@@ -171,6 +171,7 @@ void loader_init_switab() {
 	switab_functions[0x0027]	= (void *) GUI_AddIconToIconBar;
 	switab_functions[0x0133]	= (void *) GUI_StoreXYWHtoRECT;
 	switab_functions[0x0134]	= (void *) GUI_StoreXYXYtoRECT;
+	switab_functions[0x01C5]	= (void *) GUI_GetFontYSIZE;
 	
 	// SettingsAE
 	switab_functions[0x02E4]	= (void *) SettingsAE_Update_ws;
@@ -243,4 +244,7 @@ void loader_init_switab() {
 	switab_functions[0x8189 - 0x8000]	= (void *) GUI_ScreenH();
 	switab_functions[0x818A - 0x8000]	= (void *) GUI_HeaderH();
 	switab_functions[0x818B - 0x8000]	= (void *) GUI_SoftkeyH();
+	switab_functions[0x80C8 - 0x8000]	= (void *) SYS_RamCap();
+	switab_functions[0x81B9 - 0x8000]	= (void *) Helper_PngTop();
+	switab_functions[0x81BA - 0x8000]	= (void *) Helper_LibTop();
 }

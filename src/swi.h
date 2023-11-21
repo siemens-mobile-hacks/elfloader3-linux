@@ -34,7 +34,8 @@ void loader_swi_stub(int swi);
 /*
  * System
  * */
-int GetFreeRamAvail();
+int SYS_GetFreeRamAvail();
+uint16_t *SYS_RamCap();
 
 /*
  * libc
@@ -604,6 +605,8 @@ void GUI_AddIconToIconBar(int pic, short *num);
 void GUI_StoreXYWHtoRECT(RECT *rect, int x, int y, int w, int h);
 void GUI_StoreXYXYtoRECT(RECT *rect, int x, int y, int x2, int y2);
 
+int GUI_GetFontYSIZE(int font);
+
 /*
  * SettingsAE
  * */
@@ -691,7 +694,7 @@ int Obs_Sound_SetPurpose(HObj *hObj, int purpose);
 int GetExtUidByFileName_ws(WSHDR *fn);
 
 /*
- * Helper
+ * Helper (Elfloader functions)
  * */
 #ifdef NEWSGOLD
 #define MSG_HELPER_TRANSLATOR 0xDEAE
@@ -699,5 +702,36 @@ int GetExtUidByFileName_ws(WSHDR *fn);
 #define MSG_HELPER_TRANSLATOR 0x3F0
 #endif
 
+typedef struct PNGLIST PNGLIST;
+
+struct PNGLIST {
+	PNGLIST *next;
+	char *pngname;
+	IMGHDR *img;
+	uint32_t hash;
+};
+
+typedef struct DYNPNGICONLIST DYNPNGICONLIST;
+
+struct DYNPNGICONLIST {
+	DYNPNGICONLIST *next;
+	int icon;
+	IMGHDR *img;
+};
+
+typedef struct {
+	PNGLIST *pltop;
+	uint8_t *bitmap;
+	DYNPNGICONLIST *dyn_pltop;
+} PNGTOP_DESC;
+
+#define PNG_8 1
+#define PNG_16 2
+#define PNG_24 3
+
+#define PNG_1 0xFF
+
 void Helper_Init();
 void SUBPROC(void *func, int p2 = 0, void *p1 = nullptr);
+PNGTOP_DESC *Helper_PngTop();
+void *Helper_LibTop();
