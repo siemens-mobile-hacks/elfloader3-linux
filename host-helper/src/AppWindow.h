@@ -15,17 +15,20 @@ class AppWindow: public QWindow {
 	protected:
 		int m_width;
 		int m_height;
-		QLocalSocket *m_socket = nullptr;
 		QDataStream *m_stream = nullptr;
 		uint8_t *m_screen_buffer = nullptr;
 		QString m_socket_path;
+		QLocalSocket m_socket;
 		std::vector<uint8_t> m_rx_buffer;
-	
+		
+		uint32_t toIpcKeyCode(QKeyEvent *e);
+		uint32_t toIpcKeyModifier(QKeyEvent *e);
 	public:
 		explicit AppWindow(int w, int h, QWindow *parent = nullptr);
 		
 		void parseRxBuffer();
-		void handleIpcCommand(IpcPacket *pkt, uint8_t *payload);
+		void handleIpcCommand(IpcPacket *pkt);
+		void sendIpcCommand(IpcPacket *pkt);
 		
 		void setScreenBuffer(uint8_t *buffer) {
 			m_screen_buffer = buffer;

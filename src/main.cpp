@@ -101,6 +101,7 @@ int main(int argc, char **argv) {
 	ipc->start();
 	
 	GBS_Init();
+	MMI_Init();
 	Helper_Init();
 	Theme::init();
 	CSM_Init();

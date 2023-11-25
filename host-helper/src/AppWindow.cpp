@@ -2,7 +2,7 @@
 
 #include <cstdio>
 
-AppWindow::AppWindow(int w, int h, QWindow *parent) : QWindow(parent), m_backingStore(new QBackingStore(this)) {
+AppWindow::AppWindow(int w, int h, QWindow *parent) : QWindow(parent), m_backingStore(new QBackingStore(this)), m_socket(this) {
 	m_width = w;
 	m_height = h;
 	
@@ -14,12 +14,9 @@ AppWindow::AppWindow(int w, int h, QWindow *parent) : QWindow(parent), m_backing
 	setMinimumSize(QSize(width(), height()));
 	setMaximumSize(QSize(width(), height()));
 	
-	m_socket = new QLocalSocket(this);
-	m_stream = new QDataStream(m_socket);
-	
-	connect(m_socket, &QIODevice::readyRead, [this]() {
+	connect(&m_socket, &QIODevice::readyRead, [this]() {
 		char buffer[4096];
-		auto readed = m_stream->readRawData(buffer, sizeof(buffer));
+		auto readed = m_socket.read(buffer, sizeof(buffer));
 		if (readed > 0) {
 			m_rx_buffer.insert(m_rx_buffer.end(), buffer, buffer + readed);
 			parseRxBuffer();
@@ -30,36 +27,64 @@ AppWindow::AppWindow(int w, int h, QWindow *parent) : QWindow(parent), m_backing
 void AppWindow::parseRxBuffer() {
 	while (m_rx_buffer.size() >= sizeof(IpcPacket)) {
 		IpcPacket *pkt = reinterpret_cast<IpcPacket *>(&m_rx_buffer[0]);
-		int pkt_size = sizeof(IpcPacket) + pkt->size;
 		
-		if (m_rx_buffer.size() < pkt_size)
+		if (m_rx_buffer.size() < pkt->size)
 			break;
 		
-		handleIpcCommand(pkt, &m_rx_buffer[sizeof(IpcPacket)]);
-		m_rx_buffer.erase(m_rx_buffer.begin(), m_rx_buffer.begin() + pkt_size);
+		handleIpcCommand(pkt);
+		m_rx_buffer.erase(m_rx_buffer.begin(), m_rx_buffer.begin() + pkt->size);
 	}
 }
 
-void AppWindow::handleIpcCommand(IpcPacket *pkt, uint8_t *payload) {
+void AppWindow::handleIpcCommand(IpcPacket *pkt) {
 	switch (pkt->cmd) {
 		case IPC_CMD_REDRAW:
 			renderNow();
 		break;
 		
 		default:
-			printf("CMD: %d\n", pkt->cmd);
+			printf("UNKNOWN CMD: %d\n", pkt->cmd);
 		break;
 	}
 }
 
+void AppWindow::sendIpcCommand(IpcPacket *pkt) {
+	const char *data = reinterpret_cast<const char *>(pkt);
+	m_socket.write(data, pkt->size);
+	m_socket.flush();
+}
+
 void AppWindow::connectToServer() {
-	m_socket->connectToServer(m_socket_path);
-	if (!m_socket->waitForConnected(5000))
+	m_socket.connectToServer(m_socket_path);
+	if (!m_socket.waitForConnected(5000))
 		throw std::runtime_error("Can't connect to ELF simulator server!");
 	printf("Connected to %s\n", m_socket_path.toLocal8Bit().constData());
 }
 
 bool AppWindow::event(QEvent *event) {
+    if (event->type() == QEvent::KeyRelease || event->type() == QEvent::KeyPress) {
+        QKeyEvent *keyEvent = static_cast<QKeyEvent *>(event);
+		IpcPacketKeyEvent pkt = {};
+		pkt.header = { IPC_CMD_KEY_EVENT, sizeof(IpcPacketKeyEvent) };
+		pkt.keycode = toIpcKeyCode(keyEvent);
+		pkt.modifiers = toIpcKeyModifier(keyEvent);
+		
+		const char *text = keyEvent->text().toLocal8Bit().data();
+		strncpy(pkt.text, text, sizeof(pkt.text));
+        
+		if (event->type() == QEvent::KeyPress) {
+			// qDebug("key release %d%s", keyEvent->key(), keyEvent->isAutoRepeat() ? " [auto]" : "");
+			pkt.state = keyEvent->isAutoRepeat() ? IPC_KEY_REPEAT : IPC_KEY_PRESS;
+		} else {
+			// qDebug("key press %d%s", keyEvent->key(), keyEvent->isAutoRepeat() ? " [auto]" : "");
+			pkt.state = IPC_KEY_RELEASE;
+		}
+		
+		sendIpcCommand(&pkt.header);
+		
+        return true;
+	}
+    
 	if (event->type() == QEvent::UpdateRequest) {
 		renderNow();
 		return true;

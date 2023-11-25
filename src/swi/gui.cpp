@@ -134,6 +134,18 @@ void GUI_DirectRedrawGUI() {
 	GUI_DirectRedrawGUI_ID(GUI_GetTopID());
 }
 
+void GUI_HandleKeyPress(GBS_MSG *msg) {
+	GUI_RAM *gui_ram = GUI_GetById(GUI_GetTopID());
+	
+	GUI_MSG gui_msg = {};
+	gui_msg.gbsmsg = msg;
+	
+	if (gui_ram->gui->state == CSM_GUI_STATE_FOCUSED) {
+		LOGD("[GUI:%d] onKey\n", gui_ram->id);
+		gui_ram->gui->methods->onKey(gui_ram->gui, &gui_msg);
+	}
+}
+
 void GUI_DoFocus(int id) {
 	GUI_RAM *gui_ram = GUI_GetById(id);
 	

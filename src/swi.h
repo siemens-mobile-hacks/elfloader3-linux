@@ -611,6 +611,8 @@ void *GUI_RamScreenBuffer();
 
 void GUI_RedrawScreen();
 
+void GUI_HandleKeyPress(GBS_MSG *msg);
+
 /*
  * SettingsAE
  * */
@@ -622,6 +624,57 @@ int SettingsAE_Update(int val, int set, char *entry, char *keyword);
 int SettingsAE_Read(int *res, int set, char *entry, char *keyword);
 void *SettingsAE_GetEntryList(int set);
 int SettingsAE_RemoveEntry(int set, char *entry, int flag);
+
+/*
+ * MMI
+ * */
+#define KEY_DOWN        0x193
+#define KEY_UP          0x194
+#define LONG_PRESS      0x195
+
+#ifdef NEWSGOLD
+#define LEFT_SOFT       0x01
+#define RIGHT_SOFT      0x04
+#define GREEN_BUTTON    0x0B
+#define RED_BUTTON      0x0C
+#define VOL_UP_BUTTON   0x0D
+#define VOL_DOWN_BUTTON 0x0E
+#define UP_BUTTON       0x3B
+#define DOWN_BUTTON     0x3C
+#define LEFT_BUTTON     0x3D
+#define RIGHT_BUTTON    0x3E
+#define ENTER_BUTTON	0x1A
+#ifdef ELKA
+#define POC_BUTTON 0x15
+#define MEDIA_BUTTON	0x11
+#define EL_PLAY_BUTTON	0x1D
+#else
+#define INTERNET_BUTTON 0x11
+#endif
+#define PLAY_BUTTON	0x15
+#define CAMERA_BUTTON	0x14
+#else
+#define LEFT_SOFT       0x01
+#define RIGHT_SOFT      0x04
+#define GREEN_BUTTON    0x0B
+#define RED_BUTTON      0x0C
+#ifdef X75
+#define VOL_UP_BUTTON   0x14
+#define VOL_DOWN_BUTTON 0x15
+#else
+#define VOL_UP_BUTTON   0x0D
+#define VOL_DOWN_BUTTON 0x0E
+#endif
+#define UP_BUTTON       0x3B
+#define DOWN_BUTTON     0x3C
+#define LEFT_BUTTON     0x3D
+#define RIGHT_BUTTON    0x3E
+#define ENTER_BUTTON	0x1A
+#define INTERNET_BUTTON     0x11
+#endif
+#define PTT_BUTTON	0x27
+
+void MMI_Init();
 
 /*
  * Obs

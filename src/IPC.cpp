@@ -45,9 +45,19 @@ void IPC::start() {
 	}
 	
 	Loop::instance()->addFd(m_client_fd, Loop::WATCH_READ, [this](Loop::IoWatcherEv ev, int fd) {
+		uint8_t buffer[4096];
+		
 		switch (ev) {
 			case Loop::EV_CAN_READ:
-				
+			{
+				int readed = read(m_client_fd, buffer, sizeof(buffer));
+				if (readed > 0) {
+					m_rx_buffer.insert(m_rx_buffer.end(), buffer, buffer + readed);
+					parseCommand();
+				} else {
+					throw std::runtime_error(strprintf("IPC read(): %s", strerror(errno)));
+				}
+			}
 			break;
 			
 			case Loop::EV_CAN_WRITE:
@@ -71,6 +81,23 @@ void IPC::start() {
 			break;
 		}
 	});
+}
+
+void IPC::parseCommand() {
+	while (m_rx_buffer.size() >= sizeof(IpcPacket)) {
+		IpcPacket *pkt = reinterpret_cast<IpcPacket *>(&m_rx_buffer[0]);
+		
+		if (m_rx_buffer.size() < pkt->size)
+			break;
+		
+		handleCommand(pkt);
+		m_rx_buffer.erase(m_rx_buffer.begin(), m_rx_buffer.begin() + pkt->size);
+	}
+}
+
+void IPC::handleCommand(IpcPacket *pkt) {
+	if (m_handlers.find(pkt->cmd) != m_handlers.end())
+		m_handlers[pkt->cmd](pkt);
 }
 
 void IPC::stop() {
@@ -102,9 +129,10 @@ uint8_t *IPC::createSharedMemory(int *mem_id) {
 	return mem;
 }
 
-void IPC::send(uint8_t *data, int size) {
+void IPC::send(IpcPacket *pkt) {
 	m_tx_mutex.lock();
-	m_tx_buffer.insert(m_tx_buffer.end(), data, data + size);
+	uint8_t *data = reinterpret_cast<uint8_t *>(pkt);
+	m_tx_buffer.insert(m_tx_buffer.end(), data, data + pkt->size);
 	Loop::instance()->setFdFlags(m_client_fd, Loop::WATCH_READ | Loop::WATCH_WRITE);
 	m_tx_mutex.unlock();
 }

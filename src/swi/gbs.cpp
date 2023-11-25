@@ -43,12 +43,7 @@ static void _onGbsTimerFired(GbsTimerData *tmr_data) {
 }
 
 void GBS_Init() {
-	GBS_CreateProc(MMI_CEPID, "MMI", +[]() {
-		GBS_MSG msg;
-		if (GBS_RecActDstMessage(&msg)) {
-			LOGD("got msg\n");
-		}
-	}, 0, 0);
+	
 }
 
 void GBS_StartTimerProc(GBSTMR *tmr, long ticks, GbsTimerCallback callback) {

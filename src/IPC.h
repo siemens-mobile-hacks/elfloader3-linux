@@ -1,11 +1,11 @@
 #pragma once
 
-#include <uv.h>
 #include <cstdint>
 #include <thread>
 #include <functional>
 #include <cassert>
 #include <mutex>
+#include <map>
 
 #include <IpcProto.h>
 
@@ -22,7 +22,9 @@ class IPC {
 		int m_window_width = 132;
 		int m_window_height = 176;
 		std::vector<uint8_t> m_tx_buffer;
+		std::vector<uint8_t> m_rx_buffer;
 		std::mutex m_tx_mutex;
+		std::map<IpcCmd, std::function<void(IpcPacket *pkt)>> m_handlers;
 		
 		int m_server_fd = -1;
 		int m_client_fd = -1;
@@ -30,7 +32,9 @@ class IPC {
 		uint8_t *createSharedMemory(int *mem_id);
 		int openUnixSock(const char *name);
 		int waitForClient(int sock, int timeout);
-		void send(uint8_t *data, int size);
+		void send(IpcPacket *pkt);
+		void parseCommand();
+		void handleCommand(IpcPacket *pkt);
 	public:
 		static IPC *instance();
 		
@@ -38,9 +42,13 @@ class IPC {
 			return m_screen_buffer;
 		}
 		
+		inline void addHandler(IpcCmd cmd, std::function<void(IpcPacket *pkt)> callback) {
+			m_handlers[cmd] = callback;
+		}
+		
 		inline void sendRedraw() {
-			IpcPacket packet = { IPC_CMD_REDRAW, 0 };
-			send(reinterpret_cast<uint8_t *>(&packet), sizeof(packet));
+			IpcPacket packet = { IPC_CMD_REDRAW, sizeof(IpcPacket) };
+			send(&packet);
 		}
 		
 		inline void setHelperPath(const std::string &helper_path) {
