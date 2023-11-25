@@ -18,7 +18,7 @@ class Painter {
 		int m_window_x2 = 0;
 		int m_window_y2 = 0;
 		
-		std::vector<uint32_t> m_buffer;
+		uint8_t *m_buffer = nullptr;
 		std::vector<bool> m_mask;
 		
 		enum {
@@ -46,7 +46,7 @@ class Painter {
 		void fillEllipseSectionHelper(int x, int y, int x0, int y0, uint8_t option, uint32_t color, int start = -1, int end = -1);
 		void fillEllipseHelper(int x0, int y0, int rx, int ry, uint8_t option, uint32_t color, int start = -1, int end = -1);
 	public:
-		Painter(int width, int height);
+		Painter(uint8_t *buffer, int width, int height);
 		
 		uint32_t blendColors(uint32_t old_color, uint32_t new_color);
 		
@@ -81,8 +81,6 @@ class Painter {
 		void clear(uint32_t color);
 		
 		void drawMask(const uint8_t *mask, int x, int y, int w, int h, const uint32_t *colors);
-		
-		void save();
 		
 		~Painter();
 };

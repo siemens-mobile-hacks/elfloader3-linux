@@ -4,7 +4,10 @@
 #include <unistd.h>
 #include <string>
 #include <filesystem>
-#include <uv.h>
+#include <thread>
+
+#include <sys/types.h>
+#include <sys/shm.h>
 
 #include "elfloader/loader.h"
 #include "elfloader/env.h"
@@ -13,9 +16,15 @@
 #include "utils.h"
 
 #include "gui/Theme.h"
+#include "Loop.h"
+#include "IPC.h"
 #include "SieFs.h"
 
-std::string normalizeLibraryPath(const std::string &library_path_env) {
+static void mrpropper() {
+	IPC::instance()->stop();
+}
+
+static std::string normalizeLibraryPath(const std::string &library_path_env) {
 	std::vector<std::string> new_library_path_env;
 	for (auto &path: strSplit(";", library_path_env)) {
 		if (isDir(path)) {
@@ -28,7 +37,25 @@ std::string normalizeLibraryPath(const std::string &library_path_env) {
 	return strJoin(";", new_library_path_env);
 }
 
+static uint8_t *createSharedMemory(int *mem_id) {
+	*mem_id = shmget(IPC_PRIVATE, 4, IPC_CREAT | 0600);
+	if (*mem_id < 0) {
+		perror("shmget()");
+		return nullptr;
+	}
+	
+	auto mem = reinterpret_cast<uint8_t *>(shmat(*mem_id, NULL, 0));
+	if (mem == (uint8_t *) -1) {
+		perror("shmat()");
+		return nullptr;
+	}
+	
+	return mem;
+}
+
 int main(int argc, char **argv) {
+	std::atexit(mrpropper);
+	
 	if (argc != 2) {
 		fprintf(stderr, "usage: %s path/to/file.elf\n", argv[0]);
 		return 1;
@@ -64,13 +91,20 @@ int main(int argc, char **argv) {
 	loader_setenv("LD_LIBRARY_PATH", library_path_env.c_str(), true);
 	LOGD("EL3_LIBRARY_PATH: %s\n", loader_getenv("LD_LIBRARY_PATH"));
 	
-	auto *loop = uv_default_loop();
+	Loop *loop = new Loop();
+	loop->init();
+	Loop::setInstance(loop);
+	
+	IPC *ipc = IPC::instance();
+	ipc->setWindowSize(SCREEN_WIDTH, SCREEN_HEIGHT);
+	ipc->setHelperPath(self_dir + "/host-helper/elfloader3-helper");
+	ipc->start();
 	
 	GBS_Init();
 	Helper_Init();
 	Theme::init();
 	CSM_Init();
-	GUI_Init();
+	GUI_Init(ipc->getScreenBuffer());
 	
 	loader_init_switab();
 	loader_set_debug(false);
@@ -98,7 +132,9 @@ int main(int argc, char **argv) {
 	});
 	
 	LOGD("Running loop...\n");
-	while (uv_run(loop, UV_RUN_DEFAULT) == 0);
+	loop->run();
+	
+	ipc->stop();
 	
 	return 0;
 }

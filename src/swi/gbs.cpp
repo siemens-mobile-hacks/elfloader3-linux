@@ -2,16 +2,17 @@
 #include "swi/gbs.h"
 #include "utils.h"
 #include "log.h"
+#include "Loop.h"
 
 #include <cstdio>
 #include <cstdlib>
 #include <cassert>
 #include <map>
-#include <uv.h>
 
 struct GbsTimerData {
 	int cepid;
 	int msg;
+	int timer_id;
 	GbsTimerCallback callback;
 	GBSTMR *tmr;
 };
@@ -19,14 +20,14 @@ struct GbsTimerData {
 static std::map<int, GbsProcess *> gbs_processes;
 static std::map<std::thread::id, int> thread2cepid;
 
-static void _gbsTimerCallback(uv_timer_t *ut) {
-	auto *tmr_data = reinterpret_cast<GbsTimerData *>(ut->data);
+static void _onGbsTimerFired(GbsTimerData *tmr_data) {
 	auto callback = tmr_data->callback;
 	int cepid = tmr_data->cepid;
 	int msg = tmr_data->msg;
-	
 	GBSTMR *tmr = tmr_data->tmr;
-	GBS_DelTimer(tmr); // free timer
+	
+	delete tmr_data;
+	tmr->param0 = 0;
 	
 	if (callback) {
 		// Run callback (GBS_StartTimerProc)
@@ -51,41 +52,35 @@ void GBS_Init() {
 }
 
 void GBS_StartTimerProc(GBSTMR *tmr, long ticks, GbsTimerCallback callback) {
+	assert(tmr != nullptr);
 	assert(GBS_GetCurCepid() != -1);
 	
-	// Create timer payload
 	GbsTimerData *tmr_data = new GbsTimerData;
 	tmr_data->callback = callback;
 	tmr_data->cepid = GBS_GetCurCepid();
 	tmr_data->tmr = tmr;
 	tmr_data->msg = 0;
 	
-	// Create timer
-	uv_timer_t *ut = new uv_timer_t;
-	uv_timer_init(uv_default_loop(), ut);
-	ut->data = reinterpret_cast<void *>(tmr_data);
-	tmr->param0 = reinterpret_cast<int>(ut);
+	tmr_data->timer_id = Loop::instance()->addTimer([tmr_data]() {
+		_onGbsTimerFired(tmr_data);
+	}, (ticks * 1000) / 216, false);
 	
-	// Start timer
-	uv_timer_start(ut, _gbsTimerCallback, (ticks * 1000) / 216, 0);
+	tmr->param0 = reinterpret_cast<int>(tmr_data);
 }
 
 void GBS_StartTimer(GBSTMR *tmr, int ticks, int msg, int unk, int cepid) {
-	// Create timer payload
+	assert(tmr != nullptr);
 	GbsTimerData *tmr_data = new GbsTimerData;
 	tmr_data->callback = nullptr;
 	tmr_data->cepid = cepid;
 	tmr_data->tmr = tmr;
 	tmr_data->msg = msg;
 	
-	// Create timer
-	uv_timer_t *ut = new uv_timer_t;
-	uv_timer_init(uv_default_loop(), ut);
-	ut->data = reinterpret_cast<void *>(tmr_data);
-	tmr->param0 = reinterpret_cast<int>(ut);
+	tmr_data->timer_id = Loop::instance()->addTimer([tmr_data]() {
+		_onGbsTimerFired(tmr_data);
+	}, (ticks * 1000) / 216, false);
 	
-	// Start timer
-	uv_timer_start(ut, _gbsTimerCallback, (ticks * 1000) / 216, 0);
+	tmr->param0 = reinterpret_cast<int>(tmr_data);
 }
 
 void GBS_StopTimer(GBSTMR *tmr) {
@@ -93,24 +88,18 @@ void GBS_StopTimer(GBSTMR *tmr) {
 }
 
 int GBS_IsTimerRunning(GBSTMR *tmr) {
-	auto *ut = reinterpret_cast<uv_timer_t *>(tmr->param0);
-	return ut != nullptr;
+	assert(tmr != nullptr);
+	return tmr->param0 != 0;
 }
 
 void GBS_DelTimer(GBSTMR *tmr) {
-	auto *ut = reinterpret_cast<uv_timer_t *>(tmr->param0);
-	assert(ut != nullptr);
+	auto *tmr_data = reinterpret_cast<GbsTimerData *>(tmr->param0);
+	assert(tmr_data != nullptr);
 	
-	// stop
-	uv_timer_stop(ut);
+	if (tmr_data->timer_id != -1)
+		Loop::instance()->removeTimer(tmr_data->timer_id);
 	
-	// Delete timer payload
-	auto *tmr_data = reinterpret_cast<GbsTimerData *>(ut->data);
 	delete tmr_data;
-	
-	// Detele timer
-	delete ut;
-	
 	tmr->param0 = 0;
 }
 

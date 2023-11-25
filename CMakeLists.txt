@@ -1,7 +1,6 @@
 cmake_minimum_required(VERSION 3.15)
 
 include(${CMAKE_CURRENT_BINARY_DIR}/toolchain.cmake)
-include(${CMAKE_CURRENT_BINARY_DIR}/libuv.cmake)
 
 project(elfloader3 LANGUAGES C ASM CXX)
 
@@ -14,7 +13,9 @@ add_executable(elfloader3
 	src/stubs.cpp
 	src/utils.cpp
 	src/charset.cpp
+	src/IPC.cpp
 	src/SieFs.cpp
+	src/Loop.cpp
 	
 	src/gui/Theme.cpp
 	src/gui/Painter.cpp
@@ -50,8 +51,7 @@ add_executable(elfloader3
 target_compile_options(elfloader3 PUBLIC -Wno-narrowing -g)
 target_link_options(elfloader3 PUBLIC -static)
 
-target_include_directories(elfloader3 PUBLIC third_party/libuv/include)
 target_include_directories(elfloader3 PUBLIC third_party/stb)
 target_include_directories(elfloader3 SYSTEM PUBLIC src)
+target_include_directories(elfloader3 PUBLIC common)
 target_link_directories(elfloader3 PUBLIC .)
-target_link_libraries(elfloader3 -luv)

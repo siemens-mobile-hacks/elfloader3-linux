@@ -5,38 +5,10 @@
 #include <fstream>
 #include <ostream>
 
-#pragma pack(push, 1) 
-struct BMPHeader {
-	char signature[2];
-	uint32_t fileSize;
-	uint16_t reserved1;
-	uint16_t reserved2;
-	uint32_t dataOffset;
-	uint32_t headerSize;
-	int width;
-	int height;
-	uint16_t planes;
-	uint16_t bitsPerPixel;
-	uint32_t compression;
-	uint32_t dataSize;
-	int horizontalResolution;
-	int verticalResolution;
-	uint32_t colorsUsed;
-	uint32_t importantColors;
-	// BI_BITFIELDS
-	uint32_t mask[4];
-	uint32_t colorSpaceType;
-	uint32_t colorSpace[0x24];
-	uint32_t gamma[3];
-};
-#pragma pack(pop)
-
-static void _writeBMP(const char *filename, const uint32_t *pixels, int width, int height);
-
-Painter::Painter(int width, int height) {
+Painter::Painter(uint8_t *buffer, int width, int height) {
+	m_buffer = buffer;
 	m_width = width;
 	m_height = height;
-	m_buffer.resize(m_width * m_height);
 	m_mask.resize(m_width * m_height);
 	setWindow(0, 0, m_width - 1, m_height - 1);
 	clear(0xFFFFFFFF);
@@ -61,7 +33,8 @@ void Painter::setWindow(int x, int y, int x2, int y2) {
 }
 
 void Painter::clear(uint32_t color) {
-	std::fill(m_buffer.begin(), m_buffer.end(), color);
+	for (int i = 0; i < m_height; i++)
+		drawHLine(0, i, m_width, color);
 }
 
 uint32_t Painter::blendColors(uint32_t old_color, uint32_t new_color) {
@@ -153,8 +126,7 @@ void Painter::drawPixel(int x, int y, uint32_t color) {
 		return;
 	}
 	
-	uint32_t index = (m_height - y - 1) * m_width + x;
-	uint32_t old_color = m_buffer[index];
+	uint32_t index = y * m_width + x;
 	
 	if (m_perfect_drawing) {
 		if (m_mask[index])
@@ -162,7 +134,8 @@ void Painter::drawPixel(int x, int y, uint32_t color) {
 		m_mask[index] = 1;
 	}
 	
-	m_buffer[index] = blendColors(old_color, color);
+	uint16_t *rgb565_pixels = reinterpret_cast<uint16_t *>(m_buffer);
+	rgb565_pixels[index] = Bitmap::RGB8888toRGB565(blendColors(Bitmap::RGB565toRGB8888(rgb565_pixels[index]), color));
 }
 
 void Painter::drawHLine(int x, int y, int width, uint32_t color) {
@@ -909,43 +882,6 @@ std::tuple<int, int> Painter::getEllipseSectionRegion(int x1, int x2, int y1, in
 	}
 	
 	return { -1, -1 };
-}
-
-void Painter::save() {
-	_writeBMP("/tmp/sie.bmp", &m_buffer[0], m_width, m_height);
-}
-
-static void _writeBMP(const char *filename, const uint32_t *pixels, int width, int height) {
-	BMPHeader header = {};
-	header.signature[0] = 'B';
-	header.signature[1] = 'M';
-	header.headerSize = 40;
-	header.width = width;
-	header.height = height;
-	header.planes = 1;
-	header.bitsPerPixel = 32;
-	header.compression = 3;
-	header.dataOffset = sizeof(BMPHeader);
-	header.dataSize = 4 * width * height;
-	header.fileSize = sizeof(BMPHeader) + header.dataSize;
-	header.horizontalResolution = 0;
-	header.verticalResolution = 0;
-	header.colorsUsed = 0;
-	header.importantColors = 0;
-	
-	// BI_BITFIELDS
-	header.mask[0] = 0x00FF0000;
-	header.mask[1] = 0x0000FF00;
-	header.mask[2] = 0x000000FF;
-	header.mask[3] = 0xFF000000;
-	header.colorSpaceType = 0x57696E20;
-	
-	std::ofstream file(filename, std::ios::binary);
-	if (file) {
-		file.write(reinterpret_cast<const char *>(&header), sizeof(BMPHeader));
-		file.write(reinterpret_cast<const char *>(pixels), header.dataSize);
-		file.close();
-	}
 }
 
 Painter::~Painter() {

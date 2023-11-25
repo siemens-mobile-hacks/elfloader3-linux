@@ -537,7 +537,7 @@ enum {
 	DRAW_RECT_FLAG_NO_BORDER	= 0 << 2,
 };
 
-void GUI_Init();
+void GUI_Init(uint8_t *buffer);
 
 void GUI_WalkRenderTree(const std::function<bool(GUI_RAM *)> &callback, bool reverse = false);
 void GUI_SyncStates();
