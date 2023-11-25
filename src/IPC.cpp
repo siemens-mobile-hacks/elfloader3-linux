@@ -52,17 +52,16 @@ void IPC::start() {
 			
 			case Loop::EV_CAN_WRITE:
 			{
+				m_tx_mutex.lock();
 				int written = write(m_client_fd, &m_tx_buffer[0], m_tx_buffer.size());
-				
 				if (written > 0) {
-					m_tx_mutex.lock();
 					m_tx_buffer.erase(m_tx_buffer.begin(), m_tx_buffer.begin() + written);
 					if (!m_tx_buffer.size())
 						Loop::instance()->setFdFlags(m_client_fd, Loop::WATCH_READ);
-					m_tx_mutex.unlock();
 				} else {
 					throw std::runtime_error(strprintf("IPC write(): %s", strerror(errno)));
 				}
+				m_tx_mutex.unlock();
 			}
 			break;
 			

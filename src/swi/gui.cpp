@@ -16,10 +16,12 @@ static std::map<int, GUI_RAM *> id2gui = {};
 static std::map<int, size_t> id2gui_index = {};
 static std::vector<GUI_RAM *> sorted_gui_list = {};
 static Painter *painter = nullptr;
+static bool screen_redraw_requested = false;
 
 static int global_gui_id = 1;
 
-void GUI_Init(uint8_t *buffer) {
+void GUI_Init() {
+	uint8_t *buffer = IPC::instance()->getScreenBuffer();
 	painter = new Painter(buffer, SCREEN_WIDTH, SCREEN_HEIGHT);
 }
 
@@ -202,37 +204,37 @@ void GUI_PendedRedrawGUI() {
 
 void GUI_DrawString(WSHDR *wshdr, int x1, int y1, int x2, int y2, int font, int text_attribute, const char *Pen, const char *Brush) {
 	fprintf(stderr, "%s not implemented!\n", __func__);
-	IPC::instance()->sendRedraw();
+	GUI_RedrawScreen();
 }
 
 void GUI_DrawPixel(int x1, int y1, const char *color) {
 	painter->drawPixel(x1, y1, GUI_Color2Int(color));
-	IPC::instance()->sendRedraw();
+	GUI_RedrawScreen();
 }
 
 void GUI_DrawLine(int x1, int y1, int x2, int y2, int type, const char *pen) {
 	painter->drawLine(x1, y1, x2, y2, GUI_Color2Int(pen));
-	IPC::instance()->sendRedraw();
+	GUI_RedrawScreen();
 }
 
 void GUI_DrawRectangle(int x1, int y1, int x2, int y2, int flags, const char *pen, const char *brush) {
 	painter->drawRect(x1, y1, x2 - x1 + 1, y2 - y1 + 1, GUI_Color2Int(brush), GUI_Color2Int(pen));
-	IPC::instance()->sendRedraw();
+	GUI_RedrawScreen();
 }
 
 void GUI_DrawRoundedFrame(int x1, int y1, int x2, int y2, int x_round, int y_round, int flags, const char *pen, const char *brush) {
 	painter->drawRoundedRect(x1, y1, x2 - x1 + 1, y2 - y1 + 1, x_round, y_round, GUI_Color2Int(brush), GUI_Color2Int(pen));
-	IPC::instance()->sendRedraw();
+	GUI_RedrawScreen();
 }
 
 void GUI_DrawTriangle(int x1, int y1, int x2, int y2, int x3, int y3, int flags, char *pen, char *brush) {
 	painter->drawTriangle(x1, y1, x2, y2, x3, y3, GUI_Color2Int(brush), GUI_Color2Int(pen));
-	IPC::instance()->sendRedraw();
+	GUI_RedrawScreen();
 }
 
 void GUI_DrawArc(int x1, int y1, int x2, int y2, int start, int end, int flags, char *pen, char *brush) {
 	painter->drawArc(x1, y1, x2 - x1 + 1, y2 - y1 + 1, start, end, GUI_Color2Int(brush), GUI_Color2Int(pen));
-	IPC::instance()->sendRedraw();
+	GUI_RedrawScreen();
 }
 
 void GUI_DrawObject(DRWOBJ *drw) {
@@ -244,7 +246,8 @@ void GUI_DrawObject(DRWOBJ *drw) {
 	}
 	
 	painter->setWindow(x1, y1, x2, y2);
-	IPC::instance()->sendRedraw();
+	
+	GUI_RedrawScreen();
 }
 
 void GUI_SetPropTo_Obj1(DRWOBJ *drw, RECT *rect, int rect_flag, WSHDR *wshdr, int font, int flags) {
@@ -382,4 +385,18 @@ void GUI_StoreXYXYtoRECT(RECT *rect, int x, int y, int x2, int y2) {
 
 int GUI_GetFontYSIZE(int font) {
 	return 16;
+}
+
+void *GUI_RamScreenBuffer() {
+	return IPC::instance()->getScreenBuffer();
+}
+
+void GUI_RedrawScreen() {
+	if (!screen_redraw_requested) {
+		screen_redraw_requested = true;
+		GBS_RunInContext(MMI_CEPID, []() {
+			screen_redraw_requested = false;
+			IPC::instance()->sendRedraw();
+		});
+	}
 }

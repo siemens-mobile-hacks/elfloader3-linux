@@ -537,7 +537,7 @@ enum {
 	DRAW_RECT_FLAG_NO_BORDER	= 0 << 2,
 };
 
-void GUI_Init(uint8_t *buffer);
+void GUI_Init();
 
 void GUI_WalkRenderTree(const std::function<bool(GUI_RAM *)> &callback, bool reverse = false);
 void GUI_SyncStates();
@@ -606,6 +606,10 @@ void GUI_StoreXYWHtoRECT(RECT *rect, int x, int y, int w, int h);
 void GUI_StoreXYXYtoRECT(RECT *rect, int x, int y, int x2, int y2);
 
 int GUI_GetFontYSIZE(int font);
+
+void *GUI_RamScreenBuffer();
+
+void GUI_RedrawScreen();
 
 /*
  * SettingsAE

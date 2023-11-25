@@ -244,6 +244,7 @@ void loader_init_switab() {
 	switab_functions[0x8189 - 0x8000]	= (void *) GUI_ScreenH();
 	switab_functions[0x818A - 0x8000]	= (void *) GUI_HeaderH();
 	switab_functions[0x818B - 0x8000]	= (void *) GUI_SoftkeyH();
+	switab_functions[0x80E0 - 0x8000]	= (void *) GUI_RamScreenBuffer();
 	switab_functions[0x80C8 - 0x8000]	= (void *) SYS_RamCap();
 	switab_functions[0x81B9 - 0x8000]	= (void *) Helper_PngTop();
 	switab_functions[0x81BA - 0x8000]	= (void *) Helper_LibTop();

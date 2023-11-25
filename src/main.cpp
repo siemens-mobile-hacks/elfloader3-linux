@@ -104,7 +104,7 @@ int main(int argc, char **argv) {
 	Helper_Init();
 	Theme::init();
 	CSM_Init();
-	GUI_Init(ipc->getScreenBuffer());
+	GUI_Init();
 	
 	loader_init_switab();
 	loader_set_debug(false);
