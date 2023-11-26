@@ -85,6 +85,7 @@ void loader_init_switab() {
 	switab_functions[0x0090]	= (void *) FS_truncate;
 	switab_functions[0x0091]	= (void *) FS_isdir;
 	switab_functions[0x0084]	= (void *) FS_GetFileStats;
+	switab_functions[0x016B]	= (void *) FS_unlink;
 	
 	// Date && Time
 	switab_functions[0x00B4]	= (void *) GetDateTime;
@@ -126,7 +127,7 @@ void loader_init_switab() {
 	switab_functions[0x0194]	= (void *) MutexUnlock;
 	
 	// CSM
-	switab_functions[0x0107]	= (void *) CreateCSM;
+	switab_functions[0x0107]	= (void *) CSM_Create;
 	switab_functions[0x0108]	= (void *) FindCSMbyID;
 	switab_functions[0x0109]	= (void *) DoIDLE;
 	switab_functions[0x0142]	= (void *) FindCSM;

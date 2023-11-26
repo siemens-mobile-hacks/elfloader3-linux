@@ -20,6 +20,7 @@ void MMI_Init() {
 			if (msg.msg == KEY_DOWN || msg.msg == KEY_UP || msg.msg == LONG_PRESS)
 				GUI_HandleKeyPress(&msg);
 			
+			CSM_GarbageCollector();
 			GUI_GarbageCollector();
 		}
 	}, 0, 0);

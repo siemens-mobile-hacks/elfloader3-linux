@@ -135,24 +135,25 @@ typedef struct {
   int file_attr;
 } FSTATS;
 
-int FS_open(const char *cFileName, uint32_t iFileFlags, uint32_t iFileMode, uint32_t *ErrorNumber);
-int FS_read(int FileHandler, void *cBuffer, int iByteCount, uint32_t *ErrorNumber);
-int FS_write(int FileHandler, void const * cBuffer, int iByteCount, uint32_t *ErrorNumber);
-int FS_close(int FileHandler, uint32_t *ErrorNumber);
-int FS_flush(int stream, uint32_t *ErrorNumber);
-long FS_lseek(int FileHandler, uint32_t offset, uint32_t origin, uint32_t *ErrorNumber, uint32_t *ErrorNumber2);
-int FS_mkdir(const char * cFileName, uint32_t *ErrorNumber);
-int FS_GetFileAttrib(const char *cFileName, uint8_t *cAttribute, uint32_t *ErrorNumber);
-int FS_SetFileAttrib(const char *cFileName, uint8_t cAttribute, uint32_t *ErrorNumber);
-int FS_setfilesize(int FileHandler, uint32_t iNewFileSize, uint32_t *ErrorNumber);
-int FS_FindFirstFile(DIR_ENTRY *DIRENTRY, const char *mask, uint32_t *ErrorNumber);
-int FS_FindNextFile(DIR_ENTRY *DIRENTRY,uint32_t *ErrorNumber);
-int FS_FindClose(DIR_ENTRY *DIRENTRY,uint32_t *ErrorNumber);
-int FS_fmove(const char * SourceFileName, const char * DestFileName, uint32_t *ErrorNumber);
-int FS_rmdir(const char * cDirectory, uint32_t *ErrorNumber);
-int FS_truncate(int FileHandler, int length, int *errornumber);
-int FS_isdir(const char * cDirectory, uint32_t *ErrorNumber);
-int FS_GetFileStats(const char *cFileName, FSTATS * StatBuffer, uint32_t *errornumber);
+int FS_open(const char *path, uint32_t f, uint32_t m, uint32_t *errp);
+int FS_read(int fd, void *buff, int count, uint32_t *errp);
+int FS_write(int fd, void const *buff, int count, uint32_t *errp);
+int FS_close(int fd, uint32_t *errp);
+int FS_flush(int fd, uint32_t *errp);
+long FS_lseek(int fd, uint32_t offset, uint32_t origin, uint32_t *errp, uint32_t *errp2);
+int FS_mkdir(const char *pathname, uint32_t *errp);
+int FS_GetFileAttrib(const char *cFileName, uint8_t *cAttribute, uint32_t *errp);
+int FS_SetFileAttrib(const char *cFileName, uint8_t cAttribute, uint32_t *errp);
+int FS_setfilesize(int FileHandler, uint32_t iNewFileSize, uint32_t *errp);
+int FS_FindFirstFile(DIR_ENTRY *de, const char *mask, uint32_t *errp);
+int FS_FindNextFile(DIR_ENTRY *de ,uint32_t *errp);
+int FS_FindClose(DIR_ENTRY *de, uint32_t *errp);
+int FS_fmove(const char *src, const char *dst, uint32_t *errp);
+int FS_rmdir(const char *path, uint32_t *errp);
+int FS_unlink(const char *path, uint32_t *errp);
+int FS_truncate(int fd, int length, uint32_t *errp);
+int FS_isdir(const char *path, uint32_t *errp);
+int FS_GetFileStats(const char *path, FSTATS *st, uint32_t *errp);
 
 /*
  * Date & Time
@@ -341,6 +342,11 @@ void linked_list_remove(LLQ *head, void *item_ptr);
 typedef struct CSM_DESC CSM_DESC;
 typedef struct CSM_RAM CSM_RAM;
 
+enum {
+	CSM_STATE_OPEN		= 0,
+	CSM_STATE_CLOSED	= -3,
+};
+
 struct CSM_RAM {
 	CSM_RAM *next;
 	CSM_RAM *prev;
@@ -398,7 +404,9 @@ typedef struct {
 
 void GBS_Init();
 CSMROOT *CSM_root();
-int CreateCSM(const CSM_DESC *desc, const void *default_value, int param3);
+int CSM_Create(const CSM_DESC *desc, const void *default_value, int param3);
+void CSM_Close(CSM_RAM *csm);
+void CSM_GarbageCollector();
 CSM_RAM *FindCSMbyID(int id);
 void DoIDLE();
 CSM_RAM *FindCSM(CSMQ *q, int id);
@@ -706,7 +714,7 @@ typedef struct {
 	void *func;
 } OBSevent;
 
-HObj *Obs_CreateObject(int uid_in, int uid_out, int prio, int msg_callback, int emb4, int sync, int *ErrorNumber);
+HObj *Obs_CreateObject(int uid_in, int uid_out, int prio, int msg_callback, int emb4, int sync, int *errp);
 int Obs_DestroyObject(HObj *hObj);
 int Obs_SetInput_File(HObj *hObj, int unk_zero, WSHDR *path);
 int Obs_GetInputImageSize(HObj *hObj, short *w, short *h);

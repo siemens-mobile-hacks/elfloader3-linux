@@ -180,11 +180,14 @@ GbsProcess::GbsProcess(int id, const std::string &name, GbsProcCallback handler)
 
 bool GbsProcess::popMessage(GBS_MSG *msg) {
 	m_mutex.lock();
-	GBS_MSG *queue_msg = m_queue.front();
-	if (queue_msg) {
-		*msg = *queue_msg;
-		free(queue_msg);
-		m_queue.pop();
+	GBS_MSG *queue_msg = nullptr;
+	if (m_queue.size()) {
+		queue_msg = m_queue.front();
+		if (queue_msg) {
+			*msg = *queue_msg;
+			free(queue_msg);
+			m_queue.pop();
+		}
 	}
 	m_mutex.unlock();
 	return queue_msg != nullptr;

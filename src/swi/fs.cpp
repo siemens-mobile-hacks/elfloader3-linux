@@ -235,25 +235,42 @@ int FS_FindClose(DIR_ENTRY *de, uint32_t *errp) {
 	}
 }
 
-int FS_fmove(const char * SourceFileName, const char * DestFileName, uint32_t *ErrorNumber) {
+int FS_fmove(const char *src, const char *dst, uint32_t *errp) {
+	std::string src_path = SieFs::sie2path(src);
+	std::string dst_path = SieFs::sie2path(dst);
+	int ret = rename(src_path.c_str(), dst_path.c_str());
+	if (SWI_TRACE) {
+		fprintf(stderr, "[strace] fmove(%s, %s) = %d\n", src_path.c_str(), dst_path.c_str(), ret);
+	}
+	_set_errno(ret, errp);
+	return ret;
+}
+
+int FS_rmdir(const char *path, uint32_t *errp) {
+	int ret = rmdir(SieFs::sie2path(path).c_str());
+	if (SWI_TRACE) {
+		fprintf(stderr, "[strace] rmdir(%s) = %d\n", SieFs::sie2path(path).c_str(), ret);
+	}
+	_set_errno(ret, errp);
+	return ret;
+}
+
+int FS_unlink(const char *path, uint32_t *errp) {
+	int ret = unlink(SieFs::sie2path(path).c_str());
+	if (SWI_TRACE) {
+		fprintf(stderr, "[strace] unlink(%s) = %d\n", SieFs::sie2path(path).c_str(), ret);
+	}
+	_set_errno(ret, errp);
+	return ret;
+}
+
+int FS_truncate(int fd, int length, uint32_t *errp) {
 	fprintf(stderr, "%s not implemented!\n", __func__);
 	abort();
 	return 0;
 }
 
-int FS_rmdir(const char * cDirectory, uint32_t *ErrorNumber) {
-	fprintf(stderr, "%s not implemented!\n", __func__);
-	abort();
-	return 0;
-}
-
-int FS_truncate(int FileHandler, int length, int *errornumber) {
-	fprintf(stderr, "%s not implemented!\n", __func__);
-	abort();
-	return 0;
-}
-
-int FS_isdir(const char * cDirectory, uint32_t *ErrorNumber) {
+int FS_isdir(const char * cDirectory, uint32_t *errp) {
 	fprintf(stderr, "%s not implemented!\n", __func__);
 	abort();
 	return 0;
