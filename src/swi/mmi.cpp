@@ -19,6 +19,8 @@ void MMI_Init() {
 			
 			if (msg.msg == KEY_DOWN || msg.msg == KEY_UP || msg.msg == LONG_PRESS)
 				GUI_HandleKeyPress(&msg);
+			
+			GUI_GarbageCollector();
 		}
 	}, 0, 0);
 	
@@ -43,7 +45,7 @@ static int _getKeyCodeFromEvent(IpcPacketKeyEvent *ev) {
 		case IPC_KEY_INSERT:	return LEFT_SOFT;
 		case IPC_KEY_F1:		return LEFT_SOFT;
 		
-		case IPC_KEY_PAGE_UP:	return LEFT_SOFT;
+		case IPC_KEY_PAGE_UP:	return RIGHT_SOFT;
 		case IPC_KEY_F2:		return RIGHT_SOFT;
 		
 		case IPC_KEY_DELETE:	return GREEN_BUTTON;
@@ -54,6 +56,7 @@ static int _getKeyCodeFromEvent(IpcPacketKeyEvent *ev) {
 		
 		case IPC_KEY_HOME:		return ENTER_BUTTON;
 		case IPC_KEY_ENTER:		return ENTER_BUTTON;
+		case IPC_KEY_RETURN:	return ENTER_BUTTON;
 		
 		case IPC_KEY_PLUS:		return VOL_UP_BUTTON;
 		case IPC_KEY_MINUS:		return VOL_DOWN_BUTTON;

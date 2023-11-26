@@ -248,12 +248,28 @@ void MutexUnlock(MUTEX *mtx);
 /*
  * GBS
  * */
-#define MMI_CEPID 0x4209
 
 #ifdef NEWSGOLD
+
+#define MSG_PLAYFILE_REPORT 0x70BC
+#define MSG_CSM_DESTROYED 0x6400
+#define MSG_CSM_DESTROY_NOTIFY 0x6402
+#define MSG_GUI_DESTROYED 0x640E
+#define MSG_IDLETMR_EXPIRED 0x6401
+
+#define MMI_CEPID 0x4209
 #define HELPER_CEPID 0x440A
+
 #else
+
+#define MSG_CSM_DESTROYED 0x93
+#define MSG_CSM_DESTROY_NOTIFY 0x92
+#define MSG_GUI_DESTROYED 0x98
+#define MSG_IDLETMR_EXPIRED 0x95
+
+#define MMI_CEPID 0x4209
 #define HELPER_CEPID 0x4407
+
 #endif
 
 typedef struct {
@@ -317,7 +333,8 @@ typedef struct {
 // Non-SWI methods
 void linked_list_init(LLQ *q);
 void linked_list_push(LLQ *head, void *item);
-	
+void linked_list_remove(LLQ *head, void *item_ptr);
+
 /*
  * CSM
  * */
@@ -475,7 +492,7 @@ typedef struct {
 	void (*onClose)(GUI *, mfree_func_t);
 	void (*onFocus)(GUI *, malloc_func_t, mfree_func_t);
 	void (*onUnfocus)(GUI *, mfree_func_t);
-	void (*onKey)(GUI *, GUI_MSG *);
+	int (*onKey)(GUI *, GUI_MSG *);
 	void *unk0;
 	void (*onDestroy)(GUI *, mfree_func_t);
 	void (*method8)();
@@ -559,14 +576,19 @@ int GUI_Create_30or2(GUI *gui);
 int GUI_CreateWithDummyCSM(GUI *gui, int flag);
 int GUI_CreateWithDummyCSM_30or2(GUI *gui, int flag);
 
-void GeneralFuncF1(int cmd);
-void GeneralFuncF0(int cmd);
-void GeneralFunc_flag1(int id, int cmd);
-void GeneralFunc_flag0(int id, int cmd);
+void GUI_Close(int id);
+void GUI_GarbageCollector();
+
+void GUI_GeneralFuncF1(int cmd);
+void GUI_GeneralFuncF0(int cmd);
+void GUI_GeneralFunc_flag1(int id, int cmd);
+void GUI_GeneralFunc_flag0(int id, int cmd);
 
 void GUI_DirectRedrawGUI();
 void GUI_DirectRedrawGUI_ID(int id);
 void GUI_PendedRedrawGUI();
+void GUI_REDRAW();
+void GUI_IpcRedrawScreen();
 
 void GUI_DrawString(WSHDR *wshdr, int x1, int y1, int x2, int y2, int font, int text_attribute, const char *pen, const char *brush);
 void GUI_DrawRoundedFrame(int x1, int y1, int x2, int y2, int x_round, int y_round, int flags, const char *pen, const char *brush);
@@ -608,8 +630,6 @@ void GUI_StoreXYXYtoRECT(RECT *rect, int x, int y, int x2, int y2);
 int GUI_GetFontYSIZE(int font);
 
 void *GUI_RamScreenBuffer();
-
-void GUI_RedrawScreen();
 
 void GUI_HandleKeyPress(GBS_MSG *msg);
 

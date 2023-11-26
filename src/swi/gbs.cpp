@@ -89,13 +89,12 @@ int GBS_IsTimerRunning(GBSTMR *tmr) {
 
 void GBS_DelTimer(GBSTMR *tmr) {
 	auto *tmr_data = reinterpret_cast<GbsTimerData *>(tmr->param0);
-	assert(tmr_data != nullptr);
-	
-	if (tmr_data->timer_id != -1)
-		Loop::instance()->removeTimer(tmr_data->timer_id);
-	
-	delete tmr_data;
-	tmr->param0 = 0;
+	if (tmr_data) {
+		if (tmr_data->timer_id != -1)
+			Loop::instance()->removeTimer(tmr_data->timer_id);
+		delete tmr_data;
+		tmr->param0 = 0;
+	}
 }
 
 void GBS_CreateProc(int cepid, const char *name, GbsProcCallback msg_handler, int prio, int unk_zero) {

@@ -160,8 +160,8 @@ static void _fillDirEntry(DIR_ENTRY *de, const std::string &file) {
 		if ((st.st_mode & S_IFMT) == S_IFDIR)
 			de->file_attr |= FA_DIRECTORY;
 		
-		strncpy(de->file_name, filename.c_str(), sizeof(de->file_name) - 1);
-		strncpy(de->folder_name, SieFs::path2sie(dirname).c_str(), sizeof(de->folder_name) - 1);
+		strncpy(de->file_name, filename.c_str(), sizeof(de->file_name));
+		strncpy(de->folder_name, SieFs::path2sie(dirname).c_str(), sizeof(de->folder_name));
 	}
 }
 

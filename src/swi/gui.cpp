@@ -6,13 +6,16 @@
 #include "gui/Theme.h"
 
 #include <map>
+#include <queue>
 #include <vector>
 #include <cstdio>
 #include <cstdlib>
 #include <cassert>
 #include <functional>
 
+static std::queue<GUI_RAM *> gui_to_destroy;
 static std::map<int, GUI_RAM *> id2gui = {};
+static std::map<int, CSM_RAM *> id2csm = {};
 static std::map<int, size_t> id2gui_index = {};
 static std::vector<GUI_RAM *> sorted_gui_list = {};
 static Painter *painter = nullptr;
@@ -26,6 +29,7 @@ void GUI_Init() {
 }
 
 void GUI_SyncStates() {
+	id2csm.clear();
 	id2gui.clear();
 	id2gui_index.clear();
 	sorted_gui_list.clear();
@@ -36,6 +40,7 @@ void GUI_SyncStates() {
 		while (gui_cursor) {
 			id2gui_index[gui_cursor->id] = sorted_gui_list.size();
 			id2gui[gui_cursor->id] = gui_cursor;
+			id2csm[gui_cursor->id] = cursor;
 			sorted_gui_list.push_back(gui_cursor);
 			
 			gui_cursor = gui_cursor->next;
@@ -110,39 +115,25 @@ int GUI_CreateWithDummyCSM_30or2(GUI *gui, int flag) { // WTF
 	return GUI_Create(gui);
 }
 
-void GeneralFuncF1(int cmd) {
-	fprintf(stderr, "%s not implemented!\n", __func__);
-	abort();
-}
-
-void GeneralFuncF0(int cmd) {
-	fprintf(stderr, "%s not implemented!\n", __func__);
-	abort();
-}
-
-void GeneralFunc_flag1(int id, int cmd) {
-	fprintf(stderr, "%s not implemented!\n", __func__);
-	abort();
-}
-
-void GeneralFunc_flag0(int id, int cmd) {
-	fprintf(stderr, "%s not implemented!\n", __func__);
-	abort();
-}
-
-void GUI_DirectRedrawGUI() {
-	GUI_DirectRedrawGUI_ID(GUI_GetTopID());
-}
-
 void GUI_HandleKeyPress(GBS_MSG *msg) {
-	GUI_RAM *gui_ram = GUI_GetById(GUI_GetTopID());
+	int top_id = GUI_GetTopID();
+	if (top_id < 0)
+		return;
+	
+	GUI_RAM *gui_ram = GUI_GetById(top_id);
 	
 	GUI_MSG gui_msg = {};
 	gui_msg.gbsmsg = msg;
 	
 	if (gui_ram->gui->state == CSM_GUI_STATE_FOCUSED) {
 		LOGD("[GUI:%d] onKey\n", gui_ram->id);
-		gui_ram->gui->methods->onKey(gui_ram->gui, &gui_msg);
+		int ret = gui_ram->gui->methods->onKey(gui_ram->gui, &gui_msg);
+		if (ret) {
+			int id = gui_ram->id;
+			GBS_RunInContext(MMI_CEPID, [id]() {
+				GUI_GeneralFunc_flag1(id, 1);
+			});
+		}
 	}
 }
 
@@ -168,6 +159,45 @@ void GUI_DoUnFocus(int id) {
 	}
 }
 
+void GUI_Close(int id) {
+	GUI_RAM *gui_ram = GUI_GetById(id);
+	
+	assert(gui_ram->gui->state != CSM_GUI_STATE_CLOSED);
+	
+	if (gui_ram->gui->state == CSM_GUI_STATE_FOCUSED)
+		GUI_DoUnFocus(gui_ram->id);
+	
+	LOGD("[GUI:%d] onClose\n", gui_ram->id);
+	gui_ram->gui->methods->onClose(gui_ram->gui, free);
+	
+	if (gui_ram->gui->state == CSM_GUI_STATE_CLOSED) {
+		linked_list_remove(&id2csm[id]->gui_ll, gui_ram);
+		GUI_SyncStates();
+		
+		gui_to_destroy.push(gui_ram);
+		
+		int next_top = GUI_GetTopID();
+		if (next_top >= 0) {
+			GUI_DoFocus(next_top);
+			GUI_DirectRedrawGUI_ID(next_top);
+		}
+	}
+}
+
+void GUI_GarbageCollector() {
+	while (gui_to_destroy.size() > 0) {
+		GUI_RAM *gui_ram = gui_to_destroy.front();
+		
+		assert(gui_ram->gui->state == CSM_GUI_STATE_CLOSED);
+		
+		LOGD("[GUI:%d] destroy\n", gui_ram->id);
+		gui_ram->gui->methods->onDestroy(gui_ram->gui, free);
+		free(gui_ram);
+		
+		gui_to_destroy.pop();
+	}
+}
+
 GUI_RAM *GUI_GetById(int id) {
 	return id2gui[id];
 }
@@ -184,6 +214,10 @@ GUI_RAM *GUI_GetNext(int id) {
 	if (gui_index < sorted_gui_list.size() - 1)
 		return sorted_gui_list[gui_index + 1];
 	return nullptr;
+}
+
+void GUI_DirectRedrawGUI() {
+	GUI_DirectRedrawGUI_ID(GUI_GetTopID());
 }
 
 void GUI_DirectRedrawGUI_ID(int id) {
@@ -210,43 +244,73 @@ void GUI_DirectRedrawGUI_ID(int id) {
 }
 
 void GUI_PendedRedrawGUI() {
-	// TODO: subproc
-	GUI_DirectRedrawGUI_ID(GUI_GetTopID());
+	GBS_RunInContext(MMI_CEPID, []() {
+		GUI_DirectRedrawGUI_ID(GUI_GetTopID());
+	});
+}
+
+void GUI_GeneralFuncF0(int code) {
+	int id = GUI_GetTopID();
+	if (id != -1)
+		GUI_GeneralFunc_flag0(id, code);
+}
+
+void GUI_GeneralFuncF1(int code) {
+	int id = GUI_GetTopID();
+	if (id != -1)
+		GUI_GeneralFunc_flag1(id, code);
+}
+
+void GUI_GeneralFunc_flag0(int id, int code) {
+	fprintf(stderr, "%s: unimplemented!\n", __func__);
+	GUI_GeneralFunc_flag1(id, code);
+}
+
+void GUI_GeneralFunc_flag1(int id, int code) {
+	fprintf(stderr, "%s: destroy GUI\n", __func__);
+	
+	GUI_Close(id);
+	GBS_SendMessage(MMI_CEPID, MSG_GUI_DESTROYED, 0, (void *) code, nullptr);
+}
+
+void GUI_REDRAW() {
+	// WTF?
+	GUI_DirectRedrawGUI();
 }
 
 void GUI_DrawString(WSHDR *wshdr, int x1, int y1, int x2, int y2, int font, int text_attribute, const char *Pen, const char *Brush) {
 	fprintf(stderr, "%s not implemented!\n", __func__);
-	GUI_RedrawScreen();
+	GUI_IpcRedrawScreen();
 }
 
 void GUI_DrawPixel(int x1, int y1, const char *color) {
 	painter->drawPixel(x1, y1, GUI_Color2Int(color));
-	GUI_RedrawScreen();
+	GUI_IpcRedrawScreen();
 }
 
 void GUI_DrawLine(int x1, int y1, int x2, int y2, int type, const char *pen) {
 	painter->drawLine(x1, y1, x2, y2, GUI_Color2Int(pen));
-	GUI_RedrawScreen();
+	GUI_IpcRedrawScreen();
 }
 
 void GUI_DrawRectangle(int x1, int y1, int x2, int y2, int flags, const char *pen, const char *brush) {
 	painter->drawRect(x1, y1, x2 - x1 + 1, y2 - y1 + 1, GUI_Color2Int(brush), GUI_Color2Int(pen));
-	GUI_RedrawScreen();
+	GUI_IpcRedrawScreen();
 }
 
 void GUI_DrawRoundedFrame(int x1, int y1, int x2, int y2, int x_round, int y_round, int flags, const char *pen, const char *brush) {
 	painter->drawRoundedRect(x1, y1, x2 - x1 + 1, y2 - y1 + 1, x_round, y_round, GUI_Color2Int(brush), GUI_Color2Int(pen));
-	GUI_RedrawScreen();
+	GUI_IpcRedrawScreen();
 }
 
 void GUI_DrawTriangle(int x1, int y1, int x2, int y2, int x3, int y3, int flags, char *pen, char *brush) {
 	painter->drawTriangle(x1, y1, x2, y2, x3, y3, GUI_Color2Int(brush), GUI_Color2Int(pen));
-	GUI_RedrawScreen();
+	GUI_IpcRedrawScreen();
 }
 
 void GUI_DrawArc(int x1, int y1, int x2, int y2, int start, int end, int flags, char *pen, char *brush) {
 	painter->drawArc(x1, y1, x2 - x1 + 1, y2 - y1 + 1, start, end, GUI_Color2Int(brush), GUI_Color2Int(pen));
-	GUI_RedrawScreen();
+	GUI_IpcRedrawScreen();
 }
 
 void GUI_DrawObject(DRWOBJ *drw) {
@@ -259,7 +323,7 @@ void GUI_DrawObject(DRWOBJ *drw) {
 	
 	painter->setWindow(x1, y1, x2, y2);
 	
-	GUI_RedrawScreen();
+	GUI_IpcRedrawScreen();
 }
 
 void GUI_SetPropTo_Obj1(DRWOBJ *drw, RECT *rect, int rect_flag, WSHDR *wshdr, int font, int flags) {
@@ -403,7 +467,7 @@ void *GUI_RamScreenBuffer() {
 	return IPC::instance()->getScreenBuffer();
 }
 
-void GUI_RedrawScreen() {
+void GUI_IpcRedrawScreen() {
 	if (!screen_redraw_requested) {
 		screen_redraw_requested = true;
 		GBS_RunInContext(MMI_CEPID, []() {

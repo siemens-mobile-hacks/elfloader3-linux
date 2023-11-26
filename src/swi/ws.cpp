@@ -117,7 +117,10 @@ void wsRemoveChars(WSHDR *ws, uint16_t pos, uint16_t len) {
 	pos = pos - 1;
 	
 	assert(pos < ws->maxlen - 1);
-	assert(pos + len <= ws->maxlen - 1);
+	// assert(pos + len <= ws->maxlen - 1);
+	
+	if (pos + len > ws->maxlen - 1)
+		len = ws->maxlen - 1 - pos;
 	
 	memmove(&ws->body->data[pos], &ws->body->data[pos + len], (ws->maxlen - 1 - (pos + len)) * sizeof(uint16_t));
 	ws->body->len -= len;
