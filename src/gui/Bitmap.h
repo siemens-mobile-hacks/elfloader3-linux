@@ -13,9 +13,9 @@ class Bitmap {
 		};
 		
 		static inline uint32_t RGB565toRGB8888(uint32_t color) {
-			uint32_t b = ((((color >> 11) & 0x1F) * 527) + 23) >> 6;
+			uint32_t r = ((((color >> 11) & 0x1F) * 527) + 23) >> 6;
 			uint32_t g = ((((color >> 5) & 0x3F) * 259) + 33) >> 6;
-			uint32_t r = (((color & 0x1F) * 527) + 23) >> 6;
+			uint32_t b = (((color & 0x1F) * 527) + 23) >> 6;
 			return 0xFF000000 | (r << 16) | (g << 8) | b;
 		}
 		
@@ -34,10 +34,10 @@ class Bitmap {
 		static inline uint32_t getBitmapPixelRGB565(int x, int y, int w, int h, uint8_t *bitmap) {
 			uint16_t *pixels = reinterpret_cast<uint16_t *>(bitmap);
 			uint32_t color = pixels[y * w + x];
-			uint32_t b = ((((color >> 11) & 0x1F) * 527) + 23) >> 6;
+			uint32_t r = ((((color >> 11) & 0x1F) * 527) + 23) >> 6;
 			uint32_t g = ((((color >> 5) & 0x3F) * 259) + 33) >> 6;
-			uint32_t r = (((color & 0x1F) * 527) + 23) >> 6;
-			return r << 16 | g << 8 | b;
+			uint32_t b = (((color & 0x1F) * 527) + 23) >> 6;
+			return 0xFF000000 | (r << 16) | (g << 8) | b;
 		}
 		
 		static inline uint32_t getBitmapPixelRGB332(int x, int y, int w, int h, uint8_t *bitmap) {

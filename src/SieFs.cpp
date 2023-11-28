@@ -33,7 +33,7 @@ std::string SieFs::path2sie(const std::string &unix_path) {
 	// LOGD("path2sie: %s -> %s\n", unix_path.c_str(), siemens_path.c_str());
 	
 	if (!siemens_path.size()) {
-		LOGE("Invalid unix path: %s\n", unix_path.c_str());
+		LOGE("Invalid unix path: '%s'\n", unix_path.c_str());
 		abort();
 	}
 	
@@ -58,9 +58,9 @@ std::string SieFs::sie2path(const std::string &siemens_path) {
 			return unix_path;
 		}
 	}
-	LOGE("Invalid siemens path: %s\n", siemens_path.c_str());
-	abort();
-	return "";
+	LOGE("Invalid siemens path: '%s'\n", siemens_path.c_str());
+	// abort();
+	return "/non_existent/empty/path/12345";
 }
 
 std::string SieFs::caseInsensitivePath(const std::string &path) {

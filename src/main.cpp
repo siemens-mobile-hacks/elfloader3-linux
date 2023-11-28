@@ -56,12 +56,13 @@ static uint8_t *createSharedMemory(int *mem_id) {
 int main(int argc, char **argv) {
 	std::atexit(mrpropper);
 	
-	if (argc != 2) {
-		fprintf(stderr, "usage: %s path/to/file.elf\n", argv[0]);
+	if (argc < 2) {
+		fprintf(stderr, "usage: %s path/to/file.elf <fname>\n", argv[0]);
 		return 1;
 	}
 	
 	std::string filename = argv[1];
+	std::string elf_arg = argc >= 3 ? argv[2] : "";
 	
 	if (!isFileExists(filename)) {
 		LOGE("ELF not found: %s\n", filename.c_str());
@@ -121,14 +122,15 @@ int main(int argc, char **argv) {
 			return;
 		}
 		
-		// LOGD("run INIT array\n");
-		// loader_run_INIT_Array(ex);
+		std::string exe_name = SieFs::path2sie(filename);
+		std::string fname = "";
 		
-		std::string fname = SieFs::path2sie(filename);
+		if (elf_arg.size() > 0)
+			fname = SieFs::path2sie(std::filesystem::canonical(elf_arg));
 		
 		auto entry = (int (*)(const char *, const char *, const void *)) loader_elf_entry(ex);
-		printf("run entry at %p (fname=%s)\n", entry, fname.c_str());
-		int ret = entry(fname.c_str(), "", nullptr);
+		printf("run entry at %p (exe=%s, fname=%s)\n", entry, exe_name.c_str(), fname.c_str());
+		int ret = entry(exe_name.c_str(), fname.c_str(), nullptr);
 		LOGD("entry ret = %d\n", ret);
 	});
 	
