@@ -27,6 +27,7 @@ Elf32_Exec *loader_elf_open(const char *filename) {
 				ex->v_addr = (unsigned int)-1;
 				ex->fp = fp;
 				ex->body = 0;
+				ex->body_memory = 0;
 				ex->type = EXEC_ELF;
 				ex->libs = 0;
 				ex->hashtab = 0;
@@ -63,7 +64,7 @@ Elf32_Exec *loader_elf_open(const char *filename) {
 void *loader_elf_entry(Elf32_Exec *ex) {
 	if (!ex)
 		return 0;
-	return (ex->body->value + ex->ehdr.e_entry - ex->v_addr);
+	return (ex->body + ex->ehdr.e_entry - ex->v_addr);
 }
 
 int loader_elf_close(Elf32_Exec *ex) {
@@ -88,8 +89,8 @@ int loader_elf_close(Elf32_Exec *ex) {
 		free(ex->fname);
 	if (ex->hashtab)
 		free(ex->hashtab);
-	if (ex->body)
-		free(ex->body);
+	if (ex->body_memory)
+		free(ex->body_memory);
 	if (ex->temp_env)
 		free(ex->temp_env);
 	free(ex);

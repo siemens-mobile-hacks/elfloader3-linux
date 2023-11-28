@@ -58,15 +58,19 @@ static AlignedMemory *_allocate_aligned(size_t size, size_t alignment) {
 	return mem;
 }
 
-static AlignedMemory *_allocate_body(size_t size) {
+static int _allocate_body(Elf32_Exec *ex, size_t size) {
 	AlignedMemory *mem = _allocate_aligned(size, getpagesize());
 	if (!mem)
-		return NULL;
+		return 0;
 	if (mprotect(mem->value, size, PROT_READ | PROT_EXEC | PROT_WRITE) != 0) {
 		free(mem);
-		return NULL;
+		return 0;
 	}
-	return mem;
+	
+	ex->body = mem->value;
+	ex->body_memory = mem;
+	
+	return 1;
 }
 
 static char *_load_data(Elf32_Exec *ex, int offset, int size) {
@@ -153,9 +157,9 @@ int loader_do_reloc(Elf32_Exec *ex, Elf32_Phdr *phdr) {
 	}
 
 	// Таблички. Нужны только либам, и их юзающим)
-	ex->symtab = ex->dyn[DT_SYMTAB] ? (Elf32_Sym *)(ex->body->value + ex->dyn[DT_SYMTAB] - ex->v_addr) : 0;
-	ex->jmprel = (Elf32_Rel *)(ex->body->value + ex->dyn[DT_JMPREL] - ex->v_addr);
-	ex->strtab = ex->dyn[DT_STRTAB] ? ex->body->value + ex->dyn[DT_STRTAB] - ex->v_addr : 0;
+	ex->symtab = ex->dyn[DT_SYMTAB] ? (Elf32_Sym *)(ex->body + ex->dyn[DT_SYMTAB] - ex->v_addr) : 0;
+	ex->jmprel = (Elf32_Rel *)(ex->body + ex->dyn[DT_JMPREL] - ex->v_addr);
+	ex->strtab = ex->dyn[DT_STRTAB] ? ex->body + ex->dyn[DT_STRTAB] - ex->v_addr : 0;
 
 	EP3_DEBUG("STRTAB: %X\n", ex->dyn[DT_STRTAB]);
 	EP3_DEBUG("SYMTAB: %X %p\n", ex->dyn[DT_SYMTAB], ex->symtab);
@@ -221,7 +225,7 @@ int loader_do_reloc(Elf32_Exec *ex, Elf32_Phdr *phdr) {
 			Elf32_Sym *sym = ex->symtab ? &ex->symtab[symtab_index] : 0;
 			bind_type = sym ? ELF_ST_BIND(sym->st_info) : 0;
 			reloc_type = sym ? ELF_ST_TYPE(sym->st_info) : 0;
-			addr = (unsigned int *)(ex->body->value + reltab[i].r_offset - ex->v_addr);
+			addr = (unsigned int *)(ex->body + reltab[i].r_offset - ex->v_addr);
 
 			switch (r_type) {
 			case R_ARM_NONE:
@@ -229,7 +233,7 @@ int loader_do_reloc(Elf32_Exec *ex, Elf32_Phdr *phdr) {
 
 			case R_ARM_RABS32:
 				EP3_DEBUG("R_ARM_RABS32\n");
-				*addr += (unsigned int)(ex->body->value - ex->v_addr);
+				*addr += (unsigned int)(ex->body - ex->v_addr);
 				name = ex->strtab + sym->st_name;
 				EP3_DEBUG("*addr = %X\n", *addr);
 				break;
@@ -239,14 +243,14 @@ int loader_do_reloc(Elf32_Exec *ex, Elf32_Phdr *phdr) {
 				if (!ex->symtab) {
 					if (loader_warnings)
 						EP3_ERROR("warning: symtab not found, but relocation R_ARM_ABS32 is exist");
-					*addr = (unsigned int)ex->body->value;
+					*addr = (unsigned int)ex->body;
 					break;
 				}
 
 				if (!ex->strtab) {
 					if (loader_warnings)
 						EP3_ERROR("warning: symtab not found, but relocation R_ARM_ABS32 is exist");
-					*addr = (unsigned int)ex->body->value;
+					*addr = (unsigned int)ex->body;
 					break;
 				}
 
@@ -266,7 +270,7 @@ int loader_do_reloc(Elf32_Exec *ex, Elf32_Phdr *phdr) {
 					case STT_NOTYPE:
 						EP3_DEBUG("STT_NOTYPE\n");
 						if (bind_type != STB_LOCAL)
-							func = (unsigned int) (ex->body->value + sym->st_value);
+							func = (unsigned int) (ex->body + sym->st_value);
 						else
 							func = (unsigned int) (sym->st_value);
 
@@ -274,7 +278,7 @@ int loader_do_reloc(Elf32_Exec *ex, Elf32_Phdr *phdr) {
 
 					default:
 						if (sym->st_value)
-							func = (unsigned int)ex->body->value + sym->st_value;
+							func = (unsigned int)ex->body + sym->st_value;
 						else
 							func = try_search_in_base(ex, name, bind_type);
 						break;
@@ -301,7 +305,7 @@ int loader_do_reloc(Elf32_Exec *ex, Elf32_Phdr *phdr) {
 
 			case R_ARM_RELATIVE:
 				EP3_DEBUG("R_ARM_RELATIVE\n");
-				*addr += (unsigned int)(ex->body->value - ex->v_addr);
+				*addr += (unsigned int)(ex->body - ex->v_addr);
 				name = ex->strtab + sym->st_name;
 				EP3_DEBUG("*addr = %X\n", *addr);
 				break;
@@ -334,14 +338,14 @@ int loader_do_reloc(Elf32_Exec *ex, Elf32_Phdr *phdr) {
 					case STT_NOTYPE:
 						EP3_DEBUG("STT_NOTYPE\n");
 						if (bind_type != STB_LOCAL)
-							func = (unsigned int) (ex->body->value + sym->st_value);
+							func = (unsigned int) (ex->body + sym->st_value);
 						else
 							func = sym->st_value;
 						goto skeep_err1;
 
 					default:
 						if (sym->st_value)
-							func = (unsigned int)ex->body->value + sym->st_value;
+							func = (unsigned int)ex->body + sym->st_value;
 						else {
 							EP3_DEBUG("Searching in libs...\n");
 							func = try_search_in_base(ex, name, bind_type);
@@ -374,7 +378,7 @@ int loader_do_reloc(Elf32_Exec *ex, Elf32_Phdr *phdr) {
 			case R_ARM_COPY:
 				EP3_DEBUG("R_ARM_COPY\n");
 				memcpy((void *)addr,
-					(void *)(ex->body->value + sym->st_value), sym->st_size);
+					(void *)(ex->body + sym->st_value), sym->st_size);
 				break;
 
 				/* хз чо за релок, ни в одном лоадере его не встречал,
@@ -419,7 +423,7 @@ int loader_do_reloc(Elf32_Exec *ex, Elf32_Phdr *phdr) {
 				return E_UNDEF;
 			}
 
-			*((Elf32_Word *)(ex->body->value + ex->jmprel[i].r_offset)) = func;
+			*((Elf32_Word *)(ex->body + ex->jmprel[i].r_offset)) = func;
 			++i;
 		}
 	}
@@ -445,8 +449,9 @@ int loader_load_sections(Elf32_Exec *ex) {
 			break;
 		if (read(ex->fp, &phdrs[i], sizeof(Elf32_Phdr)) != sizeof(Elf32_Phdr)) {
 			/* кривой заголовок, шлём нафиг этот эльф */
-			free(ex->body);
+			free(ex->body_memory);
 			ex->body = 0;
+			ex->body_memory = 0;
 			free(phdrs);
 			return E_PHDR;
 		}
@@ -469,8 +474,8 @@ int loader_load_sections(Elf32_Exec *ex) {
 	if (i == ex->ehdr.e_phnum) { // Если прочитались все заголовки
 		// ex->bin_size = loader_get_bin_size(ex, phdrs);
 
-		if (ex->body = _allocate_body(ex->bin_size + 1)) { // Если хватило рамы
-			memset(ex->body->value, 0, ex->bin_size + 1);
+		if (_allocate_body(ex, ex->bin_size + 1)) { // Если хватило рамы
+			memset(ex->body, 0, ex->bin_size + 1);
 			memset(ex->dyn, 0, sizeof(ex->dyn));
 
 			for (i = 0; i < ex->ehdr.e_phnum; ++i) {
@@ -482,13 +487,14 @@ int loader_load_sections(Elf32_Exec *ex) {
 						break; // Пропускаем пустые сегменты
 					EP3_DEBUG("PT_LOAD: %08X - %08X | %08X - %08X\n", phdr.p_offset, phdr.p_offset + phdr.p_filesz, phdr.p_vaddr - ex->v_addr, phdr.p_vaddr - ex->v_addr + phdr.p_filesz);
 					if (lseek(ex->fp, phdr.p_offset, SEEK_SET) != -1) {
-						if (read(ex->fp, ex->body->value + phdr.p_vaddr - ex->v_addr, phdr.p_filesz) == phdr.p_filesz)
+						if (read(ex->fp, ex->body + phdr.p_vaddr - ex->v_addr, phdr.p_filesz) == phdr.p_filesz)
 							break;
 					}
 
 					// Не прочитали сколько нужно
-					free(ex->body);
+					free(ex->body_memory);
 					ex->body = 0;
+					ex->body_memory = 0;
 					free(phdrs);
 					return E_SECTION;
 
@@ -497,14 +503,15 @@ int loader_load_sections(Elf32_Exec *ex) {
 						break; // Пропускаем пустые сегменты
 
 					EP3_DEBUG("Load data dynamic segment: %d - %d\n", phdr.p_offset, phdr.p_filesz);
-					ex->dynamic = (Elf32_Dyn *) (ex->body->value + phdr.p_vaddr - ex->v_addr);
+					ex->dynamic = (Elf32_Dyn *) (ex->body + phdr.p_vaddr - ex->v_addr);
 					
 					if (!loader_do_reloc(ex, &phdr))
 						break;
 
 					// Если что-то пошло не так...
-					free(ex->body);
+					free(ex->body_memory);
 					ex->body = 0;
+					ex->body_memory = 0;
 					free(phdrs);
 					return E_SECTION;
 				}
@@ -517,18 +524,19 @@ int loader_load_sections(Elf32_Exec *ex) {
 		}
 	}
 
-	free(ex->body);
+	free(ex->body_memory);
 	ex->body = 0;
+	ex->body_memory = 0;
 	free(phdrs);
 	return E_RAM;
 }
 
 /* constructors */
 void loader_run_INIT_Array(Elf32_Exec *ex) {
-	if (!ex->dyn[DT_FINI_ARRAY])
+	if (!ex->dyn[DT_INIT_ARRAY])
 		return;
 	size_t sz = ex->dyn[DT_INIT_ARRAYSZ] / sizeof(void *);
-	void **arr = (void **)(ex->body->value + ex->dyn[DT_INIT_ARRAY] - ex->v_addr);
+	void **arr = (void **)(ex->body + ex->dyn[DT_INIT_ARRAY] - ex->v_addr);
 
 	EP3_DEBUG("init_array sz: %d\n", sz);
 
@@ -543,7 +551,7 @@ void loader_run_FINI_Array(Elf32_Exec *ex) {
 	if (!ex->dyn[DT_FINI_ARRAY])
 		return;
 	size_t sz = ex->dyn[DT_FINI_ARRAYSZ] / sizeof(void *);
-	void **arr = (void **)(ex->body->value + ex->dyn[DT_FINI_ARRAY] - ex->v_addr);
+	void **arr = (void **)(ex->body + ex->dyn[DT_FINI_ARRAY] - ex->v_addr);
 
 	EP3_DEBUG("fini_array sz: %d\n", sz);
 

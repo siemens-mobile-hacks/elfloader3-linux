@@ -20,10 +20,12 @@ struct FileSearchCtx {
 };
 
 static void _set_errno(int ret, uint32_t *errp) {
-	if (ret < 0) {
-		*errp = 1;
-	} else {
-		*errp = 0;
+	if (errp) {
+		if (ret < 0) {
+			*errp = 1;
+		} else {
+			*errp = 0;
+		}
 	}
 }
 
@@ -270,16 +272,29 @@ int FS_truncate(int fd, int length, uint32_t *errp) {
 	return 0;
 }
 
-int FS_isdir(const char * cDirectory, uint32_t *errp) {
-	fprintf(stderr, "%s not implemented!\n", __func__);
-	abort();
-	return 0;
+int FS_isdir(const char *path, uint32_t *errp) {
+	std::string file = SieFs::sie2path(path);
+	struct stat st;
+	int ret = lstat(file.c_str(), &st);
+	if (SWI_TRACE) {
+		fprintf(stderr, "[strace] stat(%s) = %d\n", SieFs::sie2path(path).c_str(), ret);
+	}
+	if (ret == 0) {
+		return ((st.st_mode & S_IFMT) == S_IFDIR);
+	} else {
+		_set_errno(ret, errp);
+		return 0;
+	}
 }
 
 int FS_GetFileStats(const char *siemens_file, FSTATS *out_st, uint32_t *errp) {
 	std::string file = SieFs::sie2path(siemens_file);
 	struct stat st;
-	if (lstat(file.c_str(), &st) == 0) {
+	int ret = lstat(file.c_str(), &st);
+	if (SWI_TRACE) {
+		fprintf(stderr, "[strace] stat(%s) = %d\n", file.c_str(), ret);
+	}
+	if (ret == 0) {
 		if (errp)
 			*errp = 0;
 		
@@ -298,8 +313,7 @@ int FS_GetFileStats(const char *siemens_file, FSTATS *out_st, uint32_t *errp) {
 		
 		return 0;
 	} else {
-		if (errp)
-			*errp = 1;
+		_set_errno(ret, errp);
+		return ret;
 	}
-	return 1;
 }

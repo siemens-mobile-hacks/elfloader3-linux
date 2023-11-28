@@ -121,8 +121,8 @@ int main(int argc, char **argv) {
 			return;
 		}
 		
-		LOGD("run INIT array\n");
-		loader_run_INIT_Array(ex);
+		// LOGD("run INIT array\n");
+		// loader_run_INIT_Array(ex);
 		
 		std::string fname = SieFs::path2sie(filename);
 		

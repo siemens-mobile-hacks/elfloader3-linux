@@ -99,7 +99,7 @@ struct r_debug {
 };
 
 typedef struct {
-	AlignedMemory *body;
+	void *body;
 	unsigned int bin_size;
 	Elf32_Ehdr ehdr;
 	unsigned int v_addr;
@@ -116,8 +116,10 @@ typedef struct {
 	int *switab;
 	char *fname; // не постоянная переменная, после загрузки эльфа она обнулится
 	char *temp_env; // временное переменное окружение для эльфа
+	// Все доп. поля кидаем в конец структуры, чтобы не нарушать бинарную совместимость
 	struct link_map linkmap;
 	Elf32_Dyn *dynamic;
+	void *body_memory;
 } Elf32_Exec;
 
 typedef struct {

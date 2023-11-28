@@ -25,7 +25,7 @@ void loader_gdb_add_lib(Elf32_Exec *ex) {
 	_gdb_brk();
 	
 	struct link_map *map = &ex->linkmap;
-	map->l_addr = (Elf32_Addr) (ex->body->value - ex->v_addr);
+	map->l_addr = (Elf32_Addr) (ex->body - ex->v_addr);
 	map->l_name = ex->fname;
 	map->l_ld = (Elf32_Addr) ex->dynamic;
 	

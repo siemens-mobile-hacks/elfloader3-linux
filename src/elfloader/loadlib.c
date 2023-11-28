@@ -91,10 +91,10 @@ Elf32_Word loader_find_export(Elf32_Exec *ex, const char *name) {
 		switch (ELF_ST_BIND(sym.st_info)) {
 		case STB_GLOBAL:
 			/* Global definition.  Just what we need. */
-			return (Elf32_Word)ex->body->value + sym.st_value;
+			return (Elf32_Word)ex->body + sym.st_value;
 		case STB_WEAK:
 			/* Weak definition.  Use this value if we don't find another. */
-			func = (Elf32_Word)ex->body->value + sym.st_value;
+			func = (Elf32_Word)ex->body + sym.st_value;
 			break;
 		default:
 			/* Local symbols are ignored.  */
@@ -348,7 +348,7 @@ try_again:
 	/* запустим функциюю инициализации либы, если таковая имеется */
 	if (ex->dyn[DT_INIT]) {
 		EP3_DEBUG("init function found\n");
-		((void (*)(const char *))(ex->body->value + ex->dyn[DT_INIT] - ex->v_addr))(name);
+		((void (*)(const char *))(ex->body + ex->dyn[DT_INIT] - ex->v_addr))(name);
 	}
 
 	EP3_DEBUG(" '%s' Loade complete\n", name);
@@ -378,7 +378,7 @@ int loader_lib_close(Elf32_Lib *lib, int immediate) {
 
 		Elf32_Exec *ex = lib->ex;
 		if (ex->dyn[DT_FINI])
-			((LIB_FUNC *)(ex->body->value + ex->dyn[DT_FINI] - ex->v_addr))();
+			((LIB_FUNC *)(ex->body + ex->dyn[DT_FINI] - ex->v_addr))();
 
 		if (lib->glob_queue) {
 			// Функция финализации

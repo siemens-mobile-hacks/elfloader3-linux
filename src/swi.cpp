@@ -1,6 +1,7 @@
 #include "swi.h"
 #include "charset.h"
 #include "elfloader/loader.h"
+#include "elfloader/env.h"
 
 void loader_swi_stub(int swi) {
 	fprintf(stderr, "Unk swi 0x%04X (%d) func called\n", swi, swi);
@@ -238,6 +239,10 @@ void loader_init_switab() {
 	
 	// Other
 	switab_functions[0x2EE]		= (void *) loader_elf_close;
+	switab_functions[0x2F2]		= (void *) loader_setenv;
+	switab_functions[0x2F3]		= (void *) loader_unsetenv;
+	switab_functions[0x2F4]		= (void *) loader_getenv;
+	switab_functions[0x2F5]		= (void *) loader_clearenv;
 	
 	// RAM
 	switab_functions[0x8106 - 0x8000]	= (void *) CSM_root();
