@@ -129,6 +129,7 @@ void GUI_HandleKeyPress(GBS_MSG *msg) {
 		LOGD("[GUI:%d] onKey\n", gui_ram->id);
 		int ret = gui_ram->gui->methods->onKey(gui_ram->gui, &gui_msg);
 		if (ret) {
+			LOGD("[GUI:%d] onKey ret=%d (gui close)\n", gui_ram->id, ret);
 			int id = gui_ram->id;
 			GBS_RunInContext(MMI_CEPID, [id]() {
 				GUI_GeneralFunc_flag1(id, 1);
@@ -270,7 +271,7 @@ void GUI_GeneralFunc_flag1(int id, int code) {
 	fprintf(stderr, "%s: destroy GUI\n", __func__);
 	
 	GUI_Close(id);
-	GBS_SendMessage(MMI_CEPID, MSG_GUI_DESTROYED, 0, (void *) code, nullptr);
+	GBS_SendMessage(MMI_CEPID, MSG_GUI_DESTROYED, 0, (void *) id, (void *) code);
 }
 
 void GUI_REDRAW() {
@@ -317,6 +318,7 @@ void GUI_DrawObject(DRWOBJ *drw) {
 	auto [x1, y1, x2, y2] = painter->getWindow();
 	
 	if (drw->type == DRWOBJ_TYPE_IMG) {
+		assert(drw->img != nullptr);
 		painter->setWindow(drw->rect.x, drw->rect.y, drw->rect.x2, drw->rect.y2);
 		painter->drawBitmap(0, 0, drw->img->w, drw->img->h, drw->img->bitmap, IMG_GetBitmapType(drw->img->bpnum), drw->offset_x, drw->offset_y);
 	}
@@ -357,7 +359,9 @@ void GUI_ObjSetColor(DRWOBJ *drw, const char *color1, const char *color2) {
 }
 
 void GUI_SetProp2ImageOrCanvas(DRWOBJ *drw, RECT *rect, int flags, IMGHDR *img, int offset_x, int offset_y) {
-	assert(drw != nullptr && rect != nullptr && img != nullptr);
+	assert(drw != nullptr);
+	assert(rect != nullptr);
+	assert(img != nullptr);
 	
 	drw->type = DRWOBJ_TYPE_IMG;
 	drw->img = img;
