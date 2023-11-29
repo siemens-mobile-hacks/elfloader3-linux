@@ -50,6 +50,8 @@ void GBS_StartTimerProc(GBSTMR *tmr, long ticks, GbsTimerCallback callback) {
 	assert(tmr != nullptr);
 	assert(GBS_GetCurCepid() != -1);
 	
+	GBS_DelTimer(tmr);
+	
 	GbsTimerData *tmr_data = new GbsTimerData;
 	tmr_data->callback = callback;
 	tmr_data->cepid = GBS_GetCurCepid();
@@ -61,10 +63,14 @@ void GBS_StartTimerProc(GBSTMR *tmr, long ticks, GbsTimerCallback callback) {
 	}, (ticks * 1000) / 216, false);
 	
 	tmr->param0 = reinterpret_cast<int>(tmr_data);
+	tmr->param1 = GBS_TMR_CREATED;
 }
 
 void GBS_StartTimer(GBSTMR *tmr, int ticks, int msg, int unk, int cepid) {
 	assert(tmr != nullptr);
+	
+	GBS_DelTimer(tmr);
+	
 	GbsTimerData *tmr_data = new GbsTimerData;
 	tmr_data->callback = nullptr;
 	tmr_data->cepid = cepid;
@@ -76,24 +82,31 @@ void GBS_StartTimer(GBSTMR *tmr, int ticks, int msg, int unk, int cepid) {
 	}, (ticks * 1000) / 216, false);
 	
 	tmr->param0 = reinterpret_cast<int>(tmr_data);
+	tmr->param1 = GBS_TMR_CREATED;
 }
 
 void GBS_StopTimer(GBSTMR *tmr) {
-	GBS_DelTimer(tmr);
+	if (GBS_IsTimerProcessing(tmr)) {
+		auto *tmr_data = reinterpret_cast<GbsTimerData *>(tmr->param0);
+		if (tmr_data->timer_id != -1) {
+			Loop::instance()->removeTimer(tmr_data->timer_id);
+			tmr_data->timer_id = -1;
+		}
+	}
 }
 
-int GBS_IsTimerRunning(GBSTMR *tmr) {
-	assert(tmr != nullptr);
-	return tmr->param0 != 0;
+int GBS_IsTimerProcessing(GBSTMR *tmr) {
+	return tmr->param1 == GBS_TMR_CREATED && tmr->param0 != 0;
 }
 
 void GBS_DelTimer(GBSTMR *tmr) {
-	auto *tmr_data = reinterpret_cast<GbsTimerData *>(tmr->param0);
-	if (tmr_data) {
+	if (GBS_IsTimerProcessing(tmr)) {
+		auto *tmr_data = reinterpret_cast<GbsTimerData *>(tmr->param0);
 		if (tmr_data->timer_id != -1)
 			Loop::instance()->removeTimer(tmr_data->timer_id);
 		delete tmr_data;
 		tmr->param0 = 0;
+		tmr->param1 = GBS_TMR_DELETED;
 	}
 }
 

@@ -287,6 +287,9 @@ typedef struct {
 	void *data1;
 } GBS_MSG;
 
+#define GBS_TMR_CREATED 0x74696d72
+#define GBS_TMR_DELETED 0x756e6466
+
 typedef struct {
 	int param0;
 	int param1;
@@ -303,7 +306,7 @@ typedef void (*GbsTimerCallback)(GBSTMR *);
 void GBS_StartTimerProc(GBSTMR *tmr, long ms, GbsTimerCallback callback);
 void GBS_StartTimer(GBSTMR *tmr, int ms, int msg, int unk, int cepid);
 void GBS_StopTimer(GBSTMR *tmr);
-int GBS_IsTimerRunning(GBSTMR * param1);
+int GBS_IsTimerProcessing(GBSTMR * param1);
 void GBS_RunInContext(int cepid, std::function<void()> callback);
 void GBS_CreateProc(int cepid, const char *name, GbsProcCallback on_msg, int prio, int unk_zero);
 int GBS_GetCurCepid(void);

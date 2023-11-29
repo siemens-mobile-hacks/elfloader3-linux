@@ -214,7 +214,7 @@ void loader_init_switab() {
 	switab_functions[0x004D]	= (void *) GBS_StartTimerProc;
 	switab_functions[0x0143]	= (void *) GBS_StartTimer;
 	switab_functions[0x0144]	= (void *) GBS_StopTimer;
-	switab_functions[0x01A6]	= (void *) GBS_IsTimerRunning;
+	switab_functions[0x01A6]	= (void *) GBS_IsTimerProcessing;
 	switab_functions[0x0105]	= (void *) GBS_CreateProc;
 	switab_functions[0x0145]	= (void *) GBS_GetCurCepid;
 	switab_functions[0x0154]	= (void *) GBS_KillProc;
