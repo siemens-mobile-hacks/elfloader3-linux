@@ -2,31 +2,45 @@
 
 #include <cstdio>
 #include <cstdlib>
+#include <cassert>
+#include <mutex>
+
+static std::mutex sched_dummy_lock;
 
 void LockSched(void) {
-	fprintf(stderr, "%s not implemented!\n", __func__);
+	sched_dummy_lock.lock();
 }
 
 void UnlockSched(void) {
-	fprintf(stderr, "%s not implemented!\n", __func__);
+	sched_dummy_lock.unlock();
 }
 
 void MutexCreate(MUTEX *mtx) {
-	fprintf(stderr, "%s not implemented!\n", __func__);
+	assert(mtx);
+	mtx->p = reinterpret_cast<void *>(new std::mutex);
 }
 
 void MutexDestroy(MUTEX *mtx) {
-	fprintf(stderr, "%s not implemented!\n", __func__);
+	assert(mtx != nullptr && mtx->p != nullptr);
+	auto m = reinterpret_cast<std::mutex *>(mtx->p);
+	delete m;
+	mtx->p = nullptr;
 }
 
 void MutexLock(MUTEX *mtx) {
-	fprintf(stderr, "%s not implemented!\n", __func__);
+	assert(mtx != nullptr && mtx->p != nullptr);
+	auto m = reinterpret_cast<std::mutex *>(mtx->p);
+	m->lock();
 }
 
 void MutexLockEx(MUTEX *mtx, int flag) {
-	fprintf(stderr, "%s not implemented!\n", __func__);
+	assert(mtx != nullptr && mtx->p != nullptr);
+	auto m = reinterpret_cast<std::mutex *>(mtx->p);
+	m->lock();
 }
 
 void MutexUnlock(MUTEX *mtx) {
-	fprintf(stderr, "%s not implemented!\n", __func__);
+	assert(mtx != nullptr && mtx->p != nullptr);
+	auto m = reinterpret_cast<std::mutex *>(mtx->p);
+	m->unlock();
 }

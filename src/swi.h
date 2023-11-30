@@ -287,8 +287,8 @@ typedef struct {
 	void *data1;
 } GBS_MSG;
 
-#define GBS_TMR_CREATED 0x74696d72
-#define GBS_TMR_DELETED 0x756e6466
+#define GBS_TMR_CREATED 0x74696d72 // "timr"
+#define GBS_TMR_DELETED 0x756e6466 // "undf"
 
 typedef struct {
 	int param0;

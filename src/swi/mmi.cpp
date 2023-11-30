@@ -42,6 +42,34 @@ void MMI_Init() {
 }
 
 static int _getKeyCodeFromEvent(IpcPacketKeyEvent *ev) {
+	if ((ev->modifiers & IPC_KEYPAD_MODIFIER)) {
+		switch (ev->keycode) {
+			case IPC_KEY_0:	return '0';
+			case IPC_KEY_1:	return '7';
+			case IPC_KEY_2:	return '8';
+			case IPC_KEY_3:	return '9';
+			case IPC_KEY_4:	return '4';
+			case IPC_KEY_5:	return '5';
+			case IPC_KEY_6:	return '6';
+			case IPC_KEY_7:	return '1';
+			case IPC_KEY_8:	return '2';
+			case IPC_KEY_9:	return '3';
+		}
+	} else {
+		switch (ev->keycode) {
+			case IPC_KEY_0:	return '0';
+			case IPC_KEY_1:	return '1';
+			case IPC_KEY_2:	return '2';
+			case IPC_KEY_3:	return '3';
+			case IPC_KEY_4:	return '4';
+			case IPC_KEY_5:	return '5';
+			case IPC_KEY_6:	return '6';
+			case IPC_KEY_7:	return '7';
+			case IPC_KEY_8:	return '8';
+			case IPC_KEY_9:	return '9';
+		}
+	}
+	
 	switch (ev->keycode) {
 		case IPC_KEY_INSERT:	return LEFT_SOFT;
 		case IPC_KEY_F1:		return LEFT_SOFT;
@@ -66,6 +94,10 @@ static int _getKeyCodeFromEvent(IpcPacketKeyEvent *ev) {
 		case IPC_KEY_DOWN:		return DOWN_BUTTON;
 		case IPC_KEY_LEFT:		return LEFT_BUTTON;
 		case IPC_KEY_RIGHT:		return RIGHT_BUTTON;
+		
+		case IPC_KEY_ASTERISK:	return '*';
+		case IPC_KEY_SLASH:		return '#';
 	}
+	
 	return -1;
 }

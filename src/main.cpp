@@ -74,19 +74,46 @@ int main(int argc, char **argv) {
 	std::string exe_dir = std::filesystem::canonical(std::filesystem::path(filename).parent_path());
 	std::string self_dir = std::filesystem::canonical(std::filesystem::path(argv[0]).parent_path());
 	
+	std::vector<std::string> lib_dirs;
+	
+	#if defined(ELKA)
+		std::string rootfs_dir = self_dir + "/rootfs/ELKA/";
+		lib_dirs.push_back(self_dir + "/../sdk/lib/ELKA");
+		lib_dirs.push_back(self_dir + "/../sdk/lib/NSG");
+		lib_dirs.push_back(self_dir + "/../sdk/lib");
+		lib_dirs.push_back(rootfs_dir + "Data/ZBin/lib");
+	#elif defined(NEWSGOLD)
+		std::string rootfs_dir = self_dir + "/rootfs/NSG/";
+		lib_dirs.push_back(self_dir + "/../sdk/lib/NSG");
+		lib_dirs.push_back(self_dir + "/../sdk/lib");
+		lib_dirs.push_back(rootfs_dir + "Data/ZBin/lib");
+	#else
+		std::string rootfs_dir = self_dir + "/rootfs/SG/";
+		lib_dirs.push_back(self_dir + "/../sdk/lib/SG");
+		lib_dirs.push_back(self_dir + "/../sdk/lib");
+		lib_dirs.push_back(rootfs_dir + "Data/ZBin/lib");
+	#endif
+	
 	std::string library_path_env;
 	if (getenv("SDK_PATH")) {
 		library_path_env = strprintf("%s/lib/NSG;%s/lib;%s/lib/legacy", getenv("SDK_PATH"), getenv("SDK_PATH"), getenv("SDK_PATH"));
 	} else if (getenv("EL3_LIBRARY_PATH")) {
 		library_path_env = getenv("EL3_LIBRARY_PATH");
 	} else {
-		library_path_env = self_dir + "/../sdk/lib/NSG;" + self_dir + "/../sdk/lib;" + self_dir + "/../sdk/lib/legacy;" + self_dir + "/rootfs/Data/ZBin/lib";
+		library_path_env = strJoin(";", lib_dirs);
 	}
 	
-	SieFs::mount("0", self_dir + "/rootfs/Data");
-	SieFs::mount("1", self_dir + "/rootfs/Cache");
-	SieFs::mount("2", self_dir + "/rootfs/Config");
+#if defined(ELKA) || defined(NEWSGOLD)
+	SieFs::mount("0", rootfs_dir + "Data");
+	SieFs::mount("1", rootfs_dir + "Cache");
+	SieFs::mount("2", rootfs_dir + "Config");
 	SieFs::mount("4", "");
+#else
+	SieFs::mount("0", rootfs_dir + "Data");
+	SieFs::mount("a", rootfs_dir + "Cache");
+	SieFs::mount("b", rootfs_dir + "Config");
+	SieFs::mount("4", "");
+#endif
 	
 	library_path_env = normalizeLibraryPath(library_path_env);
 	loader_setenv("LD_LIBRARY_PATH", library_path_env.c_str(), true);
