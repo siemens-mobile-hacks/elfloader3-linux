@@ -1,0 +1,131 @@
+<?xml version="1.0" encoding="ISO-8859-1" ?>
+
+<slides>
+
+    <!-- SLIDE 1 - Welcome screen -->
+      <animated-slide>
+        <frame src="startupAnimation_01.gif" duration="80" sound="StartupMelody.wav"
+            sound-type="audio/x-wav" />
+        <frame src="startupAnimation_02.gif" duration="80" />
+        <frame src="startupAnimation_03.gif" duration="80" />
+        <frame src="startupAnimation_04.gif" duration="80" />
+        <frame src="startupAnimation_05.gif" duration="80" />
+        <frame src="startupAnimation_06.gif" duration="80" />
+        <frame src="startupAnimation_07.gif" duration="80" />
+        <frame src="startupAnimation_08.gif" duration="80" />
+        <frame src="startupAnimation_09.gif" duration="80" />
+        <frame src="startupAnimation_10.gif" duration="80" />
+        <frame src="startupAnimation_11.gif" duration="80" />
+        <frame src="startupAnimation_12.gif" duration="80" />
+        <frame src="startupAnimation_13.gif" duration="80" />
+        <frame src="startupAnimation_14.gif" duration="80" />
+        <frame src="startupAnimation_15.gif" duration="80" />
+        <frame src="startupAnimation_16.gif"  duration="680" sound-stop="true" />
+      </animated-slide>
+    <!-- END SLIDE 1 - Welcome screen -->       
+    <slide>
+        <resource>02_idle_screen.gif</resource>
+        <duration>3000</duration>
+    </slide>
+    <slide>
+        <resource>03_browse_images.gif</resource>
+        <duration>3000</duration>
+    </slide>
+    <slide>
+        <resource>04_view_image.gif</resource>
+        <duration>3000</duration>
+    </slide>
+    <slide>
+        <resource>05_view_image.gif</resource>
+        <duration>3000</duration>
+    </slide>
+    <slide>
+        <resource>06_browse_sound.gif</resource>
+        <duration>3000</duration>
+    </slide>
+    <!-- Slide 7 - Play music -->
+    <animated-slide>
+        <frame src="play_music_00.gif" duration="1000" sound="Tuesday Love_1.aac"
+            sound-type="audio/mpeg" />
+        <frame src="play_music_01.gif" duration="1000" />
+        <frame src="play_music_02.gif" duration="1000" />
+        <frame src="play_music_03.gif" duration="1000" />
+        <frame src="play_music_04.gif" duration="1000" />
+        <frame src="play_music_05.gif" duration="1000" />
+        <frame src="play_music_06.gif" duration="1000" />
+        <frame src="play_music_07.gif" duration="1000" />
+        <frame src="play_music_08.gif" duration="1000" />
+        <frame src="play_music_09.gif" duration="1000" sound-stop="true" />
+    </animated-slide>
+    <!-- END Slide 7 - Play music -->
+
+    <!-- SLIDE 8 - Incomming call start -->
+    <animated-slide>
+        <frame src="08_ring_01.gif" duration="300" sound="CallMelody.aac"
+            sound-type="audio/midi" />
+        <frame src="08_ring_02.gif" duration="300" />
+        <frame src="08_ring_01.gif" duration="300" />
+        <frame src="08_ring_02.gif" duration="300" />
+        <frame src="08_ring_01.gif" duration="300" />
+        <frame src="08_ring_02.gif" duration="300" />
+        <frame src="08_ring_01.gif" duration="300" />
+        <frame src="08_ring_02.gif" duration="300" />
+        <frame src="08_ring_01.gif" duration="300" />
+        <frame src="08_ring_02.gif" duration="300" />
+        <frame src="08_ring_01.gif" duration="300" />
+        <frame src="08_ring_02.gif" duration="300" />
+        <frame src="08_ring_01.gif" duration="300" />
+        <frame src="08_ring_02.gif" duration="300" />
+        <frame src="08_ring_01.gif" duration="300" />
+	<frame src="08_ring_02.gif" duration="300" />
+        <frame src="08_ring_01.gif" duration="200" sound-stop="true" />
+    </animated-slide>
+    <!-- END - Slide 8 - Incomming call -->
+
+    <!-- Slide 9 - BACK to music -->
+    <animated-slide>
+        <frame src="play_music_10.gif" duration="1000" sound="Tuesday Love_2.aac"
+            sound-type="audio/mpeg" />
+        <frame src="play_music_11.gif" duration="1000" />
+        <frame src="play_music_12.gif" duration="1000" />
+    </animated-slide>
+    <!-- END Slide 9 - BACK to music -->
+
+    <!-- Slide 10 -->
+    <slide>
+        <resource>02_idle_screen.gif</resource>
+        <duration>3000</duration>
+    </slide>
+
+    <!-- Slide 11 & 12 -->
+    <camera title="Camera" camera-timeout="7000" viewer-timeout="3500"
+        top-picture="camera_top.png" bottom-picture="camera_bottom.png"
+        width="240" height="190" />
+
+    <!-- Slide 13 -->
+    <animated-slide>
+        <frame src="02_idle_screen.gif" duration="3000" sound-stop="true" />
+    </animated-slide>
+
+    <!-- SLIDE 14 - Siemens off -->
+    <animated-slide>
+        <frame src="shutdownAnimation_01.gif" duration="100" sound="ShutdownMelody.wav"
+            sound-type="audio/x-wav" />
+        <frame src="shutdownAnimation_02.gif" duration="100" />
+        <frame src="shutdownAnimation_03.gif" duration="100" />
+        <frame src="shutdownAnimation_04.gif" duration="100" />
+        <frame src="shutdownAnimation_05.gif" duration="100" />
+        <frame src="shutdownAnimation_06.gif" duration="100" />
+        <frame src="shutdownAnimation_07.gif" duration="100" />
+        <frame src="shutdownAnimation_08.gif" duration="100" />
+        <frame src="shutdownAnimation_09.gif" duration="100" />
+        <frame src="shutdownAnimation_10.gif" duration="100" />
+        <frame src="shutdownAnimation_11.gif" duration="100" />
+        <frame src="shutdownAnimation_12.gif" duration="100" />
+        <frame src="shutdownAnimation_13.gif" duration="100" />
+        <frame src="shutdownAnimation_14.gif" duration="100" />
+        <frame src="shutdownAnimation_15.gif" duration="100" />
+        <frame src="shutdownAnimation_16.gif" duration="800" sound-stop="true" />
+    </animated-slide>
+    <!-- END SLIDE 14 - Siemens off -->
+</slides>

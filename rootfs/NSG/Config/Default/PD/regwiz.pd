@@ -1,0 +1,17 @@
+000018:T:counter=0
+000026:T:show_at_startup=0
+000021:T:is_enabled=0
+000020:T:auto_send=0
+000021:T:destination=
+000023:T:interval=18000
+000022:T:max_counter=5
+000030:T:registration_status=0
+000026:T:auto_field_1=imei
+000031:T:auto_field_2=swversion
+000026:T:user_field_1=name
+000028:T:user_field_2=gender
+000030:T:user_field_3=birthday
+000027:T:user_field_4=telno
+000021:T:name.size=24
+000024:T:postcode.size=8
+000017:T:message=

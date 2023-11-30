@@ -1,0 +1,13 @@
+000028:T:OwnGreeting.OnOff=1
+000026:T:OwnGreeting.Text=
+000050:T:OwnGreeting.FactoryText=BenQ-Siemens EL71
+000035:T:CallSetupUI.AnyKeyAnswer=0
+000035:T:TimeChargeUI.AutoDisplay=0
+000033:T:SecurityUI.AutoKeyLock=0
+000033:T:CallSetupUI.MinuteBeep=0
+000034:T:CallSetupUI.CallWaiting=0
+000043:T:NetworkSetupUI.FastNetworkSearch=0
+000037:T:Screensaver.CodeProtection=0
+000040:T:Screensaver.Style=Energy saving
+000030:T:Screensaver.Timeout=2
+000026:T:ShowClock.OnOff=1

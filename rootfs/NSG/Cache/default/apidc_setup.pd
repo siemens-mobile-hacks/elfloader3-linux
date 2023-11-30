@@ -1,0 +1,7 @@
+000028:T:OwnGreeting.OnOff=0
+000026:T:ShowClock.OnOff=1
+000042:T:TimeChargeUI_Setup.bAutoDisplay=0
+000039:T:Screensaver.Style=DigitalClock
+000041:T:Screensaver.Standard Style=false
+000036:T:SecurityUI.AutoKeyLock=3600
+000031:T:Screensaver.Timeout=99

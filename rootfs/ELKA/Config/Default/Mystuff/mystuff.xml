@@ -1,0 +1,40 @@
+<?xml version="1.0"?>
+<mystuff>
+	<language />
+	<folder application="EXPLORER"
+	        position="0"
+	        display="on"
+	        location="RINGINGTONE" />
+	<folder application="EXPLORER"
+	        position="1"
+	        display="on"
+	        location="PICTURES" />
+	<folder application="EXPLORER"
+	        position="2"
+	        display="on"
+	        location="VIDEOS" />
+	<folder application="THEME"
+	        position="3"
+	        display="on"
+	        location="THEMES" />
+	<folder application="EXPLORER"
+	        position="4"
+	        display="on"
+	        location="AVATAR" />
+	<folder application="JAM"
+	        position="5"
+	        display="on"
+	        location="JAVA_JAM_GAMES" />
+	<folder application="JAM"
+	        position="6"
+	        display="on"
+	        location="JAVA_JAM_APPL" />
+	<folder application="EXPLORER"
+	        position="7"
+	        display="on"
+	        location="MISC" />
+	<folder position="8"
+	        display="off" />
+	<folder position="9"
+	        display="off" />
+</mystuff>

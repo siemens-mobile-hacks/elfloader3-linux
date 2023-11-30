@@ -1,0 +1,29 @@
+<?xml version="1.0"?>
+<!-- DOCTYPE bml SYSTEM "bml.dtd" -->
+<bml>
+	<language />
+	<sml />
+	<sml />
+	<sml />
+	<sml />
+	<sml />
+	<sml />
+	<sml />
+	<sml />
+	<sml />
+	<sml />
+	<sml />
+	<sml />
+	<sml />
+	<sml />
+	<sml />
+	<sml />
+	<sml />
+	<sml />
+	<sml />
+	<sml />
+	<sml application="BROWSER"
+	     location="NOFOLDER"
+	     title="siemens-mobile"
+	     url="http://wap.siemens.com" />
+</bml>

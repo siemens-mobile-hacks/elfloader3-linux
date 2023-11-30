@@ -1,0 +1,5 @@
+000041:T:AppointmentFields=EndTime,Alarm 
+000027:T:WeekendDays=SA,SU 
+000033:T:StartOfWorkday=06:00:00 
+000025:T:ShowBirthdays=1          
+000036:T:NotesSorting=Chronological 

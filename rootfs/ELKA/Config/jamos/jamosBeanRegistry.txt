@@ -1,0 +1,28 @@
+###############################################################################
+# This file contains the Jamos Bean Interfaces and their respective factories #
+# Author: Eduardo Jasinski Marcato (COM MD SW2 MAO)			      #
+# Date: 2005-04-27							      #
+# Changed: 2006-01-30 Glaucio Oliveira (MAO) CQ P7500086197                   #
+###############################################################################
+# Orange Help
+com.siemens.mp.jamos.ifx.service.orangehelp.emailwizard.EmailWizardUI=com.siemens.mp.jamos.bean.service.orangehelp.emailwizard.EmailWizardFactory
+com.siemens.mp.jamos.ifx.service.orangehelp.startupwizard.StartupWizardUI=com.siemens.mp.jamos.bean.service.orangehelp.startupwizard.StartupWizardFactory
+com.siemens.mp.jamos.ifx.service.orangehelp.inlifehelp.InLifeHelpUI=com.siemens.mp.jamos.bean.service.orangehelp.inlifehelp.InLifeHelpFactory
+# AppMenu
+com.siemens.mp.jamos.ifx.service.menu.JamosMenu=com.siemens.mp.jamos.bean.service.menu.JamosMenuFactory
+# MMUI
+com.siemens.mp.jamos.ifx.service.mediaplayer.MediaPlayerUI=com.siemens.mp.jamos.bean.service.mediaplayer.MediaPlayerUIBeanFactory
+com.siemens.mp.jamos.ifx.service.camera.CameraUI=com.siemens.mp.jamos.bean.service.camera.CameraUIBeanFactory
+com.siemens.mp.jamos.ifx.service.mediafolder.MediaFolderUI=com.siemens.mp.jamos.bean.service.mediafolder.MediaFolderUIBeanFactory
+com.siemens.mp.jamos.ifx.service.personalization.PersonalizationUI=com.siemens.mp.jamos.bean.service.personalization.PersonalizationUIBeanFactory
+# PIM
+com.siemens.mp.jamos.ifx.service.appointments.Appointments=com.siemens.mp.jamos.bean.service.appointments.EventFactory
+com.siemens.mp.jamos.ifx.service.notes.Notes=com.siemens.mp.jamos.bean.service.notes.NotesFactory
+com.siemens.mp.jamos.ifx.service.tasks.Tasks=com.siemens.mp.jamos.bean.service.tasks.ToDoFactory
+com.siemens.mp.jamos.ifx.service.calendar.Calendar=com.siemens.mp.jamos.bean.service.calendar.CalendarFactory
+com.siemens.mp.jamos.ifx.service.smartphonebook.Contacts=com.siemens.mp.jamos.bean.service.smartphonebook.ContactsFactory
+# JavaApps
+com.siemens.mp.jamos.ifx.service.alarm.Alarm=com.siemens.mp.jamos.bean.service.alarm.AlarmFactory
+com.siemens.mp.jamos.ifx.service.worldclock.WorldClockEntry=com.siemens.mp.jamos.bean.service.worldclock.WorldClockFactory
+com.siemens.mp.jamos.ifx.service.registrationwizard.RegistrationWizard=com.siemens.mp.jamos.bean.service.registrationwizard.RegistrationWizardFactory
+com.siemens.mp.jamos.ifx.service.memoryassistant.MemoryAssistantEntry=com.siemens.mp.jamos.bean.service.memoryassistant.MemoryAssistantFactory
