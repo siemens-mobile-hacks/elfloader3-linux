@@ -16,8 +16,8 @@ add_executable(elfloader3
 	src/IPC.cpp
 	src/SieFs.cpp
 	src/Loop.cpp
-	
-	src/gui/Theme.cpp
+	src/Resources.cpp
+	src/BinaryStream.cpp
 	src/gui/Painter.cpp
 	
 	# SWI

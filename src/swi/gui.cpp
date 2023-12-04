@@ -2,8 +2,8 @@
 #include "utils.h"
 #include "log.h"
 #include "IPC.h"
+#include "Resources.h"
 #include "gui/Painter.h"
-#include "gui/Theme.h"
 
 #include <map>
 #include <queue>
@@ -393,7 +393,7 @@ uint32_t GUI_Color2Int(const char *color) {
 }
 
 char *GUI_GetPaletteAdrByColorIndex(int index) {
-	return Theme::instance()->getColorPtr(index);
+	return Resources::instance()->getColorPtr(index);
 }
 
 void GUI_GetRGBcolor(int index, char *dest) {

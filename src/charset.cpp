@@ -1,6 +1,7 @@
 #include "charset.h"
 
 #include <cassert>
+#include <algorithm>
 
 static constexpr uint16_t cp1251_to_utf16_table[] = {
 	0x0000, 0x0001, 0x0002, 0x0003, 0x0004, 0x0005, 0x0006, 0x0007, 
@@ -202,7 +203,7 @@ size_t utf16_to_utf8(const uint16_t *input, size_t input_len, char *buffer, size
 size_t cp1251_to_utf8(const char *input, size_t input_len, char *buffer, size_t buffer_size) {
 	size_t new_len = 0;
 	for (size_t i = 0; i < input_len; i++) {
-		uint16_t codepoint = cp1251_to_utf16_table[input[i]];
+		uint16_t codepoint = cp1251_to_utf16_table[static_cast<uint8_t>(input[i])];
 		size_t char_len = _codepoint_len(codepoint);
 		if (new_len + char_len > buffer_size)
 			break;
@@ -214,14 +215,14 @@ size_t cp1251_to_utf8(const char *input, size_t input_len, char *buffer, size_t 
 size_t cp1251_to_utf16(const char *input, size_t input_len, uint16_t *buffer, size_t buffer_size) {
 	size_t new_len = std::min(buffer_size, input_len);
 	for (size_t i = 0; i < new_len; i++)
-		buffer[i] = cp1251_to_utf16_table[input[i]];
+		buffer[i] = cp1251_to_utf16_table[static_cast<uint8_t>(input[i])];
 	return new_len;
 }
 
 size_t cp1252_to_utf8(const char *input, size_t input_len, char *buffer, size_t buffer_size) {
 	size_t new_len = 0;
 	for (size_t i = 0; i < input_len; i++) {
-		uint16_t codepoint = cp1252_to_utf16_table[input[i]];
+		uint16_t codepoint = cp1252_to_utf16_table[static_cast<uint8_t>(input[i])];
 		size_t char_len = _codepoint_len(codepoint);
 		if (new_len + char_len > buffer_size)
 			break;
@@ -233,6 +234,6 @@ size_t cp1252_to_utf8(const char *input, size_t input_len, char *buffer, size_t 
 size_t cp1252_to_utf16(const char *input, size_t input_len, uint16_t *buffer, size_t buffer_size) {
 	size_t new_len = std::min(buffer_size, input_len);
 	for (size_t i = 0; i < new_len; i++)
-		buffer[i] = cp1252_to_utf16_table[input[i]];
+		buffer[i] = cp1252_to_utf16_table[static_cast<uint8_t>(input[i])];
 	return new_len;
 }

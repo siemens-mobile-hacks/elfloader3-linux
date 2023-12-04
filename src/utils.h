@@ -16,6 +16,10 @@
 #define hasMapKey(m, k) (m.find(k) != m.end())
 #define getMapValue(m, k, def) (m.find(k) != m.end() ? (m[k]) : (def))
 
+constexpr bool isLittleEndian() {
+	return __BYTE_ORDER__ == __ORDER_LITTLE_ENDIAN__;
+}
+
 int64_t getCurrentTimestamp();
 
 inline int getNewTimeout(int64_t start, int timeout) {

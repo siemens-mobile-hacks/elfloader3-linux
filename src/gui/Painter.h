@@ -6,6 +6,7 @@
 #include <vector>
 
 #include "gui/Bitmap.h"
+#include "gui/Font.h"
 
 class Painter {
 	protected:
@@ -20,6 +21,7 @@ class Painter {
 		
 		uint8_t *m_buffer = nullptr;
 		std::vector<bool> m_mask;
+		std::map<int, Font *> m_fonts;
 		
 		enum {
 			CIRCLE_DRAW_UPPER_RIGHT		= 1 << 0,
@@ -47,6 +49,10 @@ class Painter {
 		void fillEllipseHelper(int x0, int y0, int rx, int ry, uint8_t option, uint32_t color, int start = -1, int end = -1);
 	public:
 		Painter(uint8_t *buffer, int width, int height);
+		
+		inline void registerFont(int id, Font *font) {
+			m_fonts[id] = font;
+		}
 		
 		uint32_t blendColors(uint32_t old_color, uint32_t new_color);
 		

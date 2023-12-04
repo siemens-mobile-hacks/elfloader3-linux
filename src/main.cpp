@@ -15,7 +15,7 @@
 #include "log.h"
 #include "utils.h"
 
-#include "gui/Theme.h"
+#include "Resources.h"
 #include "Loop.h"
 #include "IPC.h"
 #include "SieFs.h"
@@ -131,7 +131,7 @@ int main(int argc, char **argv) {
 	GBS_Init();
 	MMI_Init();
 	Helper_Init();
-	Theme::init();
+	Resources::init(self_dir);
 	CSM_Init();
 	GUI_Init();
 	

@@ -1,9 +1,14 @@
 #pragma once
 
+#include "swi.h"
+#include "gui/Font.h"
+#include "BinaryStream.h"
+
 #include <cstdint>
 #include <string>
+#include <map>
 
-class Theme {
+class Resources {
 	protected:
 		static constexpr uint32_t MAX_EXT_PALETTE_COLORS = 60;
 		static constexpr uint32_t MAX_INT_PALETTE_COLORS = 24;
@@ -35,10 +40,34 @@ class Theme {
 		};
 		char m_ext_pallete[MAX_EXT_PALETTE_COLORS][4] = {};
 		
+		std::map<int, IMGHDR *> m_pit_table;
+		std::map<int, Font *> m_font_table;
+		
+		std::string m_root;
+		
+		Resources(const std::string &root);
+		
+		IMGHDR *getPicture(int num);
+		int getPicIdByUnicode(uint32_t num);
+		IMGHDR *getPicByUnicode(uint32_t num);
+		
+		static inline std::string getPlatformName() {
+			#if defined(ELKA)
+				return "ELKA";
+			#elif defined(NEWSGOLD)
+				return "NSG";
+			#else
+				return "SG";
+			#endif
+		}
+		
 		void load();
 		void loadColorTheme();
+		void loadPictures();
+		void loadFonts();
+		bool loadFont(Font *font, const std::string &path);
 	public:
-		static void init();
-		static Theme *instance();
+		static void init(const std::string &root);
+		static Resources *instance();
 		char *getColorPtr(int index);
 };
