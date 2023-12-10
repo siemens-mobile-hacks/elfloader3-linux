@@ -82,6 +82,13 @@ IMGHDR *Resources::getPicByUnicode(uint32_t num) {
 	return nullptr;
 }
 
+Font *Resources::getFont(int id) {
+	auto it = m_font_table.find(id);
+	if (it != m_font_table.end())
+		return it->second;
+	return nullptr;
+}
+
 void Resources::loadFonts() {
 	std::smatch m;
 	std::regex font_re("^(\\d+)\\.font$", std::regex_constants::ECMAScript | std::regex_constants::icase);

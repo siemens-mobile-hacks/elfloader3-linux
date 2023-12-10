@@ -37,6 +37,8 @@ void loader_init_switab() {
 	// System
 	switab_functions[0x005F]	= (void *) SYS_GetFreeRamAvail;
 	
+	switab_functions[0x80C8 - 0x8000]	= (void *) SYS_RamCap();
+	
 	// LIBC
 	switab_functions[0x0113]	= (void *) SWI_strpbrk;
 	switab_functions[0x0113]	= (void *) SWI_strcspn;
@@ -93,6 +95,8 @@ void loader_init_switab() {
 	switab_functions[0x00B5]	= (void *) GetWeek;
 	switab_functions[0x0230]	= (void *) GetTimeZoneShift;
 	
+	switab_functions[0x822F - 0x8000]	= (void *) RamDateTimeSettings();
+	
 	// Wide String
 	switab_functions[0x011F]	= (void *) wstrcpy;
 	switab_functions[0x0120]	= (void *) wstrncpy;
@@ -134,6 +138,8 @@ void loader_init_switab() {
 	switab_functions[0x0142]	= (void *) FindCSM;
 	switab_functions[0x01FC]	= (void *) CloseCSM;
 	
+	switab_functions[0x8106 - 0x8000]	= (void *) CSM_root();
+	
 	// GUI
 	switab_functions[0x014D]	= (void *) GUI_GetFocusedTop;
 	switab_functions[0x0135]	= (void *) GUI_IsOnTop;
@@ -158,11 +164,19 @@ void loader_init_switab() {
 	switab_functions[0x0203]	= (void *) GUI_DrawPixel;
 	switab_functions[0x0204]	= (void *) GUI_DrawArc;
 	switab_functions[0x012A]	= (void *) GUI_DrawObject;
-	switab_functions[0x0149]	= (void *) GUI_SetPropTo_Obj1;
-	switab_functions[0x014A]	= (void *) GUI_FreeDrawObject_subobj;
-	switab_functions[0x014B]	= (void *) GUI_ObjSetColor;
-	switab_functions[0x0201]	= (void *) GUI_SetProp2ImageOrCanvas;
-	switab_functions[0x0151]	= (void *) GUI_SetPropTo_Obj5;
+	switab_functions[0x014A]	= (void *) GUI_FreeDrawObject;
+	switab_functions[0x014B]	= (void *) GUI_DrawObjectSetColor;
+	
+	switab_functions[0x01FD]	= (void *) GUI_SetProp2Rect;			// type=0x0
+	switab_functions[0x0149]	= (void *) GUI_SetProp2Text;			// type=0x1
+	switab_functions[0x0205]	= (void *) GUI_SetProp2RoundedRect;		// type=0x4
+	switab_functions[0x0201]	= (void *) GUI_SetProp2ImageOrCanvas;	// type=0x5
+	switab_functions[0x0151]	= (void *) GUI_SetProp2Image;			// type=0x5
+	switab_functions[0x038C]	= (void *) GUI_SetProp2Line;			// type=0xF
+	switab_functions[0x038E]	= (void *) GUI_SetProp2Arc;				// type=0x13
+	switab_functions[0x038D]	= (void *) GUI_SetProp2Triangle;		// type=0x15
+	switab_functions[0x0386]	= (void *) GUI_SetProp2EImage;			// type=0x17
+	
 	switab_functions[0x012E]	= (void *) GUI_GetPaletteAdrByColorIndex;
 	switab_functions[0x012F]	= (void *) GUI_GetRGBcolor;
 	switab_functions[0x0130]	= (void *) GUI_GetRGBbyPaletteAdr;
@@ -175,6 +189,16 @@ void loader_init_switab() {
 	switab_functions[0x0133]	= (void *) GUI_StoreXYWHtoRECT;
 	switab_functions[0x0134]	= (void *) GUI_StoreXYXYtoRECT;
 	switab_functions[0x01C5]	= (void *) GUI_GetFontYSIZE;
+	switab_functions[0x0388]	= (void *) GUI_SetDepthBuffer;
+	switab_functions[0x0389]	= (void *) GUI_SetDepthBufferOnLCDLAYER;
+	
+	switab_functions[0x8188 - 0x8000]	= (void *) GUI_ScreenW();
+	switab_functions[0x8189 - 0x8000]	= (void *) GUI_ScreenH();
+	switab_functions[0x818A - 0x8000]	= (void *) GUI_HeaderH();
+	switab_functions[0x818B - 0x8000]	= (void *) GUI_SoftkeyH();
+	switab_functions[0x80E0 - 0x8000]	= (void *) GUI_RamScreenBuffer();
+	switab_functions[0x80F5 - 0x8000]	= (void *) GUI_RamMainLCDLayer();
+	switab_functions[0x80F6 - 0x8000]	= (void *) GUI_RamMMILCDLayer();
 	
 	// SettingsAE
 	switab_functions[0x02E4]	= (void *) SettingsAE_Update_ws;
@@ -237,22 +261,13 @@ void loader_init_switab() {
 	// Helper
 	switab_functions[0x0171]	= (void *) SUBPROC;
 	
+	switab_functions[0x81B9 - 0x8000]	= (void *) Helper_PngTop();
+	switab_functions[0x81BA - 0x8000]	= (void *) Helper_LibTop();
+	
 	// Other
 	switab_functions[0x2EE]		= (void *) loader_elf_close;
 	switab_functions[0x2F2]		= (void *) loader_setenv;
 	switab_functions[0x2F3]		= (void *) loader_unsetenv;
 	switab_functions[0x2F4]		= (void *) loader_getenv;
 	switab_functions[0x2F5]		= (void *) loader_clearenv;
-	
-	// RAM
-	switab_functions[0x8106 - 0x8000]	= (void *) CSM_root();
-	switab_functions[0x822F - 0x8000]	= (void *) RamDateTimeSettings();
-	switab_functions[0x8188 - 0x8000]	= (void *) GUI_ScreenW();
-	switab_functions[0x8189 - 0x8000]	= (void *) GUI_ScreenH();
-	switab_functions[0x818A - 0x8000]	= (void *) GUI_HeaderH();
-	switab_functions[0x818B - 0x8000]	= (void *) GUI_SoftkeyH();
-	switab_functions[0x80E0 - 0x8000]	= (void *) GUI_RamScreenBuffer();
-	switab_functions[0x80C8 - 0x8000]	= (void *) SYS_RamCap();
-	switab_functions[0x81B9 - 0x8000]	= (void *) Helper_PngTop();
-	switab_functions[0x81BA - 0x8000]	= (void *) Helper_LibTop();
 }

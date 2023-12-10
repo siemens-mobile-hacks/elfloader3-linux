@@ -47,9 +47,21 @@ class Resources {
 		
 		Resources(const std::string &root);
 		
+		void load();
+		void loadColorTheme();
+		void loadPictures();
+		void loadFonts();
+		bool loadFont(Font *font, const std::string &path);
+	
+	public:
 		IMGHDR *getPicture(int num);
 		int getPicIdByUnicode(uint32_t num);
 		IMGHDR *getPicByUnicode(uint32_t num);
+		Font *getFont(int id);
+		
+		static void init(const std::string &root);
+		static Resources *instance();
+		char *getColorPtr(int index);
 		
 		static inline std::string getPlatformName() {
 			#if defined(ELKA)
@@ -60,14 +72,4 @@ class Resources {
 				return "SG";
 			#endif
 		}
-		
-		void load();
-		void loadColorTheme();
-		void loadPictures();
-		void loadFonts();
-		bool loadFont(Font *font, const std::string &path);
-	public:
-		static void init(const std::string &root);
-		static Resources *instance();
-		char *getColorPtr(int index);
 };

@@ -13,6 +13,10 @@
 #include <cassert>
 #include <functional>
 
+// Currently we have only one layer
+static LCDLAYER mmi_layer = {};
+static LCDLAYER *mmi_layer_ptr = &mmi_layer;
+
 static std::queue<GUI_RAM *> gui_to_destroy;
 static std::map<int, GUI_RAM *> id2gui = {};
 static std::map<int, CSM_RAM *> id2csm = {};
@@ -26,6 +30,12 @@ static int global_gui_id = 1;
 void GUI_Init() {
 	uint8_t *buffer = IPC::instance()->getScreenBuffer();
 	painter = new Painter(buffer, SCREEN_WIDTH, SCREEN_HEIGHT);
+	
+	mmi_layer.buffer = buffer;
+	mmi_layer.w = SCREEN_WIDTH;
+	mmi_layer.h = SCREEN_HEIGHT;
+	mmi_layer.depth = LCDLAYER_DEPTH_TYPE_16BIT;
+	GUI_StoreXYWHtoRECT(&mmi_layer.rc, 0, 0, SCREEN_WIDTH, SCREEN_HEIGHT);
 }
 
 void GUI_SyncStates() {
@@ -136,6 +146,10 @@ void GUI_HandleKeyPress(GBS_MSG *msg) {
 			});
 		}
 	}
+}
+
+Painter *GUI_GetPainter() {
+	return painter;
 }
 
 void GUI_DoFocus(int id) {
@@ -279,154 +293,23 @@ void GUI_REDRAW() {
 	GUI_DirectRedrawGUI();
 }
 
-void GUI_DrawString(WSHDR *wshdr, int x1, int y1, int x2, int y2, int font, int text_attribute, const char *Pen, const char *Brush) {
+LCDLAYER *GUI_RamMainLCDLayer() {
+	// Not implemented
+	return nullptr;
+}
+
+LCDLAYER **GUI_RamMMILCDLayer() {
+	return &mmi_layer_ptr;
+}
+
+void GUI_SetDepthBuffer(uint8_t depth) {
 	fprintf(stderr, "%s not implemented!\n", __func__);
-	GUI_IpcRedrawScreen();
+	abort();
 }
 
-void GUI_DrawPixel(int x1, int y1, const char *color) {
-	painter->drawPixel(x1, y1, GUI_Color2Int(color));
-	GUI_IpcRedrawScreen();
-}
-
-void GUI_DrawLine(int x1, int y1, int x2, int y2, int type, const char *pen) {
-	painter->drawLine(x1, y1, x2, y2, GUI_Color2Int(pen));
-	GUI_IpcRedrawScreen();
-}
-
-void GUI_DrawRectangle(int x1, int y1, int x2, int y2, int flags, const char *pen, const char *brush) {
-	painter->drawRect(x1, y1, x2 - x1 + 1, y2 - y1 + 1, GUI_Color2Int(brush), GUI_Color2Int(pen));
-	GUI_IpcRedrawScreen();
-}
-
-void GUI_DrawRoundedFrame(int x1, int y1, int x2, int y2, int x_round, int y_round, int flags, const char *pen, const char *brush) {
-	painter->drawRoundedRect(x1, y1, x2 - x1 + 1, y2 - y1 + 1, x_round, y_round, GUI_Color2Int(brush), GUI_Color2Int(pen));
-	GUI_IpcRedrawScreen();
-}
-
-void GUI_DrawTriangle(int x1, int y1, int x2, int y2, int x3, int y3, int flags, char *pen, char *brush) {
-	painter->drawTriangle(x1, y1, x2, y2, x3, y3, GUI_Color2Int(brush), GUI_Color2Int(pen));
-	GUI_IpcRedrawScreen();
-}
-
-void GUI_DrawArc(int x1, int y1, int x2, int y2, int start, int end, int flags, char *pen, char *brush) {
-	painter->drawArc(x1, y1, x2 - x1 + 1, y2 - y1 + 1, start, end, GUI_Color2Int(brush), GUI_Color2Int(pen));
-	GUI_IpcRedrawScreen();
-}
-
-void GUI_DrawObject(DRWOBJ *drw) {
-	auto [x1, y1, x2, y2] = painter->getWindow();
-	
-	if (drw->type == DRWOBJ_TYPE_IMG) {
-		assert(drw->img != nullptr);
-		painter->setWindow(drw->rect.x, drw->rect.y, drw->rect.x2, drw->rect.y2);
-		painter->drawBitmap(0, 0, drw->img->w, drw->img->h, drw->img->bitmap, IMG_GetBitmapType(drw->img->bpnum), drw->offset_x, drw->offset_y);
-	}
-	
-	painter->setWindow(x1, y1, x2, y2);
-	
-	GUI_IpcRedrawScreen();
-}
-
-void GUI_SetPropTo_Obj1(DRWOBJ *drw, RECT *rect, int rect_flag, WSHDR *wshdr, int font, int flags) {
-	assert(drw != nullptr && rect != nullptr && wshdr != nullptr);
-	
-	drw->type = DRWOBJ_TYPE_TEXT;
-	drw->rect_flags = rect_flag;
-	drw->flags = flags;
-	drw->font = font;
-	memcpy(&drw->rect, rect, sizeof(RECT));
-	
-	// Clone string
-	drw->ws = AllocWS(wshdr->body->len + 1);
-	memcpy(drw->ws->wsbody, wshdr->wsbody, wshdr->body->len + 1);
-}
-
-void GUI_ObjSetColor(DRWOBJ *drw, const char *color1, const char *color2) {
-	assert(drw != nullptr);
-	
-	if (color1) {
-		memcpy(drw->color1, color1, 4);
-	} else {
-		memset(drw->color1, 0, 4);
-	}
-	
-	if (color2) {
-		memcpy(drw->color2, color2, 4);
-	} else {
-		memset(drw->color2, 0, 4);
-	}
-}
-
-void GUI_SetProp2ImageOrCanvas(DRWOBJ *drw, RECT *rect, int flags, IMGHDR *img, int offset_x, int offset_y) {
-	assert(drw != nullptr);
-	assert(rect != nullptr);
-	assert(img != nullptr);
-	
-	drw->type = DRWOBJ_TYPE_IMG;
-	drw->img = img;
-	drw->rect_flags = 0;
-	drw->flags = flags;
-	drw->offset_x = offset_x;
-	drw->offset_y = offset_y;
-	memcpy(&drw->rect, rect, sizeof(RECT));
-}
-
-void GUI_SetPropTo_Obj5(DRWOBJ *drw, RECT *rect, int flags, IMGHDR *img) {
-	GUI_SetProp2ImageOrCanvas(drw, rect, flags, img, 0, 0);
-}
-
-void GUI_FreeDrawObject_subobj(DRWOBJ *drw) {
-	assert(drw != nullptr);
-	if (drw->type == DRWOBJ_TYPE_TEXT) {
-		if (drw->ws) {
-			FreeWS(drw->ws);
-			drw->ws = nullptr;
-		}
-	}
-}
-
-uint32_t GUI_Color2Int(const char *color) {
-	const uint8_t *u8 = reinterpret_cast<const uint8_t *>(color);
-	uint32_t a = static_cast<uint32_t>(u8[3]) * 0xFF / 0x64;
-	return (a << 24) | (u8[0] << 16) | (u8[1] << 8) | u8[2]; // RGBA
-}
-
-char *GUI_GetPaletteAdrByColorIndex(int index) {
-	return Resources::instance()->getColorPtr(index);
-}
-
-void GUI_GetRGBcolor(int index, char *dest) {
-	GUI_GetRGBbyPaletteAdr(GUI_GetPaletteAdrByColorIndex(index), dest);
-}
-
-void GUI_GetRGBbyPaletteAdr(char *addr, char *dest) {
-	assert(dest != nullptr && addr != nullptr);
-	memcpy(dest, addr, 4);
-}
-
-void GUI_SetColor(int a, int r, int g, int b, char *dest) {
-	assert(dest != nullptr);
-	dest[0] = r;
-	dest[1] = g;
-	dest[2] = b;
-	dest[3] = a;
-}
-
-int GUI_ScreenW() {
-	return SCREEN_WIDTH;
-}
-
-int GUI_ScreenH() {
-	return SCREEN_HEIGHT;
-}
-
-int GUI_HeaderH() {
-	return 32; // ELKA
-}
-
-int GUI_SoftkeyH() {
-	return 32; // ELKA
+void GUI_SetDepthBufferOnLCDLAYER(LCDLAYER *layer, uint8_t depth) {
+	fprintf(stderr, "%s not implemented!\n", __func__);
+	abort();
 }
 
 void GUI_SetIDLETMR(int time_ms, int msg) {
@@ -447,20 +330,6 @@ void GUI_DisableIconBar(int disable) {
 
 void GUI_AddIconToIconBar(int pic, short *num) {
 	// stub
-}
-
-void GUI_StoreXYWHtoRECT(RECT *rect, int x, int y, int w, int h) {
-	rect->x = x;
-	rect->y = y;
-	rect->x2 = x + w - 1;
-	rect->y2 = y + h - 1;
-}
-
-void GUI_StoreXYXYtoRECT(RECT *rect, int x, int y, int x2, int y2) {
-	rect->x = x;
-	rect->y = y;
-	rect->x2 = x2;
-	rect->y2 = y2;
 }
 
 int GUI_GetFontYSIZE(int font) {

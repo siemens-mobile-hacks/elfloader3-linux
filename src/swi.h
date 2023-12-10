@@ -6,6 +6,7 @@
 #include <string>
 
 #include "gui/Bitmap.h"
+#include "gui/Painter.h"
 
 #define NEWSGOLD 1
 #define ELKA 1
@@ -422,6 +423,13 @@ CSM_RAM *CSM_Current();
 /*
  * Images
  * */
+enum {
+	IMGHDR_TYPE_WB		= 1,
+	IMGHDR_TYPE_RGB332	= 5,
+	IMGHDR_TYPE_RGB565	= 8,
+	IMGHDR_TYPE_RGB8888	= 10
+};
+
 typedef struct {
 #ifdef ELKA
 	uint16_t w;
@@ -436,11 +444,23 @@ typedef struct {
 } IMGHDR;
 
 enum {
-	IMGHDR_TYPE_WB		= 1,
-	IMGHDR_TYPE_RGB332	= 5,
-	IMGHDR_TYPE_RGB565	= 8,
-	IMGHDR_TYPE_RGB8888	= 10
+	EIMGHDR_TRANSPARENT_8BIT		= 0xC0,
+	EIMGHDR_TRANSPARENT_16BIT		= 0xE000
 };
+
+enum {
+	EIMGHDR_TYPE_RGB565		= 8,
+	EIMGHDR_TYPE_RGB8888	= 10
+};
+
+typedef struct{
+	int bpnum; // 16bit = 8, 32bit = 0x0A, 0x80 - packed
+	int w;
+	int h;
+	int zero;     // 0x00000000
+	int tp_pixel; // Пиксель прозрачности 16 бит 0xE000, 8 бит 0xC0
+	char *bitmap;
+} EIMGHDR;
 
 IMGHDR *IMG_LoadAny(const std::string &path);
 IMGHDR *IMG_CreateIMGHDRFromPngFile(const char *fname, int type);
@@ -456,6 +476,116 @@ enum {
 	CSM_GUI_STATE_FOCUSED		= 2,
 };
 
+// UTF16 formating
+#define UTF16_UNDERLINE			0xE001 // TEXT_UNDERLINE
+#define UTF16_NO_UNDERLINE		0xE002
+
+#define UTF16_BG_INVERTION		0xE003 // TEXT_INVERT
+#define UTF16_BG_INVERTION2		0xE005 // TEXT_INVERT2
+#define UTF16_NO_INVERTION		0xE004
+
+#define UTF16_TEXT_COLOR_RGBA	0xE006 // Example: { UTF16_TEXT_COLOR_RGBA, 0xRRGG, 0xBBAA }
+#define UTF16_BG_COLOR_RGBA		0xE007 // Example: { UTF16_BG_COLOR_RGBA, 0xRRGG, 0xBBAA }
+
+#define UTF16_TEXT_COLOR		0xE008 // Example: { UTF16_TEXT_COLOR, PC_FOREGROUND }
+#define UTF16_BG_COLOR			0xE009 // Example: { UTF16_BG_COLOR, PC_BACKGROUND }
+
+#define UTF16_FONT_RESET		0xE010 // Reset font to default
+
+#define UTF16_FONT_SMALL		0xE012 // FONT_SMALL
+#define UTF16_FONT_SMALL_BOLD	0xE013 // FONT_SMALL_BOLD
+
+#define UTF16_FONT_MEDIUM		0xE014 // FONT_MEDIUM
+#define UTF16_FONT_MEDIUM_BOLD	0xE015 // FONT_MEDIUM_BOLD
+
+#define UTF16_FONT_LARGE_BOLD	0xE017 // FONT_LARGE_BOLD
+#define UTF16_FONT_LARGE		0xE018 // FONT_LARGE
+
+#define UTF16_FONT_UNK0			0xE011 // FONT_SMALL
+#define UTF16_FONT_UNK1			0xE016 // FONT_LARGE_BOLD
+#define UTF16_FONT_UNK2			0xE019 // FONT_SMALL
+#define UTF16_FONT_UNK3			0xE01A // FONT_SMALL_BOLD
+#define UTF16_FONT_UNK4			0xE01B // FONT_SMALL
+
+// Font sizes
+#ifdef NEWSGOLD
+	#ifdef ELKA
+		#define FONT_LARGE 0
+		#define FONT_LARGE_BOLD 1
+		#define FONT_LARGE_ITALIC 2
+		#define FONT_LARGE_ITALIC_BOLD 3
+		#define FONT_MEDIUM 4
+		#define FONT_MEDIUM_BOLD 5
+		#define FONT_MEDIUM_ITALIC 6
+		#define FONT_MEDIUM_ITALIC_BOLD 7
+		#define FONT_NUMERIC_SMALL 8
+		#define FONT_NUMERIC_SMALL_BOLD 9
+		#define FONT_NUMERIC_XSMALL 8
+		#define FONT_SMALL 8
+		#define FONT_SMALL_BOLD 9
+		#define FONT_SMALL_ITALIC 10
+		#define FONT_SMALL_ITALIC_BOLD 11
+		#define FONT_NUMERIC_LARGE 0
+		#define FONT_NUMERIC_MEDIUM 4
+	#else
+		#define FONT_LARGE 0
+		#define FONT_LARGE_BOLD 1
+		#define FONT_LARGE_ITALIC 2
+		#define FONT_LARGE_ITALIC_BOLD 3
+		#define FONT_MEDIUM 4
+		#define FONT_MEDIUM_BOLD 5
+		#define FONT_MEDIUM_ITALIC 6
+		#define FONT_MEDIUM_ITALIC_BOLD 7
+		#define FONT_NUMERIC_SMALL 8
+		#define FONT_NUMERIC_SMALL_BOLD 9
+		#define FONT_NUMERIC_XSMALL 10
+		#define FONT_SMALL 11
+		#define FONT_SMALL_BOLD 12
+		#define FONT_SMALL_ITALIC 13
+		#define FONT_SMALL_ITALIC_BOLD 14
+		#define FONT_NUMERIC_LARGE 15
+		#define FONT_NUMERIC_MEDIUM 16
+	#endif
+#else
+	#define FONT_LARGE 0
+	#define FONT_LARGE_BOLD 1
+	#define FONT_LARGE_ITALIC 0
+	#define FONT_LARGE_ITALIC_BOLD 1
+	#define FONT_MEDIUM 2
+	#define FONT_MEDIUM_BOLD 3
+	#define FONT_MEDIUM_ITALIC 2
+	#define FONT_MEDIUM_ITALIC_BOLD 3
+	#define FONT_NUMERIC_SMALL 4
+	#define FONT_NUMERIC_SMALL_BOLD 5
+	#define FONT_NUMERIC_XSMALL 6
+	#define FONT_SMALL 7
+	#define FONT_SMALL_BOLD 8
+	#define FONT_SMALL_ITALIC 7
+	#define FONT_SMALL_ITALIC_BOLD 8
+	#define FONT_NUMERIC_LARGE 9
+	#define FONT_NUMERIC_MEDIUM 10
+#endif
+
+// DrawString flags
+#define TEXT_ALIGNLEFT 1
+#define TEXT_ALIGNMIDDLE 2
+#define TEXT_ALIGNRIGHT 4
+#define TEXT_UNDERLINE 8
+#define TEXT_INVERT 16
+#define TEXT_OUTLINE 32
+#define TEXT_PASSWORD 64
+#define TEXT_NOFORMAT 128
+#define TEXT_INVERT2 256
+
+// DrawRectangle flags
+#define RECT_DOT_OUTLINE 1
+#define RECT_FILL_WITH_PEN 2
+#define RECT_DRAW_INVERT 4
+
+// DrawLine flags
+#define LINE_DOTTED 1
+#define LINE_DOTTED2 2
+
 typedef struct {
 	short x;
 	short y;
@@ -464,29 +594,108 @@ typedef struct {
 } RECT;
 
 enum {
-	DRWOBJ_TYPE_TEXT	= 0x01,
-	DRWOBJ_TYPE_IMG		= 0x05,
+	DRWOBJ_TYPE_RECT			= 0x00,
+	DRWOBJ_TYPE_TEXT			= 0x01,
+	DRWOBJ_TYPE_SCROLLING_TEXT	= 0x03,
+	DRWOBJ_TYPE_ROUNDED_RECT	= 0x04,
+	DRWOBJ_TYPE_IMG				= 0x05,
+	DRWOBJ_TYPE_PIXEL			= 0x0B,
+	DRWOBJ_TYPE_LINE			= 0x0F,
+	DRWOBJ_TYPE_PIE				= 0x13,
+	DRWOBJ_TYPE_ARC				= 0x12,
+	DRWOBJ_TYPE_TRIANGLE		= 0x15,
+	DRWOBJ_TYPE_EIMG			= 0x17,
 };
 
 typedef struct {
-	uint8_t type; // 05 - img with bleed, 01 - text
+	uint8_t type;
 	uint8_t rect_flags;
 	uint8_t unk2;
 	char color1[4];
 	char color2[4];
 	uint8_t unk3;
 	RECT rect;
+	
 	union {
-		IMGHDR *img;
-		WSHDR *ws;
+		char dummy[0x10];
+		
+		struct {
+			WSHDR *value;
+			uint8_t font;
+			uint8_t offset_x;
+			uint8_t offset_y;
+			uint8_t unk5;
+			uint16_t flags;
+			uint8_t xdisp;
+		} text;
+		
+		struct {
+			IMGHDR *value;
+			uint8_t font;
+			uint8_t offset_x;
+			uint8_t offset_y;
+			uint8_t unk5;
+			uint16_t flags;
+		} img;
+		
+		struct {
+			void *value;
+			int offset_x;
+			int offset_y;
+			uint16_t flags;
+		} eimg;
+		
+		struct {
+			int16_t x;
+			int16_t y;
+			int16_t x2;
+			int16_t y2;
+		} line;
+		
+		struct {
+			int16_t x1;
+			int16_t y1;
+			int16_t x2;
+			int16_t y2;
+			int16_t x3;
+			int16_t y3;
+			uint16_t flags;
+		} triangle;
+		
+		struct {
+			int16_t x;
+			int16_t y;
+			int16_t w;
+			int16_t h;
+			int16_t start;
+			int16_t end;
+		} arc;
+		
+		struct {
+			uint8_t round_x;
+			uint8_t round_y;
+		} rectangle;
 	};
-	uint8_t font;
-	uint8_t offset_x;
-	uint8_t offset_y;
-	uint8_t unk5;
-	uint16_t flags;
-	uint8_t unk6[6];
 } DRWOBJ;
+
+static_assert(sizeof(DRWOBJ) == 0x24);
+
+enum {
+	LCDLAYER_DEPTH_TYPE_16BIT = 4,
+	LCDLAYER_DEPTH_TYPE_32BIT = 5
+};
+
+typedef struct {
+	int w;
+	int h;
+	int unk0;
+	int unk1;
+	RECT rc;
+	void *buffer;
+	void *unk2;
+	uint8_t depth;
+	char unk3[117];
+} LCDLAYER;
 
 typedef struct GUI GUI;
 
@@ -577,6 +786,8 @@ bool GUI_IsOnTop(int id);
 void GUI_DoFocus(int id);
 void GUI_DoUnFocus(int id);
 
+Painter *GUI_GetPainter();
+
 GUI_RAM *GUI_GetById(int id);
 GUI_RAM *GUI_GetPrev(int id);
 GUI_RAM *GUI_GetNext(int id);
@@ -601,21 +812,36 @@ void GUI_PendedRedrawGUI();
 void GUI_REDRAW();
 void GUI_IpcRedrawScreen();
 
-void GUI_DrawString(WSHDR *wshdr, int x1, int y1, int x2, int y2, int font, int text_attribute, const char *pen, const char *brush);
+void GUI_DrawString(WSHDR *ws, int x1, int y1, int x2, int y2, int font, int text_attribute, const char *pen, const char *brush);
+void GUI_DrawScrollString(WSHDR *ws, int x1, int y1, int x2, int y2, int xdisp, int font, int text_attribute, const char *pen, const char *brush);
 void GUI_DrawRoundedFrame(int x1, int y1, int x2, int y2, int x_round, int y_round, int flags, const char *pen, const char *brush);
 void GUI_DrawLine(int x, int y, int x2, int y2, int flags, const char *pen);
 void GUI_DrawRectangle(int x, int y, int x2, int y2, int flags, const char *pen, const char *brush);
-
 void GUI_DrawTriangle(int x1, int y1, int x2, int y2, int x3, int y3, int flags, char *pen, char *brush);
 void GUI_DrawPixel(int x, int y, const char *color);
 void GUI_DrawArc(int x1, int y1, int x2, int y2, int start, int end, int flags, char *pen, char *brush);
-void GUI_DrawObject(DRWOBJ *drw);
+void GUI_DrawIMGHDR(int x, int y, IMGHDR *img, const char *pen, const char *brush, uint16_t offset_x, uint16_t offset_y, int w, int h, int flags);
 
-void GUI_SetPropTo_Obj1(DRWOBJ *drw, RECT *rect, int rect_flag, WSHDR *wshdr, int font, int flags);
-void GUI_FreeDrawObject_subobj(DRWOBJ *drw);
-void GUI_ObjSetColor(DRWOBJ *drw, const char *color1, const char *color2);
-void GUI_SetProp2ImageOrCanvas(DRWOBJ *drw, RECT *rect, int flags, IMGHDR *img, int offset_x, int offset_y);
-void GUI_SetPropTo_Obj5(DRWOBJ *drw, RECT *rect, int flags, IMGHDR *img);
+void GUI_DrawObject(DRWOBJ *drw);
+void GUI_FreeDrawObject(DRWOBJ *drw);
+
+DRWOBJ *GUI_DrawObjectSetColor(DRWOBJ *drw, const char *color1, const char *color2);
+DRWOBJ *GUI_SetProp2Text(DRWOBJ *drw, RECT *rect, int rect_flag, WSHDR *wshdr, int font, int flags);
+DRWOBJ *GUI_SetProp2ScrollingText(DRWOBJ *drw, RECT *rect, int rect_flag, WSHDR *wshdr, int xdisp, int font, int flags);
+DRWOBJ *GUI_SetProp2ImageOrCanvas(DRWOBJ *drw, RECT *rect, int flags, IMGHDR *img, int offset_x, int offset_y);
+DRWOBJ *GUI_SetProp2Image(DRWOBJ *drw, RECT *rect, int flags, IMGHDR *img);
+DRWOBJ *GUI_SetProp2Triangle(DRWOBJ *drw, int x1, int y1, int x2, int y2, int x3, int y3, int flags, char *pen, char *brush);
+DRWOBJ *GUI_SetProp2Rect(DRWOBJ *drw, RECT *rect, int flags);
+DRWOBJ *GUI_SetProp2RoundedRect(DRWOBJ *drw, RECT *rect, int flags, int round_x, int round_y);
+DRWOBJ *GUI_SetProp2Arc(DRWOBJ *drw, RECT *rect, int flags, int x, int y, int x2, int y2, int start, int end);
+DRWOBJ *GUI_SetProp2Pie(DRWOBJ *drw, RECT *rect, int flags, int x, int y, int x2, int y2, int start, int end);
+DRWOBJ *GUI_SetProp2Line(DRWOBJ *drw, RECT *rect, int flags, int x, int y, int x2, int y2);
+DRWOBJ *GUI_SetProp2Pixel(DRWOBJ *drw, RECT *rect, int flags, int x, int y);
+DRWOBJ *GUI_SetProp2EImage(DRWOBJ *drw, RECT *rect, int flags, EIMGHDR *img, int offset_x, int offset_y);
+
+inline bool GUI_ColorIsTransparent(const char *color) {
+	return !color || color[3] == 0;
+}
 
 char *GUI_GetPaletteAdrByColorIndex(int index);
 void GUI_GetRGBcolor(int index, char *dest);
@@ -627,6 +853,12 @@ int GUI_ScreenW();
 int GUI_ScreenH();
 int GUI_HeaderH();
 int GUI_SoftkeyH();
+
+LCDLAYER *GUI_RamMainLCDLayer();
+LCDLAYER **GUI_RamMMILCDLayer();
+
+void GUI_SetDepthBuffer(uint8_t depth);
+void GUI_SetDepthBufferOnLCDLAYER(LCDLAYER *layer, uint8_t depth);
 
 void GUI_SetIDLETMR(int time_ms, int msg);
 void GUI_RestartIDLETMR();

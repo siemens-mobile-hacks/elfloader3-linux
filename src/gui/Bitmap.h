@@ -47,10 +47,11 @@ class Bitmap {
 		}
 		
 		static inline uint32_t getBitmapPixelWB(int x, int y, int w, int h, uint8_t *pixels) {
-			uint32_t index = y * w + x;
-			uint32_t byte_index = (index + 7) / 8;
-			uint32_t bit_index = 7 - (index % 8);
-			return ((pixels[index] >> byte_index) & 1) ? 0xFFFFFFFF : 0xFF000000;
+			uint32_t row = (w + 7) / 8;
+			uint32_t current_bit = y * (row * 8) + x;
+			uint32_t current_byte = current_bit / 8;
+			uint32_t current_shift = 7 - (current_bit - current_byte * 8);
+			return ((pixels[current_byte] >> current_shift) & 1) ? 0xFFFFFFFF : 0xFF000000;
 		}
 		
 		static inline uint32_t getBitmapPixel(Type type, int x, int y, int w, int h, uint8_t *bitmap) {

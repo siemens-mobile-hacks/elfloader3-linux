@@ -1,5 +1,6 @@
 #include "Painter.h"
 
+#include <cassert>
 #include <cmath>
 #include <new>
 #include <fstream>
@@ -80,9 +81,33 @@ void Painter::drawMask(const uint8_t *mask, int x, int y, int w, int h, const ui
 }
 
 /*
+ * Text
+ * */
+
+void Painter::drawText(int x, int y, int w, int h, Font *font, uint16_t *text, int length, uint32_t fill_color, uint32_t stroke_color) {
+	int offset_x = 0;
+	for (int i = 0; i < length; i++) {
+		uint16_t ch = text[i];
+		
+		auto it = font->chars.find(ch);
+		if (it == font->chars.end()) {
+			printf("Unknown char: %04X\n", ch);
+			it = font->chars.find(0xFFFF); // fallback
+			assert(it != font->chars.end());
+		}
+		
+		drawBitmap(x + offset_x, y, it->second.w, it->second.h, it->second.bitmap, Bitmap::TYPE_WB, 0, 0, fill_color, stroke_color);
+		
+		offset_x += it->second.w;
+		
+		printf("U+%04X: %dx%d\n", ch, it->second.w, it->second.h);
+	}
+}
+
+/*
  * Bitmap
  * */
-void Painter::drawBitmap(int x, int y, int w, int h, uint8_t *bitmap, Bitmap::Type type, int offset_x, int offset_y) {
+void Painter::drawBitmap(int x, int y, int w, int h, uint8_t *bitmap, Bitmap::Type type, int offset_x, int offset_y, uint32_t fill_color, uint32_t stroke_color) {
 	int min_img_x = m_window_x + x;
 	int max_img_x = m_window_x + x + w - 1 - offset_x;
 	
@@ -109,7 +134,15 @@ void Painter::drawBitmap(int x, int y, int w, int h, uint8_t *bitmap, Bitmap::Ty
 	for (int img_y = start_y; img_y <= end_y; img_y++) {
 		for (int img_x = start_x; img_x <= end_x; img_x++) {
 			uint32_t color = Bitmap::getBitmapPixel(type, img_x, img_y, w, h, bitmap);
-			drawPixel(x + img_x - offset_x, y + img_y - offset_y, color);
+			if (type == Bitmap::TYPE_WB) {
+				if (color & 0xFFFFFF) {
+					drawPixel(x + img_x - offset_x, y + img_y - offset_y, stroke_color);
+				} else {
+					drawPixel(x + img_x - offset_x, y + img_y - offset_y, fill_color);
+				}
+			} else {
+				drawPixel(x + img_x - offset_x, y + img_y - offset_y, color);
+			}
 		}
 	}
 }
@@ -148,15 +181,14 @@ void Painter::drawVLine(int x, int y, int height, uint32_t color) {
 		drawPixel(x, y + i, color);
 }
 
-// From u8g2
-void Painter::drawLine(int x1, int y1, int x2, int y2, uint32_t color) {
+void Painter::getLinePoints(std::vector<std::pair<int, int>> &result, int x1, int y1, int x2, int y2) {
 	int tmp;
 	int x,y;
 	int dx, dy;
 	int err;
 	int ystep;
 	
-	uint8_t swapxy = 0;
+	bool swapxy = false;
 	
 	if (x1 > x2) {
 		dx = x1 - x2;
@@ -170,24 +202,16 @@ void Painter::drawLine(int x1, int y1, int x2, int y2, uint32_t color) {
 		dy = y2 - y1;
 	}
 	
-	if (!dy) {
-		drawHLine(x1, y1, dx, color);
-		return;
-	} else if (!dx) {
-		drawVLine(x1, y1, dy, color);
-		return;
-	}
-	
 	if (dy > dx) {
-		swapxy = 1;
-		tmp = dx; dx = dy; dy = tmp;
-		tmp = x1; x1 = y1; y1 = tmp;
-		tmp = x2; x2 = y2; y2 = tmp;
+		swapxy = true;
+		std::swap(x1, y1);
+		std::swap(x2, y2);
+		std::swap(dx, dy);
 	}
 	
 	if (x1 > x2) {
-		tmp = x1; x1 =x2; x2 = tmp;
-		tmp = y1; y1 =y2; y2 = tmp;
+		std::swap(x1, x2);
+		std::swap(y1, y2);
 	}
 	
 	err = dx >> 1;
@@ -200,8 +224,81 @@ void Painter::drawLine(int x1, int y1, int x2, int y2, uint32_t color) {
 	
 	y = y1;
 	
-	if (x2 == 0xffff)
-		x2--;
+	for (x = x1; x <= x2; x++) {
+		if (swapxy) {
+			result.push_back({y, x});
+		} else {
+			result.push_back({x, y});
+		}
+		
+		err -= dy;
+		
+		if (err < 0) {
+			y += ystep;
+			err += dx;
+		}
+	}
+}
+
+// From u8g2
+void Painter::drawLine(int x1, int y1, int x2, int y2, uint32_t color) {
+	int tmp;
+	int x,y;
+	int dx, dy;
+	int err;
+	int ystep;
+	
+	bool swapxy = false;
+	
+	if (y1 == y2) {
+		if (x2 > x1) {
+			drawHLine(x1, y1, x2 - x1, color);
+		} else {
+			drawHLine(x2, y2, x1 - x2, color);
+		}
+		return;
+	} else if (x1 == x2) {
+		if (y2 > y1) {
+			drawVLine(x1, y1, y2 - y1, color);
+		} else {
+			drawVLine(x2, y2, y1 - y2, color);
+		}
+		return;
+	}
+	
+	if (x1 > x2) {
+		dx = x1 - x2;
+	} else {
+		dx = x2 - x1;
+	}
+	
+	if (y1 > y2) {
+		dy = y1 - y2;
+	} else {
+		dy = y2 - y1;
+	}
+	
+	if (dy > dx) {
+		swapxy = true;
+		std::swap(x1, y1);
+		std::swap(x2, y2);
+		std::swap(dx, dy);
+	}
+	
+	if (x1 > x2) {
+		std::swap(x1, x2);
+		std::swap(y1, y2);
+	}
+	
+	err = dx >> 1;
+	
+	if (y2 > y1) {
+		ystep = 1;
+	} else {
+		ystep = -1;
+	}
+	
+	y = y1;
 	
 	for (x = x1; x <= x2; x++) {
 		if (swapxy == 0) {
@@ -290,8 +387,8 @@ void Painter::drawArc(int x, int y, int w, int h, int start, int end, uint32_t f
 		stopPerfectDrawing();
 	}
 	
-	if ((fill_color & 0xFF000000) != 0 && stroke_color != fill_color) {
-		startPerfectDrawing(stroke_color);
+	if ((stroke_color & 0xFF000000) != 0 && stroke_color != fill_color) {
+		startPerfectDrawing(fill_color);
 		strokeArc(x, y, w, h, start, end, stroke_color);
 		stopPerfectDrawing();
 	}
@@ -465,68 +562,55 @@ void Painter::drawRoundedRect(int x, int y, int w, int h, int x_radius, int y_ra
 /*
  * Triangle
  * */
-
 void Painter::strokeTriangle(int x1, int y1, int x2, int y2, int x3, int y3, uint32_t color) {
-	// Sort vertices based on y-coordinate
-	if (y1 > y2) {
-		std::swap(x1, x2);
-		std::swap(y1, y2);
-	}
-	
-	if (y1 > y3) {
-		std::swap(x1, x3);
-		std::swap(y1, y3);
-	}
-	
-	if (y2 > y3) {
-		std::swap(x2, x3);
-		std::swap(y2, y3);
-	}
-	
 	drawLine(x1, y1, x2, y2, color);
 	drawLine(x2, y2, x3, y3, color);
 	drawLine(x3, y3, x1, y1, color);
 }
 
-// By ChatGPT, lol
 void Painter::fillTriangle(int x1, int y1, int x2, int y2, int x3, int y3, uint32_t color) {
-	// Sort vertices based on y-coordinate
-	if (y1 > y2) {
-		std::swap(x1, x2);
-		std::swap(y1, y2);
+    if (y2 < y1) {
+		std::swap(x2, x1);
+		std::swap(y2, y1);
+	}
+    
+    if (y3 < y1) {
+		std::swap(x3, x1);
+		std::swap(y3, y1);
 	}
 	
-	if (y1 > y3) {
-		std::swap(x1, x3);
-		std::swap(y1, y3);
+    if (y3 < y2) {
+		std::swap(x3, x2);
+		std::swap(y3, y2);
 	}
 	
-	if (y2 > y3) {
-		std::swap(x2, x3);
-		std::swap(y2, y3);
+	std::vector<std::pair<int, int>> points;
+	getLinePoints(points, x1, y1, x2, y2);
+	getLinePoints(points, x2, y2, x3, y3);
+	getLinePoints(points, x3, y3, x1, y1);
+	
+	std::vector<int> min_x(y3 - y1 + 1, -1);
+	std::vector<int> max_x(y3 - y1 + 1, 0);
+	
+	for (auto it: points) {
+		int key = it.second - y1;
+		
+		if (min_x[key] == -1 || min_x[key] > it.first)
+			min_x[key] = it.first;
+		
+		if (max_x[key] < it.first)
+			max_x[key] = it.first;
 	}
 	
-	// Draw upper part of the triangle
-	for (int scanlineY = y1; scanlineY <= y2; ++scanlineY) {
-		int xL = x1 + ((x2 - x1) * (scanlineY - y1)) / (y2 - y1);
-		int xR = x1 + ((x3 - x1) * (scanlineY - y1)) / (y3 - y1);
-		for (int x = xL; x <= xR; ++x)
-			drawPixel(x, scanlineY, color);
-	}
-	
-	// Draw lower part of the triangle
-	for (int scanlineY = y2 + 1; scanlineY <= y3; ++scanlineY) {
-		int xL = x2 + ((x3 - x2) * (scanlineY - y2)) / (y3 - y2);
-		int xR = x1 + ((x3 - x1) * (scanlineY - y1)) / (y3 - y1);
-		for (int x = xL; x <= xR; ++x)
-			drawPixel(x, scanlineY, color);
+	for (int i = 0; i < min_x.size(); i++) {
+		if (min_x[i] != -1)
+			drawHLine(min_x[i], y1 + i, max_x[i] - min_x[i] + 1, color);
 	}
 }
 
 void Painter::drawTriangle(int x1, int y1, int x2, int y2, int x3, int y3, uint32_t fill_color, uint32_t stroke_color) {
 	if ((fill_color & 0xFF000000) != 0) {
 		startPerfectDrawing(fill_color);
-		strokeTriangle(x1, y1, x2, y2, x3, y3, fill_color);
 		fillTriangle(x1, y1, x2, y2, x3, y3, fill_color);
 		stopPerfectDrawing();
 	}

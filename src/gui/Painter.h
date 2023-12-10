@@ -47,6 +47,8 @@ class Painter {
 		
 		void fillEllipseSectionHelper(int x, int y, int x0, int y0, uint8_t option, uint32_t color, int start = -1, int end = -1);
 		void fillEllipseHelper(int x0, int y0, int rx, int ry, uint8_t option, uint32_t color, int start = -1, int end = -1);
+		
+		void getLinePoints(std::vector<std::pair<int, int>> &result, int x1, int y1, int x2, int y2);
 	public:
 		Painter(uint8_t *buffer, int width, int height);
 		
@@ -66,7 +68,8 @@ class Painter {
 		void drawVLine(int x, int y, int height, uint32_t color);
 		void drawLine(int x, int y, int w, int h, uint32_t color);
 		
-		void drawBitmap(int x, int y, int w, int h, uint8_t *bitmap, Bitmap::Type type, int offset_x = 0, int offset_y = 0);
+		void drawBitmap(int x, int y, int w, int h, uint8_t *bitmap, Bitmap::Type type, int offset_x = 0, int offset_y = 0, uint32_t fill_color = 0xFFFFFFFF, uint32_t stroke_color = 0xFF000000);
+		void drawText(int x, int y, int w, int h, Font *font, uint16_t *text, int length, uint32_t fill_color, uint32_t stroke_color);
 		
 		void strokeRect(int x, int y, int w, int h, uint32_t color);
 		void fillRect(int x, int y, int w, int h, uint32_t color);
