@@ -139,8 +139,31 @@ void GUI_DrawIMGHDR(int x, int y, IMGHDR *img, const char *pen, const char *brus
 	assert(img != nullptr);
 	assert(img->bitmap != nullptr);
 	
+	static const char black[] = { 0x00, 0x00, 0x00, 0x64 };
+	static const char transparent[] = { 0x00, 0x00, 0x00, 0x00 };
+	
+	pen = pen ?: black;
+	brush = brush ?: transparent;
+	
 	GUI_SetProp2ImageOrCanvas(&drw, &rect, 0, img, offset_x, offset_y);
 	GUI_DrawObjectSetColor(&drw, pen, brush);
 	GUI_DrawObject(&drw);
 	GUI_FreeDrawObject(&drw);
+}
+
+void GUI_DrawImg(int x, int y, int picture) {
+	IMGHDR *img = Resources::instance()->getPicture(picture);
+	if (img)
+		GUI_DrawIMGHDR(x, y, img, nullptr, nullptr, 0, 0, img->w, img->h, 0);
+}
+
+void GUI_DrawCanvas(void *data, int x1, int y1, int x2, int y2, int flags) {
+	fprintf(stderr, "%s not implemented!\n", __func__);
+	abort();
+}
+
+void GUI_DrawImgBW(int x, int y, int picture, char *pen, char *brush) {
+	IMGHDR *img = Resources::instance()->getPicture(picture);
+	if (img)
+		GUI_DrawIMGHDR(x, y, img, pen, brush, 0, 0, img->w, img->h, 0);
 }

@@ -462,7 +462,7 @@ typedef struct{
 	char *bitmap;
 } EIMGHDR;
 
-IMGHDR *IMG_LoadAny(const std::string &path);
+IMGHDR *IMG_LoadAny(const std::string &path, bool only_rgb888 = true);
 IMGHDR *IMG_CreateIMGHDRFromPngFile(const char *fname, int type);
 int IMG_CalcBitmapSize(short w,short h, char typy);
 Bitmap::Type IMG_GetBitmapType(int bpnum);
@@ -821,6 +821,13 @@ void GUI_DrawTriangle(int x1, int y1, int x2, int y2, int x3, int y3, int flags,
 void GUI_DrawPixel(int x, int y, const char *color);
 void GUI_DrawArc(int x1, int y1, int x2, int y2, int start, int end, int flags, char *pen, char *brush);
 void GUI_DrawIMGHDR(int x, int y, IMGHDR *img, const char *pen, const char *brush, uint16_t offset_x, uint16_t offset_y, int w, int h, int flags);
+void GUI_DrawImg(int x, int y, int picture);
+void GUI_DrawCanvas(void *data, int x1, int y1, int x2, int y2, int flags);
+void GUI_DrawImgBW(int x, int y, int picture, char *pen, char *brush);
+
+IMGHDR* GUI_GetPITaddr(int num);
+int GUI_GetImgHeight(int picture);
+int GUI_GetImgWidth(int picture);
 
 void GUI_DrawObject(DRWOBJ *drw);
 void GUI_FreeDrawObject(DRWOBJ *drw);
@@ -870,7 +877,9 @@ void GUI_AddIconToIconBar(int pic, short *num);
 void GUI_StoreXYWHtoRECT(RECT *rect, int x, int y, int w, int h);
 void GUI_StoreXYXYtoRECT(RECT *rect, int x, int y, int x2, int y2);
 
-int GUI_GetFontYSIZE(int font);
+int GUI_GetFontYSIZE(int font_id);
+int GUI_GetSymbolWidth(int ch, int font_id);
+int GUI_GetStringWidth(WSHDR *ws, int font_id);
 
 void *GUI_RamScreenBuffer();
 

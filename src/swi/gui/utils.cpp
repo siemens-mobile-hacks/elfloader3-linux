@@ -5,6 +5,20 @@
 
 #include <cassert>
 
+IMGHDR *GUI_GetPITaddr(int num) {
+	return Resources::instance()->getPicture(num);
+}
+
+int GUI_GetImgHeight(int picture) {
+	IMGHDR *img = Resources::instance()->getPicture(picture);
+	return img ? img->h : 0;
+}
+
+int GUI_GetImgWidth(int picture) {
+	IMGHDR *img = Resources::instance()->getPicture(picture);
+	return img ? img->w : 0;
+}
+
 uint32_t GUI_Color2Int(const char *color) {
 	color = color ?: GUI_GetPaletteAdrByColorIndex(23); // fallback
 	const uint8_t *u8 = reinterpret_cast<const uint8_t *>(color);

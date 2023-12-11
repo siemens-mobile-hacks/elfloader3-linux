@@ -28,8 +28,9 @@ add_executable(elfloader3
 	src/swi/ll.cpp
 	src/swi/lock.cpp
 	src/swi/gui.cpp
-	src/swi/gui/drwobj.cpp
+	src/swi/gui/font.cpp
 	src/swi/gui/utils.cpp
+	src/swi/gui/drwobj.cpp
 	src/swi/gui/painter.cpp
 	src/swi/csm.cpp
 	src/swi/obs.cpp

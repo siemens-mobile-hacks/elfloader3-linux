@@ -332,10 +332,6 @@ void GUI_AddIconToIconBar(int pic, short *num) {
 	// stub
 }
 
-int GUI_GetFontYSIZE(int font) {
-	return 16;
-}
-
 void *GUI_RamScreenBuffer() {
 	return IPC::instance()->getScreenBuffer();
 }

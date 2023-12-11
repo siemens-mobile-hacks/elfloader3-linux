@@ -178,7 +178,7 @@ void Resources::loadPictures() {
 		std::string path = entry.path();
 		if (std::regex_match(fname, m, pic_re)) {
 			int pit_index = strToInt(m[1].str(), 10, 0);
-			IMGHDR *img = IMG_LoadAny(path);
+			IMGHDR *img = IMG_LoadAny(path, false);
 			if (img)
 				m_pit_table[pit_index] = img;
 		}
@@ -188,8 +188,9 @@ void Resources::loadPictures() {
 IMGHDR *Resources::getPicture(int num) {
 	auto it = m_pit_table.find(num);
 	if (it == m_pit_table.end()) {
-		std::string path = m_root + "/res/" + getPlatformName() + "/PIT/" + std::to_string(num) + ".png";
-		m_pit_table[num] = IMG_LoadAny(path);
+		std::string path = m_root + "/res/" + getPlatformName() + "/PIT/" + strprintf("%04d.png", num);
+		m_pit_table[num] = IMG_LoadAny(path, false);
+		it = m_pit_table.find(num);
 	}
 	return it->second;
 }

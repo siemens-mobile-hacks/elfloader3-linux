@@ -163,6 +163,9 @@ void loader_init_switab() {
 	switab_functions[0x0202]	= (void *) GUI_DrawTriangle;
 	switab_functions[0x0203]	= (void *) GUI_DrawPixel;
 	switab_functions[0x0204]	= (void *) GUI_DrawArc;
+	switab_functions[0x0023]	= (void *) GUI_DrawImg;
+	switab_functions[0x0025]	= (void *) GUI_DrawCanvas;
+	switab_functions[0x0026]	= (void *) GUI_DrawImgBW;
 	switab_functions[0x012A]	= (void *) GUI_DrawObject;
 	switab_functions[0x014A]	= (void *) GUI_FreeDrawObject;
 	switab_functions[0x014B]	= (void *) GUI_DrawObjectSetColor;
@@ -189,8 +192,13 @@ void loader_init_switab() {
 	switab_functions[0x0133]	= (void *) GUI_StoreXYWHtoRECT;
 	switab_functions[0x0134]	= (void *) GUI_StoreXYXYtoRECT;
 	switab_functions[0x01C5]	= (void *) GUI_GetFontYSIZE;
+	switab_functions[0x01E1]	= (void *) GUI_GetSymbolWidth;
+	switab_functions[0x0208]	= (void *) GUI_GetStringWidth;
 	switab_functions[0x0388]	= (void *) GUI_SetDepthBuffer;
 	switab_functions[0x0389]	= (void *) GUI_SetDepthBufferOnLCDLAYER;
+	switab_functions[0x001E]	= (void *) GUI_GetPITaddr;
+	switab_functions[0x0021]	= (void *) GUI_GetImgHeight;
+	switab_functions[0x0022]	= (void *) GUI_GetImgWidth;
 	
 	switab_functions[0x8188 - 0x8000]	= (void *) GUI_ScreenW();
 	switab_functions[0x8189 - 0x8000]	= (void *) GUI_ScreenH();
