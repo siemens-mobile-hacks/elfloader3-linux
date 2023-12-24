@@ -94,6 +94,7 @@ void GUI_DrawRectangle(int x1, int y1, int x2, int y2, int flags, const char *pe
 
 void GUI_DrawRoundedFrame(int x1, int y1, int x2, int y2, int round_x, int round_y, int flags, const char *pen, const char *brush) {
 	DRWOBJ drw;
+	RECT rect2;
 	RECT rect = {
 		.x = std::min(x1, x2),
 		.y = std::min(y1, y2),
@@ -101,9 +102,82 @@ void GUI_DrawRoundedFrame(int x1, int y1, int x2, int y2, int round_x, int round
 		.y2 = std::max(y1, y2),
 	};
 	
-	GUI_SetProp2RoundedRect(&drw, &rect, flags, round_x, round_y);
-	GUI_DrawObjectSetColor(&drw, brush, pen);
-	GUI_DrawObject(&drw);
+	int w = rect.x2 - rect.x + 1;
+	int h = rect.y2 - rect.y + 1;
+	
+	if (round_x < 2 || round_y < 2 || w < 4 || h < 4) {
+		GUI_DrawRectangle(x1, y1, x2, y2, flags, pen, brush);
+		return;
+	}
+	
+	round_x = std::min(w / 2, round_x);
+	round_y = std::min(h / 2, round_y);
+	
+	int xl = rect.x + round_x;
+	int yu = rect.y + round_y;
+	
+	int xr = rect.x2 - round_x;
+	int yl = rect.y2 - round_y;
+	
+	if (!GUI_ColorIsTransparent(brush)) {
+		GUI_DrawObjectSetColor(&drw, brush, brush);
+		
+		GUI_SetProp2FilledEllipseSection(&drw, &rect, 1, xr + 1, yu - 1, round_x, round_y, DRWOBJ_ELLIPSE_SECTION_UPPER_RIGHT);
+		GUI_DrawObject(&drw);
+		
+		GUI_SetProp2FilledEllipseSection(&drw, &rect, 1, xl - 1, yu - 1, round_x, round_y, DRWOBJ_ELLIPSE_SECTION_UPPER_LEFT);
+		GUI_DrawObject(&drw);
+		
+		GUI_SetProp2FilledEllipseSection(&drw, &rect, 1, xl - 1, yl + 1, round_x, round_y, DRWOBJ_ELLIPSE_SECTION_LOWER_LEFT);
+		GUI_DrawObject(&drw);
+		
+		GUI_SetProp2FilledEllipseSection(&drw, &rect, 1, xr + 1, yl + 1, round_x, round_y, DRWOBJ_ELLIPSE_SECTION_LOWER_RIGHT);
+		GUI_DrawObject(&drw);
+		
+		if (xr - xl >= 0) {
+			GUI_StoreXYXYtoRECT(&rect2, xl, rect.y, xr, yu - 1);
+			GUI_SetProp2RectEx(&drw, &rect2, 0, 1, 0);
+			GUI_DrawObject(&drw);
+		}
+		
+		if (yl - yu >= 0) {
+			GUI_StoreXYXYtoRECT(&rect2, rect.x, yu, rect.x2, yl);
+			GUI_SetProp2RectEx(&drw, &rect2, 0, 1, 0);
+			GUI_DrawObject(&drw);
+		}
+		
+		if (xr - xl >= 0) {
+			GUI_StoreXYXYtoRECT(&rect2, xl, yl + 1, xr, rect.y2);
+			GUI_SetProp2RectEx(&drw, &rect2, 0, 1, 0);
+			GUI_DrawObject(&drw);
+		}
+	}
+	
+	if (!GUI_ColorIsTransparent(pen)) {
+		GUI_DrawObjectSetColor(&drw, pen, pen);
+		
+		GUI_SetProp2StrokeEllipseSection(&drw, &rect, 1, xr + 1, yu - 1, round_x, round_y, DRWOBJ_ELLIPSE_SECTION_UPPER_RIGHT);
+		GUI_DrawObject(&drw);
+		
+		GUI_SetProp2StrokeEllipseSection(&drw, &rect, 1, xl - 1, yu - 1, round_x, round_y, DRWOBJ_ELLIPSE_SECTION_UPPER_LEFT);
+		GUI_DrawObject(&drw);
+		
+		GUI_SetProp2StrokeEllipseSection(&drw, &rect, 1, xl - 1, yl + 1, round_x, round_y, DRWOBJ_ELLIPSE_SECTION_LOWER_LEFT);
+		GUI_DrawObject(&drw);
+		
+		GUI_SetProp2StrokeEllipseSection(&drw, &rect, 1, xr + 1, yl + 1, round_x, round_y, DRWOBJ_ELLIPSE_SECTION_LOWER_RIGHT);
+		GUI_DrawObject(&drw);
+		
+		if (xr - xl >= 0) {
+			GUI_DrawLine(xl, rect.y, xr + 1, rect.y, 0, pen);
+			GUI_DrawLine(xl, rect.y2, xr + 1, rect.y2, 0, pen);
+		}
+		
+		if (yl - yu >= 0) {
+			GUI_DrawLine(rect.x, yu, rect.x, yl + 1, 0, pen);
+			GUI_DrawLine(rect.x2, yu, rect.x2, yl + 1, 0, pen);
+		}
+	}
 }
 
 void GUI_DrawTriangle(int x1, int y1, int x2, int y2, int x3, int y3, int flags, char *pen, char *brush) {

@@ -9,6 +9,14 @@
 #include "gui/Font.h"
 
 class Painter {
+	public:
+		enum {
+			CIRCLE_DRAW_UPPER_RIGHT		= 1 << 0,
+			CIRCLE_DRAW_UPPER_LEFT		= 1 << 1,
+			CIRCLE_DRAW_LOWER_LEFT		= 1 << 2,
+			CIRCLE_DRAW_LOWER_RIGHT		= 1 << 3,
+		};
+	
 	protected:
 		int m_width = 0;
 		int m_height = 0;
@@ -23,34 +31,15 @@ class Painter {
 		std::vector<bool> m_mask;
 		std::map<int, Font *> m_fonts;
 		
-		enum {
-			CIRCLE_DRAW_UPPER_RIGHT		= 1 << 0,
-			CIRCLE_DRAW_UPPER_LEFT		= 1 << 1,
-			CIRCLE_DRAW_LOWER_LEFT		= 1 << 2,
-			CIRCLE_DRAW_LOWER_RIGHT		= 1 << 3,
-		};
-		
-		void startPerfectDrawing(uint32_t color);
-		void stopPerfectDrawing();
-		
 		static bool isInEllipseRange(int x, int y, int start, int end);
 		static std::tuple<int, int> getEllipseSectionRegion(int x1, int x2, int y1, int y2);
-		
-		void strokeCircleSectionHelper(int x, int y, int x0, int y0, uint8_t option, uint32_t color);
-		void strokeCircleHelper(int x0, int y0, int rad, uint8_t option, uint32_t color);
-		
-		void fillCircleSectionHelper(int x, int y, int x0, int y0, uint8_t option, uint32_t color);
-		void fillCircleHelper(int x0, int y0, int rad, uint8_t option, uint32_t color);
-		
-		void strokeEllipseSectionHelper(int x, int y, int x0, int y0, uint8_t option, uint32_t color, int start = -1, int end = -1);
-		void strokeEllipseHelper(int x0, int y0, int rx, int ry, uint8_t option, uint32_t color, int start = -1, int end = -1);
-		
-		void fillEllipseSectionHelper(int x, int y, int x0, int y0, uint8_t option, uint32_t color, int start = -1, int end = -1);
-		void fillEllipseHelper(int x0, int y0, int rx, int ry, uint8_t option, uint32_t color, int start = -1, int end = -1);
 		
 		void getLinePoints(std::vector<std::pair<int, int>> &result, int x1, int y1, int x2, int y2);
 	public:
 		Painter(uint8_t *buffer, int width, int height);
+		
+		void startPerfectDrawing(uint32_t color);
+		void stopPerfectDrawing();
 		
 		inline void registerFont(int id, Font *font) {
 			m_fonts[id] = font;
@@ -70,6 +59,18 @@ class Painter {
 		
 		void drawBitmap(int x, int y, int w, int h, uint8_t *bitmap, Bitmap::Type type, int offset_x = 0, int offset_y = 0, uint32_t fill_color = 0xFFFFFFFF, uint32_t stroke_color = 0xFF000000);
 		void drawText(int x, int y, int w, int h, Font *font, uint16_t *text, int length, uint32_t fill_color, uint32_t stroke_color);
+		
+		void strokeCircleSectionHelper(int x, int y, int x0, int y0, uint8_t option, uint32_t color);
+		void strokeCircleHelper(int x0, int y0, int rad, uint8_t option, uint32_t color);
+		
+		void fillCircleSectionHelper(int x, int y, int x0, int y0, uint8_t option, uint32_t color);
+		void fillCircleHelper(int x0, int y0, int rad, uint8_t option, uint32_t color);
+		
+		void strokeEllipseSectionHelper(int x, int y, int x0, int y0, uint8_t option, uint32_t color, int start = -1, int end = -1);
+		void strokeEllipseHelper(int x0, int y0, int rx, int ry, uint8_t option, uint32_t color, int start = -1, int end = -1);
+		
+		void fillEllipseSectionHelper(int x, int y, int x0, int y0, uint8_t option, uint32_t color, int start = -1, int end = -1);
+		void fillEllipseHelper(int x0, int y0, int rx, int ry, uint8_t option, uint32_t color, int start = -1, int end = -1);
 		
 		void strokeRect(int x, int y, int w, int h, uint32_t color);
 		void fillRect(int x, int y, int w, int h, uint32_t color);

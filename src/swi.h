@@ -577,6 +577,9 @@ enum {
 #define TEXT_NOFORMAT 128
 #define TEXT_INVERT2 256
 
+// DrawArc flags
+#define ARC_DRAW_OUTLINE 1
+
 // DrawRectangle flags
 #define RECT_DOT_OUTLINE 1
 #define RECT_FILL_WITH_PEN 2
@@ -594,17 +597,26 @@ typedef struct {
 } RECT;
 
 enum {
-	DRWOBJ_TYPE_RECT			= 0x00,
-	DRWOBJ_TYPE_TEXT			= 0x01,
-	DRWOBJ_TYPE_SCROLLING_TEXT	= 0x03,
-	DRWOBJ_TYPE_ROUNDED_RECT	= 0x04,
-	DRWOBJ_TYPE_IMG				= 0x05,
-	DRWOBJ_TYPE_PIXEL			= 0x0B,
-	DRWOBJ_TYPE_LINE			= 0x0F,
-	DRWOBJ_TYPE_PIE				= 0x13,
-	DRWOBJ_TYPE_ARC				= 0x12,
-	DRWOBJ_TYPE_TRIANGLE		= 0x15,
-	DRWOBJ_TYPE_EIMG			= 0x17,
+	DRWOBJ_ELLIPSE_SECTION_UPPER_RIGHT = 1,
+	DRWOBJ_ELLIPSE_SECTION_UPPER_LEFT,
+	DRWOBJ_ELLIPSE_SECTION_LOWER_LEFT,
+	DRWOBJ_ELLIPSE_SECTION_LOWER_RIGHT,
+};
+
+enum {
+	DRWOBJ_TYPE_RECT						= 0x00,
+	DRWOBJ_TYPE_TEXT						= 0x01,
+	DRWOBJ_TYPE_SCROLLING_TEXT				= 0x03,
+	DRWOBJ_TYPE_RECT_EX						= 0x04,
+	DRWOBJ_TYPE_IMG							= 0x05,
+	DRWOBJ_TYPE_PIXEL						= 0x0B,
+	DRWOBJ_TYPE_LINE						= 0x0F,
+	DRWOBJ_TYPE_STROKE_ELLIPSE_SECTION		= 0x10,
+	DRWOBJ_TYPE_FILLED_ELLIPSE_SECTION		= 0x11,
+	DRWOBJ_TYPE_PIE							= 0x13,
+	DRWOBJ_TYPE_ARC							= 0x12,
+	DRWOBJ_TYPE_TRIANGLE					= 0x15,
+	DRWOBJ_TYPE_EIMG						= 0x17,
 };
 
 typedef struct {
@@ -650,6 +662,7 @@ typedef struct {
 			int16_t y;
 			int16_t x2;
 			int16_t y2;
+			uint16_t flags;
 		} line;
 		
 		struct {
@@ -669,11 +682,20 @@ typedef struct {
 			int16_t h;
 			int16_t start;
 			int16_t end;
+			uint16_t flags;
 		} arc;
 		
 		struct {
-			uint8_t round_x;
-			uint8_t round_y;
+			int16_t x;
+			int16_t y;
+			int16_t radius_x;
+			int16_t radius_y;
+			uint16_t flags;
+		} ellipse_section;
+		
+		struct {
+			uint8_t fill_mode;
+			uint8_t fill_value;
 		} rectangle;
 	};
 } DRWOBJ;
@@ -839,13 +861,15 @@ DRWOBJ *GUI_SetProp2ImageOrCanvas(DRWOBJ *drw, RECT *rect, int flags, IMGHDR *im
 DRWOBJ *GUI_SetProp2Image(DRWOBJ *drw, RECT *rect, int flags, IMGHDR *img);
 DRWOBJ *GUI_SetProp2Triangle(DRWOBJ *drw, int x1, int y1, int x2, int y2, int x3, int y3, int flags, char *pen, char *brush);
 DRWOBJ *GUI_SetProp2Rect(DRWOBJ *drw, RECT *rect, int flags);
-DRWOBJ *GUI_SetProp2RoundedRect(DRWOBJ *drw, RECT *rect, int flags, int round_x, int round_y);
+DRWOBJ *GUI_SetProp2RectEx(DRWOBJ *drw, RECT *rect, int flags, int fill_mode, int fill_value);
 DRWOBJ *GUI_SetProp2Arc(DRWOBJ *drw, RECT *rect, int flags, int x, int y, int x2, int y2, int start, int end);
 DRWOBJ *GUI_SetProp2Pie(DRWOBJ *drw, RECT *rect, int flags, int x, int y, int x2, int y2, int start, int end);
 DRWOBJ *GUI_SetProp2Line(DRWOBJ *drw, RECT *rect, int flags, int x, int y, int x2, int y2);
 DRWOBJ *GUI_SetProp2Pixel(DRWOBJ *drw, RECT *rect, int flags, int x, int y);
 DRWOBJ *GUI_SetProp2EImage(DRWOBJ *drw, RECT *rect, int flags, EIMGHDR *img, int offset_x, int offset_y);
-
+DRWOBJ *GUI_SetProp2StrokeEllipseSection(DRWOBJ *drw, RECT *rect, int flags, int x, int y, int radius_x, int radius_y, int type);
+DRWOBJ *GUI_SetProp2FilledEllipseSection(DRWOBJ *drw, RECT *rect, int flags, int x, int y, int radius_x, int radius_y, int type);
+	
 inline bool GUI_ColorIsTransparent(const char *color) {
 	return !color || color[3] == 0;
 }

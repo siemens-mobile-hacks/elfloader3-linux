@@ -106,15 +106,15 @@ DRWOBJ *GUI_SetProp2Rect(DRWOBJ *drw, RECT *rect, int flags) {
 	return drw;
 }
 
-DRWOBJ *GUI_SetProp2RoundedRect(DRWOBJ *drw, RECT *rect, int flags, int round_x, int round_y) {
+DRWOBJ *GUI_SetProp2RectEx(DRWOBJ *drw, RECT *rect, int flags, int fill_mode, int fill_value) {
 	assert(drw != nullptr);
 	
-	drw->type = DRWOBJ_TYPE_ROUNDED_RECT;
+	drw->type = DRWOBJ_TYPE_RECT_EX;
 	drw->rect_flags = flags;
 	memcpy(&drw->rect, rect, sizeof(RECT));
 	
-	drw->rectangle.round_x = round_x;
-	drw->rectangle.round_y = round_y;
+	drw->rectangle.fill_mode = fill_mode;
+	drw->rectangle.fill_value = fill_value;
 	
 	return drw;
 }
@@ -132,6 +132,7 @@ DRWOBJ *GUI_SetProp2Arc(DRWOBJ *drw, RECT *rect, int flags, int x, int y, int w,
 	drw->arc.h = h;
 	drw->arc.start = start;
 	drw->arc.end = end;
+	drw->arc.flags = flags;
 	
 	return drw;
 }
@@ -149,6 +150,7 @@ DRWOBJ *GUI_SetProp2Pie(DRWOBJ *drw, RECT *rect, int flags, int x, int y, int w,
 	drw->arc.h = h;
 	drw->arc.start = start;
 	drw->arc.end = end;
+	drw->arc.flags = flags;
 	
 	return drw;
 }
@@ -226,6 +228,48 @@ void GUI_FreeDrawObject(DRWOBJ *drw) {
 	}
 }
 
+DRWOBJ *GUI_SetProp2StrokeEllipseSection(DRWOBJ *drw, RECT *rect, int flags, int x, int y, int radius_x, int radius_y, int type) {
+	assert(drw != nullptr);
+	
+	drw->type = DRWOBJ_TYPE_STROKE_ELLIPSE_SECTION;
+	drw->rect_flags = flags;
+	memcpy(&drw->rect, rect, sizeof(RECT));
+	
+	drw->ellipse_section.x = x;
+	drw->ellipse_section.y = y;
+	drw->ellipse_section.radius_x = radius_x;
+	drw->ellipse_section.radius_y = radius_y;
+	drw->ellipse_section.flags = type;
+	
+	return drw;
+}
+
+DRWOBJ *GUI_SetProp2FilledEllipseSection(DRWOBJ *drw, RECT *rect, int flags, int x, int y, int radius_x, int radius_y, int type) {
+	assert(drw != nullptr);
+	
+	drw->type = DRWOBJ_TYPE_FILLED_ELLIPSE_SECTION;
+	drw->rect_flags = flags;
+	memcpy(&drw->rect, rect, sizeof(RECT));
+	
+	drw->ellipse_section.x = x;
+	drw->ellipse_section.y = y;
+	drw->ellipse_section.radius_x = radius_x;
+	drw->ellipse_section.radius_y = radius_y;
+	drw->ellipse_section.flags = type;
+	
+	return drw;
+}
+
+static int _ellipseHelperFlagsToPainter(int type) {
+	switch (type) {
+		case DRWOBJ_ELLIPSE_SECTION_UPPER_LEFT:		return Painter::CIRCLE_DRAW_UPPER_LEFT;
+		case DRWOBJ_ELLIPSE_SECTION_LOWER_LEFT:		return Painter::CIRCLE_DRAW_LOWER_LEFT;
+		case DRWOBJ_ELLIPSE_SECTION_UPPER_RIGHT:	return Painter::CIRCLE_DRAW_UPPER_RIGHT;
+		case DRWOBJ_ELLIPSE_SECTION_LOWER_RIGHT:	return Painter::CIRCLE_DRAW_LOWER_RIGHT;
+	}
+	return -1;
+}
+
 void GUI_DrawObject(DRWOBJ *drw) {
 	assert(drw != nullptr);
 	
@@ -235,6 +279,7 @@ void GUI_DrawObject(DRWOBJ *drw) {
 	painter->setWindow(rect->x, rect->y, rect->x2, rect->y2);
 	
 	switch (drw->type) {
+		case DRWOBJ_TYPE_RECT_EX:
 		case DRWOBJ_TYPE_RECT:
 		{
 			int w = rect->x2 - rect->x + 1;
@@ -243,19 +288,52 @@ void GUI_DrawObject(DRWOBJ *drw) {
 		}
 		break;
 		
-		case DRWOBJ_TYPE_ROUNDED_RECT:
-		{
-			int w = rect->x2 - rect->x + 1;
-			int h = rect->y2 - rect->y + 1;
-			painter->drawRoundedRect(0, 0, w, h, drw->rectangle.round_x, drw->rectangle.round_y, GUI_Color2Int(drw->color1), GUI_Color2Int(drw->color2));
-		}
-		break;
-		
 		case DRWOBJ_TYPE_IMG:
 		{
 			IMGHDR *img = drw->img.value;
 			painter->drawBitmap(0, 0, img->w, img->h, img->bitmap, IMG_GetBitmapType(img->bpnum),
 				drw->img.offset_x, drw->img.offset_y, GUI_Color2Int(drw->color1), GUI_Color2Int(drw->color2));
+		}
+		break;
+		
+		case DRWOBJ_TYPE_STROKE_ELLIPSE_SECTION:
+		case DRWOBJ_TYPE_FILLED_ELLIPSE_SECTION:
+		{
+			int x = drw->ellipse_section.x - rect->x;
+			int y = drw->ellipse_section.y - rect->y;
+			int draw_position;
+			
+			switch (drw->ellipse_section.flags) {
+				case DRWOBJ_ELLIPSE_SECTION_UPPER_LEFT:
+					draw_position = Painter::CIRCLE_DRAW_UPPER_LEFT;
+				break;
+				
+				case DRWOBJ_ELLIPSE_SECTION_LOWER_LEFT:
+					draw_position = Painter::CIRCLE_DRAW_LOWER_LEFT;
+				break;
+				
+				case DRWOBJ_ELLIPSE_SECTION_UPPER_RIGHT:
+					draw_position = Painter::CIRCLE_DRAW_UPPER_RIGHT;
+				break;
+				
+				case DRWOBJ_ELLIPSE_SECTION_LOWER_RIGHT:
+					draw_position = Painter::CIRCLE_DRAW_LOWER_RIGHT;
+				break;
+				
+				default:
+					LOGE("Invalid drw->ellipse_section.flags: %d\n", drw->ellipse_section.flags);
+					abort();
+				break;
+			}
+			
+			uint32_t color = GUI_Color2Int(drw->color1);
+			painter->startPerfectDrawing(color);
+			if (drw->type == DRWOBJ_TYPE_FILLED_ELLIPSE_SECTION) {
+				painter->fillEllipseHelper(x, y, drw->ellipse_section.radius_x - 1, drw->ellipse_section.radius_y - 1, draw_position, GUI_Color2Int(drw->color1));
+			} else {
+				painter->strokeEllipseHelper(x, y, drw->ellipse_section.radius_x - 1, drw->ellipse_section.radius_y - 1, draw_position, GUI_Color2Int(drw->color1));
+			}
+			painter->stopPerfectDrawing();
 		}
 		break;
 		

@@ -154,7 +154,7 @@ void Painter::drawPixel(int x, int y, uint32_t color) {
 	x += m_window_x;
 	y += m_window_y;
 	
-	if (x < 0 || y < 0 || x > m_window_x2 || y > m_window_y2) {
+	if (x < m_window_x || y < m_window_y || x > m_window_x2 || y > m_window_y2) {
 		// printf("ignored pixel %d x %d\n", x, y);
 		return;
 	}
