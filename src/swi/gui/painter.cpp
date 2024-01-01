@@ -219,6 +219,7 @@ void GUI_DrawArc(int x1, int y1, int x2, int y2, int start, int end, int flags, 
 	if (!GUI_ColorIsTransparent(pen)) {
 		GUI_SetProp2Arc(&drw, &rect, 0, x1, y1, x2 - x1 + 1, y2 - y1 + 1, start, end);
 		GUI_DrawObjectSetColor(&drw, pen, pen);
+		drw.arc.flags = flags;
 		GUI_DrawObject(&drw);
 		GUI_FreeDrawObject(&drw);
 	}

@@ -161,6 +161,12 @@ void Painter::drawPixel(int x, int y, uint32_t color) {
 	x += m_window_x;
 	y += m_window_y;
 	
+	if (m_dotted_mode) {
+		m_dotted_counter++;
+		if ((m_dotted_counter % 2) != 0)
+			return;
+	}
+	
 	if (x < m_window_x || y < m_window_y || x > m_window_x2 || y > m_window_y2) {
 		// printf("ignored pixel %d x %d\n", x, y);
 		return;
@@ -253,7 +259,7 @@ void Painter::getLinePoints(std::vector<std::pair<int, int>> &result, int x1, in
 }
 
 // From u8g2
-void Painter::drawLine(int x1, int y1, int x2, int y2, uint32_t color) {
+void Painter::drawLine(int x1, int y1, int x2, int y2, uint32_t color, bool dotted) {
 	int tmp;
 	int x,y;
 	int dx, dy;
@@ -262,12 +268,15 @@ void Painter::drawLine(int x1, int y1, int x2, int y2, uint32_t color) {
 	
 	bool swapxy = false;
 	
+	setDottedMode(dotted);
+	
 	if (y1 == y2) {
 		if (x2 > x1) {
 			drawHLine(x1, y1, x2 - x1, color);
 		} else {
 			drawHLine(x2, y2, x1 - x2, color);
 		}
+		setDottedMode(false);
 		return;
 	} else if (x1 == x2) {
 		if (y2 > y1) {
@@ -275,6 +284,7 @@ void Painter::drawLine(int x1, int y1, int x2, int y2, uint32_t color) {
 		} else {
 			drawVLine(x2, y2, y1 - y2, color);
 		}
+		setDottedMode(false);
 		return;
 	}
 	
@@ -326,12 +336,14 @@ void Painter::drawLine(int x1, int y1, int x2, int y2, uint32_t color) {
 			err += dx;
 		}
 	}
+	
+	setDottedMode(false);
 }
 
 /*
  * ARC
  * */
-void Painter::strokeArc(int x, int y, int w, int h, int start_angle, int sweep_angle, uint32_t color) {
+void Painter::strokeArc(int x, int y, int w, int h, int start_angle, int sweep_angle, uint32_t color, bool dotted) {
 	int end_angle = start_angle + sweep_angle;
 	
 	int x_radius = w / 2;
@@ -354,12 +366,14 @@ void Painter::strokeArc(int x, int y, int w, int h, int start_angle, int sweep_a
 		}
 	};
 	
+	setDottedMode(dotted);
 	startPerfectDrawing(color);
 	drawArcHelper(xr, yu, CIRCLE_DRAW_UPPER_RIGHT, 0);
 	drawArcHelper(xl, yu, CIRCLE_DRAW_UPPER_LEFT, 90);
 	drawArcHelper(xl, yl, CIRCLE_DRAW_LOWER_LEFT, 180);
 	drawArcHelper(xr, yl, CIRCLE_DRAW_LOWER_RIGHT, 270);
 	stopPerfectDrawing();
+	setDottedMode(false);
 }
 
 void Painter::fillArc(int x, int y, int w, int h, int start_angle, int sweep_angle, uint32_t color) {

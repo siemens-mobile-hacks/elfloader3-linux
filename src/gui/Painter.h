@@ -26,6 +26,8 @@ class Painter {
 		int m_width = 0;
 		int m_height = 0;
 		bool m_perfect_drawing = false;
+		bool m_dotted_mode = false;
+		int m_dotted_counter = 0;
 		
 		int m_window_x = 0;
 		int m_window_y = 0;
@@ -47,6 +49,11 @@ class Painter {
 		void startPerfectDrawing(uint32_t color);
 		void stopPerfectDrawing();
 		
+		inline void setDottedMode(bool flag) {
+			m_dotted_mode = flag;
+			m_dotted_counter = 0;
+		}
+		
 		inline void setBlendMode(BlendMode mode) {
 			m_blend_mode = mode;
 		}
@@ -66,7 +73,7 @@ class Painter {
 		void drawPixel(int x, int y, uint32_t color);
 		void drawHLine(int x, int y, int width, uint32_t color);
 		void drawVLine(int x, int y, int height, uint32_t color);
-		void drawLine(int x, int y, int w, int h, uint32_t color);
+		void drawLine(int x, int y, int w, int h, uint32_t color, bool dotted = false);
 		
 		void drawBitmap(int x, int y, int w, int h, uint8_t *bitmap, Bitmap::Type type, int offset_x = 0, int offset_y = 0, uint32_t fill_color = 0xFFFFFFFF, uint32_t stroke_color = 0xFF000000);
 		void drawText(int x, int y, int w, int h, Font *font, uint16_t *text, int length, uint32_t fill_color, uint32_t stroke_color);
@@ -85,12 +92,13 @@ class Painter {
 		
 		void strokeRect(int x, int y, int w, int h, uint32_t color);
 		void fillRect(int x, int y, int w, int h, uint32_t color);
+		
 		void drawPattern(int x, int y, int w, int h, uint8_t pattern, uint32_t fill_color, uint32_t stroke_color);
 		
 		void strokeRoundedRect(int x, int y, int w, int h, int x_radius, int y_radius, uint32_t color);
 		void fillRoundedRect(int x, int y, int w, int h, int x_radius, int y_radius, uint32_t color);
 		
-		void strokeArc(int x, int y, int w, int h, int start_angle, int sweep_angle, uint32_t color);
+		void strokeArc(int x, int y, int w, int h, int start_angle, int sweep_angle, uint32_t color, bool dotted = false);
 		void fillArc(int x, int y, int w, int h, int start_angle, int sweep_angle, uint32_t color);
 		
 		void strokeTriangle(int x1, int y1, int x2, int y2, int x3, int y3, uint32_t color);

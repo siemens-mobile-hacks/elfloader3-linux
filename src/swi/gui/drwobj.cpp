@@ -132,7 +132,7 @@ DRWOBJ *GUI_SetProp2Arc(DRWOBJ *drw, RECT *rect, int flags, int x, int y, int w,
 	drw->arc.h = h;
 	drw->arc.start = start;
 	drw->arc.end = end;
-	drw->arc.flags = flags;
+	drw->arc.flags = 0;
 	
 	return drw;
 }
@@ -366,7 +366,10 @@ void GUI_DrawObject(DRWOBJ *drw) {
 		break;
 		
 		case DRWOBJ_TYPE_LINE:
-			painter->drawLine(drw->line.x - rect->x, drw->line.y - rect->y, drw->line.x2 - rect->x, drw->line.y2 - rect->y, GUI_Color2Int(drw->color1));
+		{
+			bool dotted = (drw->rect_flags & (LINE_DOTTED | LINE_DOTTED2)) != 0;
+			painter->drawLine(drw->line.x - rect->x, drw->line.y - rect->y, drw->line.x2 - rect->x, drw->line.y2 - rect->y, GUI_Color2Int(drw->color1), dotted);
+		}
 		break;
 		
 		case DRWOBJ_TYPE_PIE:
@@ -374,7 +377,10 @@ void GUI_DrawObject(DRWOBJ *drw) {
 		break;
 		
 		case DRWOBJ_TYPE_ARC:
-			painter->strokeArc(drw->arc.x - rect->x, drw->arc.y - rect->y, drw->arc.w, drw->arc.h, drw->arc.start, drw->arc.end, GUI_Color2Int(drw->color1));
+		{
+			bool dotted = (drw->arc.flags & RECT_DOT_OUTLINE) != 0;
+			painter->strokeArc(drw->arc.x - rect->x, drw->arc.y - rect->y, drw->arc.w, drw->arc.h, drw->arc.start, drw->arc.end, GUI_Color2Int(drw->color1), dotted);
+		}
 		break;
 		
 		case DRWOBJ_TYPE_TRIANGLE:
