@@ -161,15 +161,13 @@ void Painter::drawPixel(int x, int y, uint32_t color) {
 	x += m_window_x;
 	y += m_window_y;
 	
+	if (x < m_window_x || y < m_window_y || x > m_window_x2 || y > m_window_y2)
+		return;
+	
 	if (m_dotted_mode) {
 		m_dotted_counter++;
 		if ((m_dotted_counter % 2) != 0)
 			return;
-	}
-	
-	if (x < m_window_x || y < m_window_y || x > m_window_x2 || y > m_window_y2) {
-		// printf("ignored pixel %d x %d\n", x, y);
-		return;
 	}
 	
 	uint32_t index = y * m_width + x;

@@ -245,18 +245,16 @@ void GUI_DrawIMGHDR(int x, int y, IMGHDR *img, const char *pen, const char *brus
 }
 
 void GUI_DrawImg(int x, int y, int picture) {
-	IMGHDR *img = Resources::instance()->getPicture(picture);
-	if (img)
-		GUI_DrawIMGHDR(x, y, img, nullptr, nullptr, 0, 0, img->w, img->h, 0);
-}
-
-void GUI_DrawCanvas(void *data, int x1, int y1, int x2, int y2, int flags) {
-	fprintf(stderr, "%s not implemented!\n", __func__);
-	abort();
+	GUI_DrawImgBW(x, y, picture, GUI_GetPaletteAdrByColorIndex(100), GUI_GetPaletteAdrByColorIndex(0x65));
 }
 
 void GUI_DrawImgBW(int x, int y, int picture, char *pen, char *brush) {
 	IMGHDR *img = Resources::instance()->getPicture(picture);
 	if (img)
 		GUI_DrawIMGHDR(x, y, img, pen, brush, 0, 0, img->w, img->h, 0);
+}
+
+void GUI_DrawCanvas(void *data, int x1, int y1, int x2, int y2, int flags) {
+	fprintf(stderr, "%s not implemented!\n", __func__);
+	abort();
 }
