@@ -90,23 +90,14 @@ void GUI_DrawRectangle(int x1, int y1, int x2, int y2, int flags, const char *pe
 	if (!GUI_ColorIsTransparent(brush)) {
 		if ((flags & RECT_DRAW_INVERT)) {
 			GUI_SetProp2Rect(&drw, &rect, DRWOBJ_RECT_FLAG_INVERT_BG);
-			GUI_DrawObjectSetColor(&drw, brush, pen);
-			GUI_DrawObject(&drw);
-			GUI_FreeDrawObject(&drw);
 		} else if ((flags & RECT_FILL_WITH_PEN)) {
-			int fill_type = DRWOBJ_RECT_BG_TYPE_FILL;
-			int fill_value = 0;
-			
-			if ((flags & RECT_FILL_WITH_PEN)) {
-				fill_type = DRWOBJ_RECT_BG_TYPE_PATTERN;
-				fill_value = 0x55; // 01010101
-			}
-			
-			GUI_SetProp2RectEx(&drw, &rect, 0, fill_type, fill_value);
-			GUI_DrawObjectSetColor(&drw, brush, pen);
-			GUI_DrawObject(&drw);
-			GUI_FreeDrawObject(&drw);
+			GUI_SetProp2RectEx(&drw, &rect, 0, DRWOBJ_RECT_BG_TYPE_PATTERN, 0x55);
+		} else {
+			GUI_SetProp2RectEx(&drw, &rect, 0, DRWOBJ_RECT_BG_TYPE_FILL, 0);
 		}
+		GUI_DrawObjectSetColor(&drw, brush, pen);
+		GUI_DrawObject(&drw);
+		GUI_FreeDrawObject(&drw);
 	}
 	
 	bool only_bg = (flags & RECT_DRAW_INVERT) || ((flags & RECT_FILL_WITH_PEN) && (flags & RECT_DOT_OUTLINE));

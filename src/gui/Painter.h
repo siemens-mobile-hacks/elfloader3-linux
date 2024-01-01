@@ -85,20 +85,16 @@ class Painter {
 		
 		void strokeRect(int x, int y, int w, int h, uint32_t color);
 		void fillRect(int x, int y, int w, int h, uint32_t color);
-		void drawRect(int x, int y, int w, int h, uint32_t fill_color, uint32_t stroke_color);
 		void drawPattern(int x, int y, int w, int h, uint8_t pattern, uint32_t fill_color, uint32_t stroke_color);
 		
 		void strokeRoundedRect(int x, int y, int w, int h, int x_radius, int y_radius, uint32_t color);
 		void fillRoundedRect(int x, int y, int w, int h, int x_radius, int y_radius, uint32_t color);
-		void drawRoundedRect(int x, int y, int w, int h, int x_radius, int y_radius, uint32_t fill_color, uint32_t stroke_color);
 		
 		void strokeArc(int x, int y, int w, int h, int start_angle, int sweep_angle, uint32_t color);
 		void fillArc(int x, int y, int w, int h, int start_angle, int sweep_angle, uint32_t color);
-		void drawArc(int x, int y, int w, int h, int start, int end, uint32_t fill_color, uint32_t stroke_color);
 		
 		void strokeTriangle(int x1, int y1, int x2, int y2, int x3, int y3, uint32_t color);
 		void fillTriangle(int x1, int y1, int x2, int y2, int x3, int y3, uint32_t color);
-		void drawTriangle(int x1, int y1, int x2, int y2, int x3, int y3, uint32_t fill_color, uint32_t stroke_color);
 		
 		void clear(uint32_t color);
 		

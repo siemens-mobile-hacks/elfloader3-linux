@@ -354,10 +354,12 @@ void Painter::strokeArc(int x, int y, int w, int h, int start_angle, int sweep_a
 		}
 	};
 	
+	startPerfectDrawing(color);
 	drawArcHelper(xr, yu, CIRCLE_DRAW_UPPER_RIGHT, 0);
 	drawArcHelper(xl, yu, CIRCLE_DRAW_UPPER_LEFT, 90);
 	drawArcHelper(xl, yl, CIRCLE_DRAW_LOWER_LEFT, 180);
 	drawArcHelper(xr, yl, CIRCLE_DRAW_LOWER_RIGHT, 270);
+	stopPerfectDrawing();
 }
 
 void Painter::fillArc(int x, int y, int w, int h, int start_angle, int sweep_angle, uint32_t color) {
@@ -383,27 +385,12 @@ void Painter::fillArc(int x, int y, int w, int h, int start_angle, int sweep_ang
 		}
 	};
 	
+	startPerfectDrawing(color);
 	fillArcHelper(xr, yu, CIRCLE_DRAW_UPPER_RIGHT, 0);
 	fillArcHelper(xl, yu, CIRCLE_DRAW_UPPER_LEFT, 90);
 	fillArcHelper(xl, yl, CIRCLE_DRAW_LOWER_LEFT, 180);
 	fillArcHelper(xr, yl, CIRCLE_DRAW_LOWER_RIGHT, 270);
-}
-
-void Painter::drawArc(int x, int y, int w, int h, int start, int end, uint32_t fill_color, uint32_t stroke_color) {
-	if (w <= 0 || h <= 0)
-		return;
-	
-	if ((fill_color & 0xFF000000) != 0) {
-		startPerfectDrawing(fill_color);
-		fillArc(x, y, w, h, start, end, fill_color);
-		stopPerfectDrawing();
-	}
-	
-	if ((stroke_color & 0xFF000000) != 0 && stroke_color != fill_color) {
-		startPerfectDrawing(fill_color);
-		strokeArc(x, y, w, h, start, end, stroke_color);
-		stopPerfectDrawing();
-	}
+	stopPerfectDrawing();
 }
 
 /*
@@ -422,17 +409,6 @@ void Painter::strokeRect(int x, int y, int w, int h, uint32_t color) {
 void Painter::fillRect(int x, int y, int w, int h, uint32_t color) {
 	for (int i = 0; i < h; i++)
 		drawHLine(x, y + i, w, color);
-}
-
-void Painter::drawRect(int x, int y, int w, int h, uint32_t fill_color, uint32_t stroke_color) {
-	if (w <= 0 || h <= 0)
-		return;
-	
-	if ((fill_color & 0xFF000000) != 0)
-		fillRect(x, y, w, h, fill_color);
-	
-	if ((stroke_color & 0xFF000000) != 0 && stroke_color != fill_color)
-		strokeRect(x, y, w, h, stroke_color);
 }
 
 /*
@@ -480,6 +456,8 @@ void Painter::strokeRoundedRect(int x, int y, int w, int h, int x_radius, int y_
 	int xr = x + w - x_radius - 1;
 	int yl = y + h - y_radius - 1;
 	
+	startPerfectDrawing(color);
+	
 	if (!x_radius || !y_radius) {
 		strokeCircleHelper(xl, yu, 0, CIRCLE_DRAW_UPPER_LEFT, color);
 		strokeCircleHelper(xr, yu, 0, CIRCLE_DRAW_UPPER_RIGHT, color);
@@ -511,6 +489,8 @@ void Painter::strokeRoundedRect(int x, int y, int w, int h, int x_radius, int y_
 		drawVLine(x, yu, hh, color);
 		drawVLine(x + w, yu, hh, color);
 	}
+	
+	stopPerfectDrawing();
 }
 	
 void Painter::fillRoundedRect(int x, int y, int w, int h, int x_radius, int y_radius, uint32_t color) {
@@ -538,6 +518,8 @@ void Painter::fillRoundedRect(int x, int y, int w, int h, int x_radius, int y_ra
 	
 	int xr = x + w - x_radius - 1;
 	int yl = y + h - y_radius - 1;
+	
+	startPerfectDrawing(color);
 	
 	if (!x_radius || !y_radius) {
 		fillCircleHelper(xl, yu, 0, CIRCLE_DRAW_UPPER_LEFT, color);
@@ -568,35 +550,24 @@ void Painter::fillRoundedRect(int x, int y, int w, int h, int x_radius, int y_ra
 		hh -= 2;
 		fillRect(x, yu, w, hh, color);
 	}
-}
-
-void Painter::drawRoundedRect(int x, int y, int w, int h, int x_radius, int y_radius, uint32_t fill_color, uint32_t stroke_color) {
-	if (w <= 0 || h <= 0)
-		return;
 	
-	if ((fill_color & 0xFF000000) != 0) {
-		startPerfectDrawing(fill_color);
-		fillRoundedRect(x, y, w, h, x_radius, y_radius, fill_color);
-		stopPerfectDrawing();
-	}
-	
-	if ((stroke_color & 0xFF000000) != 0 && stroke_color != fill_color) {
-		startPerfectDrawing(stroke_color);
-		strokeRoundedRect(x, y, w, h, x_radius, y_radius, stroke_color);
-		stopPerfectDrawing();
-	}
+	stopPerfectDrawing();
 }
 
 /*
  * Triangle
  * */
 void Painter::strokeTriangle(int x1, int y1, int x2, int y2, int x3, int y3, uint32_t color) {
+	startPerfectDrawing(color);
 	drawLine(x1, y1, x2, y2, color);
 	drawLine(x2, y2, x3, y3, color);
 	drawLine(x3, y3, x1, y1, color);
+	stopPerfectDrawing();
 }
 
 void Painter::fillTriangle(int x1, int y1, int x2, int y2, int x3, int y3, uint32_t color) {
+	startPerfectDrawing(color);
+	
     if (y2 < y1) {
 		std::swap(x2, x1);
 		std::swap(y2, y1);
@@ -634,20 +605,8 @@ void Painter::fillTriangle(int x1, int y1, int x2, int y2, int x3, int y3, uint3
 		if (min_x[i] != -1)
 			drawHLine(min_x[i], y1 + i, max_x[i] - min_x[i] + 1, color);
 	}
-}
-
-void Painter::drawTriangle(int x1, int y1, int x2, int y2, int x3, int y3, uint32_t fill_color, uint32_t stroke_color) {
-	if ((fill_color & 0xFF000000) != 0) {
-		startPerfectDrawing(fill_color);
-		fillTriangle(x1, y1, x2, y2, x3, y3, fill_color);
-		stopPerfectDrawing();
-	}
 	
-	if ((stroke_color & 0xFF000000) != 0 && stroke_color != fill_color) {
-		startPerfectDrawing(stroke_color);
-		strokeTriangle(x1, y1, x2, y2, x3, y3, stroke_color);
-		stopPerfectDrawing();
-	}
+	stopPerfectDrawing();
 }
 
 /*

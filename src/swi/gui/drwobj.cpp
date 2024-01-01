@@ -286,7 +286,8 @@ void GUI_DrawObject(DRWOBJ *drw) {
 		{
 			int w = rect->x2 - rect->x + 1;
 			int h = rect->y2 - rect->y + 1;
-			painter->drawRect(0, 0, w, h, GUI_Color2Int(drw->color1), GUI_Color2Int(drw->color2));
+			painter->fillRect(0, 0, w, h, GUI_Color2Int(drw->color1));
+			painter->strokeRect(0, 0, w, h, GUI_Color2Int(drw->color2));
 		}
 		break;
 		
@@ -297,11 +298,11 @@ void GUI_DrawObject(DRWOBJ *drw) {
 			
 			switch (drw->rectangle.fill_mode) {
 				case DRWOBJ_RECT_BG_TYPE_FILL:
-					painter->drawRect(0, 0, w, h, GUI_Color2Int(drw->color1), GUI_Color2Int(drw->color2));
+					painter->fillRect(0, 0, w, h, GUI_Color2Int(drw->color1));
 				break;
 				
 				case DRWOBJ_RECT_BG_TYPE_FILL2:
-					painter->drawRect(0, 0, w, h, GUI_Color2Int(drw->color1), GUI_Color2Int(drw->color2));
+					painter->fillRect(0, 0, w, h, GUI_Color2Int(drw->color2));
 				break;
 				
 				case DRWOBJ_RECT_BG_TYPE_PATTERN:
@@ -369,20 +370,26 @@ void GUI_DrawObject(DRWOBJ *drw) {
 		break;
 		
 		case DRWOBJ_TYPE_PIE:
-			painter->drawArc(drw->arc.x - rect->x, drw->arc.y - rect->y, drw->arc.w, drw->arc.h, drw->arc.start, drw->arc.end, GUI_Color2Int(drw->color1), 0x00000000);
+			painter->fillArc(drw->arc.x - rect->x, drw->arc.y - rect->y, drw->arc.w, drw->arc.h, drw->arc.start, drw->arc.end, GUI_Color2Int(drw->color1));
 		break;
 		
 		case DRWOBJ_TYPE_ARC:
-			painter->drawArc(drw->arc.x - rect->x, drw->arc.y - rect->y, drw->arc.w, drw->arc.h, drw->arc.start, drw->arc.end, 0x00000000, GUI_Color2Int(drw->color1));
+			painter->strokeArc(drw->arc.x - rect->x, drw->arc.y - rect->y, drw->arc.w, drw->arc.h, drw->arc.start, drw->arc.end, GUI_Color2Int(drw->color1));
 		break;
 		
 		case DRWOBJ_TYPE_TRIANGLE:
 		{
-			painter->drawTriangle(
+			painter->fillTriangle(
 				drw->triangle.x1 - rect->x, drw->triangle.y1 - rect->y,
 				drw->triangle.x2 - rect->x, drw->triangle.y2 - rect->y,
 				drw->triangle.x3 - rect->x, drw->triangle.y3 - rect->y,
-				GUI_Color2Int(drw->color2), GUI_Color2Int(drw->color1)
+				GUI_Color2Int(drw->color2)
+			);
+			painter->strokeTriangle(
+				drw->triangle.x1 - rect->x, drw->triangle.y1 - rect->y,
+				drw->triangle.x2 - rect->x, drw->triangle.y2 - rect->y,
+				drw->triangle.x3 - rect->x, drw->triangle.y3 - rect->y,
+				GUI_Color2Int(drw->color1)
 			);
 		}
 		break;
