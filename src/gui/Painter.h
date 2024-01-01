@@ -16,6 +16,11 @@ class Painter {
 			CIRCLE_DRAW_LOWER_LEFT		= 1 << 2,
 			CIRCLE_DRAW_LOWER_RIGHT		= 1 << 3,
 		};
+		
+		enum BlendMode {
+			BLEND_MODE_NORMAL	= 0,
+			BLEND_MODE_INVERT	= 1,
+		};
 	
 	protected:
 		int m_width = 0;
@@ -27,6 +32,7 @@ class Painter {
 		int m_window_x2 = 0;
 		int m_window_y2 = 0;
 		
+		uint32_t m_blend_mode = BLEND_MODE_NORMAL;
 		uint8_t *m_buffer = nullptr;
 		std::vector<bool> m_mask;
 		std::map<int, Font *> m_fonts;
@@ -41,11 +47,16 @@ class Painter {
 		void startPerfectDrawing(uint32_t color);
 		void stopPerfectDrawing();
 		
+		inline void setBlendMode(BlendMode mode) {
+			m_blend_mode = mode;
+		}
+		
 		inline void registerFont(int id, Font *font) {
 			m_fonts[id] = font;
 		}
 		
 		uint32_t blendColors(uint32_t old_color, uint32_t new_color);
+		uint32_t invertColor(uint32_t old_color);
 		
 		void setWindow(int x, int y, int x2, int y2);
 		inline std::tuple<int, int, int, int> getWindow() {
@@ -75,6 +86,7 @@ class Painter {
 		void strokeRect(int x, int y, int w, int h, uint32_t color);
 		void fillRect(int x, int y, int w, int h, uint32_t color);
 		void drawRect(int x, int y, int w, int h, uint32_t fill_color, uint32_t stroke_color);
+		void drawPattern(int x, int y, int w, int h, uint8_t pattern, uint32_t fill_color, uint32_t stroke_color);
 		
 		void strokeRoundedRect(int x, int y, int w, int h, int x_radius, int y_radius, uint32_t color);
 		void fillRoundedRect(int x, int y, int w, int h, int x_radius, int y_radius, uint32_t color);

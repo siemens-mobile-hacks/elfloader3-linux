@@ -63,6 +63,13 @@ uint32_t Painter::blendColors(uint32_t old_color, uint32_t new_color) {
 	return 0xFF000000 | (result_r << 16) | (result_g << 8) | result_b;
 }
 
+uint32_t Painter::invertColor(uint32_t old_color) {
+	uint32_t r = (old_color >> 16) & 0xFF;
+	uint32_t g = (old_color >> 8) & 0xFF;
+	uint32_t b = old_color & 0xFF;
+	return 0xFF000000 | ((0xFF - r) << 16) | ((0xFF - g) << 8) | (0xFF - b);
+}
+
 void Painter::drawMask(const uint8_t *mask, int x, int y, int w, int h, const uint32_t *colors) {
 	for (int mask_y = 0; mask_y < h; mask_y++) {
 		int line_start = mask_y * w;
@@ -167,8 +174,13 @@ void Painter::drawPixel(int x, int y, uint32_t color) {
 		m_mask[index] = 1;
 	}
 	
-	uint16_t *rgb565_pixels = reinterpret_cast<uint16_t *>(m_buffer);
-	rgb565_pixels[index] = Bitmap::RGB8888toRGB565(blendColors(Bitmap::RGB565toRGB8888(rgb565_pixels[index]), color));
+	if (m_blend_mode == BLEND_MODE_NORMAL) {
+		uint16_t *rgb565_pixels = reinterpret_cast<uint16_t *>(m_buffer);
+		rgb565_pixels[index] = Bitmap::RGB8888toRGB565(blendColors(Bitmap::RGB565toRGB8888(rgb565_pixels[index]), color));
+	} else if (m_blend_mode == BLEND_MODE_INVERT) {
+		uint16_t *rgb565_pixels = reinterpret_cast<uint16_t *>(m_buffer);
+		rgb565_pixels[index] = Bitmap::RGB8888toRGB565(invertColor(Bitmap::RGB565toRGB8888(rgb565_pixels[index])));
+	}
 }
 
 void Painter::drawHLine(int x, int y, int width, uint32_t color) {
@@ -421,6 +433,22 @@ void Painter::drawRect(int x, int y, int w, int h, uint32_t fill_color, uint32_t
 	
 	if ((stroke_color & 0xFF000000) != 0 && stroke_color != fill_color)
 		strokeRect(x, y, w, h, stroke_color);
+}
+
+/*
+ * Pattern
+ * */
+void Painter::drawPattern(int x, int y, int w, int h, uint8_t pattern, uint32_t fill_color, uint32_t stroke_color) {
+	for (int draw_y = 0; draw_y < h; draw_y++) {
+		for (int draw_x = 0; draw_x < w; draw_x++) {
+			bool flag = ((pattern >> (7 - (draw_x % 8))) & 1) == 0;
+			if (draw_y % 2 == 0) {
+				drawPixel(x + draw_x, y + draw_y, (flag ? stroke_color : fill_color));
+			} else {
+				drawPixel(x + draw_x, y + draw_y, (flag ? fill_color : stroke_color));
+			}
+		}
+	}
 }
 
 /*

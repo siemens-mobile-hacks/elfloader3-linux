@@ -70,7 +70,8 @@ void GUI_DrawLine(int x1, int y1, int x2, int y2, int flags, const char *pen) {
 	};
 	
 	if (!GUI_ColorIsTransparent(pen)) {
-		GUI_SetProp2Line(&drw, &rect, 0, x1, y1, x2, y2);
+		GUI_SetProp2Line(&drw, &rect, (flags & RECT_DOT_OUTLINE), x1, y1, x2, y2);
+		drw.line.flags = flags;
 		GUI_DrawObjectSetColor(&drw, pen, nullptr);
 		GUI_DrawObject(&drw);
 		GUI_FreeDrawObject(&drw);
@@ -86,10 +87,38 @@ void GUI_DrawRectangle(int x1, int y1, int x2, int y2, int flags, const char *pe
 		.y2 = std::max(y1, y2),
 	};
 	
-	GUI_SetProp2Rect(&drw, &rect, 0);
-	GUI_DrawObjectSetColor(&drw, brush, pen);
-	GUI_DrawObject(&drw);
-	GUI_FreeDrawObject(&drw);
+	if (!GUI_ColorIsTransparent(brush) && (flags & (RECT_FILL_WITH_PEN | RECT_DRAW_INVERT))) {
+		if ((flags & RECT_DRAW_INVERT)) {
+			GUI_SetProp2Rect(&drw, &rect, DRWOBJ_RECT_FLAG_INVERT_BG);
+		} else {
+			int fill_type = DRWOBJ_RECT_BG_TYPE_FILL;
+			int fill_value = 0;
+			
+			if ((flags & RECT_FILL_WITH_PEN)) {
+				fill_type = DRWOBJ_RECT_BG_TYPE_PATTERN;
+				fill_value = 0x55; // 01010101
+			}
+			
+			GUI_SetProp2RectEx(&drw, &rect, 0, fill_type, fill_value);
+		}
+		
+		GUI_DrawObjectSetColor(&drw, brush, pen);
+		GUI_DrawObject(&drw);
+		GUI_FreeDrawObject(&drw);
+	}
+	
+	bool need_border = (
+		!(flags & RECT_DRAW_INVERT) &&
+		(!(flags & RECT_FILL_WITH_PEN) || !(flags & RECT_DOT_OUTLINE))
+	);
+	
+	if (pen != brush && !GUI_ColorIsTransparent(pen) && need_border) {
+		int line_flags = flags & ~RECT_FILL_WITH_PEN;
+		GUI_DrawLine(rect.x, rect.y, rect.x2, rect.y, line_flags, pen);
+		GUI_DrawLine(rect.x, rect.y2, rect.x2, rect.y2, line_flags, pen);
+		GUI_DrawLine(rect.x, rect.y, rect.x, rect.y2, line_flags, pen);
+		GUI_DrawLine(rect.x2, rect.y, rect.x2, rect.y2, line_flags, pen);
+	}
 }
 
 void GUI_DrawRoundedFrame(int x1, int y1, int x2, int y2, int round_x, int round_y, int flags, const char *pen, const char *brush) {
@@ -153,7 +182,7 @@ void GUI_DrawRoundedFrame(int x1, int y1, int x2, int y2, int round_x, int round
 		}
 	}
 	
-	if (!GUI_ColorIsTransparent(pen)) {
+	if (!GUI_ColorIsTransparent(pen) && !(flags & DRWOBJ_RECT_FLAG_INVERT_BG)) {
 		GUI_DrawObjectSetColor(&drw, pen, pen);
 		
 		GUI_SetProp2StrokeEllipseSection(&drw, &rect, 1, xr + 1, yu - 1, round_x, round_y, DRWOBJ_ELLIPSE_SECTION_UPPER_RIGHT);

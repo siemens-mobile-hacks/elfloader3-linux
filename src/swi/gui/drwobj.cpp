@@ -278,13 +278,36 @@ void GUI_DrawObject(DRWOBJ *drw) {
 	RECT *rect = &drw->rect;
 	painter->setWindow(rect->x, rect->y, rect->x2, rect->y2);
 	
+	if ((drw->rect_flags & DRWOBJ_RECT_FLAG_INVERT_BG))
+		painter->setBlendMode(Painter::BLEND_MODE_INVERT);
+	
 	switch (drw->type) {
-		case DRWOBJ_TYPE_RECT_EX:
 		case DRWOBJ_TYPE_RECT:
 		{
 			int w = rect->x2 - rect->x + 1;
 			int h = rect->y2 - rect->y + 1;
 			painter->drawRect(0, 0, w, h, GUI_Color2Int(drw->color1), GUI_Color2Int(drw->color2));
+		}
+		break;
+		
+		case DRWOBJ_TYPE_RECT_EX:
+		{
+			int w = rect->x2 - rect->x + 1;
+			int h = rect->y2 - rect->y + 1;
+			
+			switch (drw->rectangle.fill_mode) {
+				case DRWOBJ_RECT_BG_TYPE_FILL:
+					painter->drawRect(0, 0, w, h, GUI_Color2Int(drw->color1), GUI_Color2Int(drw->color2));
+				break;
+				
+				case DRWOBJ_RECT_BG_TYPE_FILL2:
+					painter->drawRect(0, 0, w, h, GUI_Color2Int(drw->color1), GUI_Color2Int(drw->color2));
+				break;
+				
+				case DRWOBJ_RECT_BG_TYPE_PATTERN:
+					painter->drawPattern(0, 0, w, h, drw->rectangle.fill_value, GUI_Color2Int(drw->color1), GUI_Color2Int(drw->color2));
+				break;
+			}
 		}
 		break;
 		
@@ -364,6 +387,9 @@ void GUI_DrawObject(DRWOBJ *drw) {
 		}
 		break;
 	}
+	
+	if ((drw->rect_flags & DRWOBJ_RECT_FLAG_INVERT_BG))
+		painter->setBlendMode(Painter::BLEND_MODE_NORMAL);
 	
 	GUI_IpcRedrawScreen();
 }

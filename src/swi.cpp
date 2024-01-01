@@ -172,7 +172,7 @@ void loader_init_switab() {
 	
 	switab_functions[0x01FD]	= (void *) GUI_SetProp2Rect;			// type=0x0
 	switab_functions[0x0149]	= (void *) GUI_SetProp2Text;			// type=0x1
-	switab_functions[0x0205]	= (void *) GUI_SetProp2RectEx;		// type=0x4
+	switab_functions[0x0205]	= (void *) GUI_SetProp2RectEx;			// type=0x4
 	switab_functions[0x0201]	= (void *) GUI_SetProp2ImageOrCanvas;	// type=0x5
 	switab_functions[0x0151]	= (void *) GUI_SetProp2Image;			// type=0x5
 	switab_functions[0x038C]	= (void *) GUI_SetProp2Line;			// type=0xF
