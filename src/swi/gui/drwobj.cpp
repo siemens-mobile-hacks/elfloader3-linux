@@ -178,7 +178,7 @@ DRWOBJ *GUI_SetProp2Line(DRWOBJ *drw, RECT *rect, int flags, int x, int y, int x
 	drw->line.x = x;
 	drw->line.y = y;
 	drw->line.x2 = x2;
-	drw->line.x2 = y2;
+	drw->line.y2 = y2;
 	
 	return drw;
 }
