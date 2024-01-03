@@ -7,6 +7,8 @@
 #include <cassert>
 
 void GUI_DrawString(WSHDR *ws, int x1, int y1, int x2, int y2, int font_id, int flags, const char *pen, const char *brush) {
+	assert(ws != nullptr);
+	
 	DRWOBJ drw;
 	RECT rect = {
 		.x = std::min(x1, x2),
@@ -15,25 +17,75 @@ void GUI_DrawString(WSHDR *ws, int x1, int y1, int x2, int y2, int font_id, int 
 		.y2 = std::max(y1, y2),
 	};
 	
-	GUI_SetProp2Text(&drw, &rect, 0, ws, font_id, flags);
-	GUI_DrawObjectSetColor(&drw, brush, pen);
-	GUI_DrawObject(&drw);
-	GUI_FreeDrawObject(&drw);
-	
-	/*
-	fprintf(stderr, "%s not implemented!\n", __func__);
-	
-	Font *font = Resources::instance()->getFont(font_id);
-	assert(font);
-	
-	Painter *painter = GUI_GetPainter();
-	painter->drawText(x1, y1, x2 - x1 + 1, y2 - y1 + 1, font, ws->body->data, ws->body->len, GUI_Color2Int(brush), GUI_Color2Int(pen));
-	
-	GUI_IpcRedrawScreen();
-	*/
+	if ((flags & TEXT_OUTLINE)) {
+		const char *transparent = GUI_GetPaletteAdrByColorIndex(0x17);
+		
+		flags &= ~(TEXT_INVERT | TEXT_INVERT2 | TEXT_OUTLINE);
+		
+		GUI_StoreXYXYtoRECT(&rect, rect.x, rect.y, rect.x2 - 2, rect.y2 - 2);
+		GUI_SetProp2Text(&drw, &rect, 0, ws, font_id, flags);
+		GUI_DrawObjectSetColor(&drw, brush, transparent);
+		GUI_DrawObject(&drw);
+		GUI_FreeDrawObject(&drw);
+		
+		GUI_StoreXYXYtoRECT(&rect, rect.x + 1, rect.y, rect.x2 - 1, rect.y2 - 2);
+		GUI_SetProp2Text(&drw, &rect, 0, ws, font_id, flags);
+		GUI_DrawObjectSetColor(&drw, brush, transparent);
+		GUI_DrawObject(&drw);
+		GUI_FreeDrawObject(&drw);
+		
+		GUI_StoreXYXYtoRECT(&rect, rect.x + 2, rect.y, rect.x2, rect.y2 - 2);
+		GUI_SetProp2Text(&drw, &rect, 0, ws, font_id, flags);
+		GUI_DrawObjectSetColor(&drw, brush, transparent);
+		GUI_DrawObject(&drw);
+		GUI_FreeDrawObject(&drw);
+		
+		GUI_StoreXYXYtoRECT(&rect, rect.x, rect.y + 1, rect.x2 - 2, rect.y2 - 1);
+		GUI_SetProp2Text(&drw, &rect, 0, ws, font_id, flags);
+		GUI_DrawObjectSetColor(&drw, brush, transparent);
+		GUI_DrawObject(&drw);
+		GUI_FreeDrawObject(&drw);
+		
+		GUI_StoreXYXYtoRECT(&rect, rect.x + 2, rect.y + 1, rect.x2, rect.y2 - 1);
+		GUI_SetProp2Text(&drw, &rect, 0, ws, font_id, flags);
+		GUI_DrawObjectSetColor(&drw, brush, transparent);
+		GUI_DrawObject(&drw);
+		GUI_FreeDrawObject(&drw);
+		
+		GUI_StoreXYXYtoRECT(&rect, rect.x, rect.y + 2, rect.x2 - 2, rect.y2);
+		GUI_SetProp2Text(&drw, &rect, 0, ws, font_id, flags);
+		GUI_DrawObjectSetColor(&drw, brush, transparent);
+		GUI_DrawObject(&drw);
+		GUI_FreeDrawObject(&drw);
+		
+		GUI_StoreXYXYtoRECT(&rect, rect.x + 1, rect.y + 2, rect.x2 - 1, rect.y2);
+		GUI_SetProp2Text(&drw, &rect, 0, ws, font_id, flags);
+		GUI_DrawObjectSetColor(&drw, brush, transparent);
+		GUI_DrawObject(&drw);
+		GUI_FreeDrawObject(&drw);
+		
+		GUI_StoreXYXYtoRECT(&rect, rect.x + 2, rect.y + 2, rect.x2, rect.y2);
+		GUI_SetProp2Text(&drw, &rect, 0, ws, font_id, flags);
+		GUI_DrawObjectSetColor(&drw, brush, transparent);
+		GUI_DrawObject(&drw);
+		GUI_FreeDrawObject(&drw);
+		
+		GUI_StoreXYXYtoRECT(&rect, rect.x + 1, rect.y + 1, rect.x2 - 1, rect.y2);
+		GUI_SetProp2Text(&drw, &rect, 0, ws, font_id, flags);
+		GUI_DrawObjectSetColor(&drw, pen, transparent);
+		GUI_DrawObject(&drw);
+		GUI_FreeDrawObject(&drw);
+	} else {
+		GUI_SetProp2Text(&drw, &rect, 0, ws, font_id, flags);
+		GUI_DrawObjectSetColor(&drw, pen, brush);
+		GUI_DrawObject(&drw);
+		GUI_FreeDrawObject(&drw);
+	}
 }
 
 void GUI_DrawScrollString(WSHDR *ws, int x1, int y1, int x2, int y2, int xdisp, int font_id, int flags, const char *pen, const char *brush) {
+	assert(ws != nullptr);
+	
 	DRWOBJ drw;
 	RECT rect = {
 		.x = std::min(x1, x2),
@@ -42,10 +94,32 @@ void GUI_DrawScrollString(WSHDR *ws, int x1, int y1, int x2, int y2, int xdisp, 
 		.y2 = std::max(y1, y2),
 	};
 	
-	GUI_SetProp2ScrollingText(&drw, &rect, 0, ws, xdisp, font_id, flags);
-	GUI_DrawObjectSetColor(&drw, brush, pen);
-	GUI_DrawObject(&drw);
-	GUI_FreeDrawObject(&drw);
+	if ((flags & TEXT_OUTLINE)) {
+		const char *transparent = GUI_GetPaletteAdrByColorIndex(0x17);
+		
+		flags &= ~(TEXT_INVERT | TEXT_INVERT2 | TEXT_OUTLINE);
+		
+		GUI_DrawScrollString(ws, rect.x, rect.y, rect.x2, rect.y2, xdisp, font_id, flags, brush, transparent);
+		GUI_DrawScrollString(ws, rect.x + 1, rect.y, rect.x2, rect.y2, xdisp, font_id, flags, brush, transparent);
+		GUI_DrawScrollString(ws, rect.x + 2, rect.y, rect.x2, rect.y2, xdisp, font_id, flags, brush, transparent);
+		GUI_DrawScrollString(ws, rect.x, rect.y + 1, rect.x2, rect.y2, xdisp, font_id, flags, brush, transparent);
+		GUI_DrawScrollString(ws, rect.x + 2, rect.y + 1, rect.x2, rect.y2, xdisp, font_id, flags, brush, transparent);
+		GUI_DrawScrollString(ws, rect.x, rect.y + 2, rect.x2, rect.y2, xdisp, font_id, flags, brush, transparent);
+		GUI_DrawScrollString(ws, rect.x + 1, rect.y + 2, rect.x2, rect.y2, xdisp, font_id, flags, brush, transparent);
+		GUI_DrawScrollString(ws, rect.x + 2, rect.y + 2, rect.x2, rect.y2, xdisp, font_id, flags, brush, transparent);
+		
+		if (xdisp > 1) {
+			xdisp = xdisp - 1;
+			rect.x = rect.x - 1;
+		}
+		
+		GUI_DrawScrollString(ws, rect.x + 1, rect.y + 1, rect.x2, rect.y2, xdisp, font_id, flags, pen, transparent);
+	} else {
+		GUI_SetProp2ScrollingText(&drw, &rect, 0, ws, xdisp, font_id, flags);
+		GUI_DrawObjectSetColor(&drw, pen, brush);
+		GUI_DrawObject(&drw);
+		GUI_FreeDrawObject(&drw);
+	}
 }
 
 void GUI_DrawPixel(int x1, int y1, const char *pen) {

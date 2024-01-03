@@ -8,14 +8,14 @@
 DRWOBJ *GUI_SetProp2Text(DRWOBJ *drw, RECT *rect, int rect_flag, WSHDR *wshdr, int font, int flags) {
 	assert(drw != nullptr && rect != nullptr && wshdr != nullptr);
 	
-	drw->type = DRWOBJ_TYPE_TEXT;
+	drw->type = DRWOBJ_TYPE_MULTILINE_TEXT;
 	drw->rect_flags = rect_flag;
 	memcpy(&drw->rect, rect, sizeof(RECT));
 	
 	drw->text.flags = flags;
 	drw->text.font = font;
 	drw->text.value = AllocWS(wshdr->body->len + 1);
-	memcpy(drw->text.value->wsbody, wshdr->wsbody, wshdr->body->len + 1);
+	memcpy(drw->text.value->wsbody, wshdr->wsbody, (wshdr->body->len + 1) * sizeof(uint16_t));
 	
 	return drw;
 }
@@ -23,7 +23,7 @@ DRWOBJ *GUI_SetProp2Text(DRWOBJ *drw, RECT *rect, int rect_flag, WSHDR *wshdr, i
 DRWOBJ *GUI_SetProp2ScrollingText(DRWOBJ *drw, RECT *rect, int rect_flag, WSHDR *wshdr, int xdisp, int font, int flags) {
 	assert(drw != nullptr && rect != nullptr && wshdr != nullptr);
 	
-	drw->type = DRWOBJ_TYPE_SCROLLING_TEXT;
+	drw->type = DRWOBJ_TYPE_INLINE_TEXT;
 	drw->rect_flags = rect_flag;
 	memcpy(&drw->rect, rect, sizeof(RECT));
 	
@@ -31,7 +31,7 @@ DRWOBJ *GUI_SetProp2ScrollingText(DRWOBJ *drw, RECT *rect, int rect_flag, WSHDR 
 	drw->text.font = font;
 	drw->text.value = AllocWS(wshdr->body->len + 1);
 	drw->text.xdisp = xdisp;
-	memcpy(drw->text.value->wsbody, wshdr->wsbody, wshdr->body->len + 1);
+	memcpy(drw->text.value->wsbody, wshdr->wsbody, (wshdr->body->len + 1) * sizeof(uint16_t));
 	
 	return drw;
 }
@@ -220,7 +220,7 @@ DRWOBJ *GUI_DrawObjectSetColor(DRWOBJ *drw, const char *color1, const char *colo
 
 void GUI_FreeDrawObject(DRWOBJ *drw) {
 	assert(drw != nullptr);
-	if (drw->type == DRWOBJ_TYPE_TEXT) {
+	if (drw->type == DRWOBJ_TYPE_MULTILINE_TEXT) {
 		if (drw->text.value) {
 			FreeWS(drw->text.value);
 			drw->text.value = nullptr;
@@ -270,6 +270,8 @@ static int _ellipseHelperFlagsToPainter(int type) {
 	return -1;
 }
 
+void _explodeStringToWords(WSHDR *ws);
+
 void GUI_DrawObject(DRWOBJ *drw) {
 	assert(drw != nullptr);
 	
@@ -282,6 +284,34 @@ void GUI_DrawObject(DRWOBJ *drw) {
 		painter->setBlendMode(Painter::BLEND_MODE_INVERT);
 	
 	switch (drw->type) {
+		case DRWOBJ_TYPE_INLINE_TEXT:
+		{
+			DrawTextState state = {
+				.pen			= GUI_Color2Int(drw->color1),
+				.brush			= GUI_Color2Int(drw->color2),
+				.default_font	= drw->text.font,
+				.font			= drw->text.font,
+				.flags			= drw->text.flags,
+			};
+			
+			GUI_DrawObject_ScrollString(painter, &state, drw->text.value, rect, drw->text.xdisp);
+		}
+		break;
+		
+		case DRWOBJ_TYPE_MULTILINE_TEXT:
+		{
+			DrawTextState state = {
+				.pen			= GUI_Color2Int(drw->color1),
+				.brush			= GUI_Color2Int(drw->color2),
+				.default_font	= drw->text.font,
+				.font			= drw->text.font,
+				.flags			= drw->text.flags,
+			};
+			
+			GUI_DrawObject_ScrollString(painter, &state, drw->text.value, rect, 1);
+		}
+		break;
+		
 		case DRWOBJ_TYPE_RECT:
 		{
 			int w = rect->x2 - rect->x + 1;

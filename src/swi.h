@@ -507,6 +507,11 @@ enum {
 #define UTF16_FONT_UNK3			0xE01A // FONT_SMALL_BOLD
 #define UTF16_FONT_UNK4			0xE01B // FONT_SMALL
 
+#define UTF16_ALIGN_NONE		0xE01C
+#define UTF16_ALIGN_RIGHT		0xE01D // TEXT_ALIGNRIGHT
+#define UTF16_ALIGN_LEFT		0xE01E // TEXT_ALIGNLEFT
+#define UTF16_ALIGN_CENTER		0xE01F // TEXT_ALIGNMIDDLE
+
 // Font sizes
 #ifdef NEWSGOLD
 	#ifdef ELKA
@@ -616,8 +621,8 @@ enum {
 
 enum {
 	DRWOBJ_TYPE_RECT						= 0x00,
-	DRWOBJ_TYPE_TEXT						= 0x01,
-	DRWOBJ_TYPE_SCROLLING_TEXT				= 0x03,
+	DRWOBJ_TYPE_MULTILINE_TEXT				= 0x01,
+	DRWOBJ_TYPE_INLINE_TEXT					= 0x03,
 	DRWOBJ_TYPE_RECT_EX						= 0x04,
 	DRWOBJ_TYPE_IMG							= 0x05,
 	DRWOBJ_TYPE_PIXEL						= 0x0B,
@@ -644,12 +649,9 @@ typedef struct {
 		
 		struct {
 			WSHDR *value;
-			uint8_t font;
-			uint8_t offset_x;
-			uint8_t offset_y;
-			uint8_t unk5;
+			int font;
 			uint16_t flags;
-			uint8_t xdisp;
+			uint16_t xdisp;
 		} text;
 		
 		struct {
@@ -880,7 +882,7 @@ DRWOBJ *GUI_SetProp2Pixel(DRWOBJ *drw, RECT *rect, int flags, int x, int y);
 DRWOBJ *GUI_SetProp2EImage(DRWOBJ *drw, RECT *rect, int flags, EIMGHDR *img, int offset_x, int offset_y);
 DRWOBJ *GUI_SetProp2StrokeEllipseSection(DRWOBJ *drw, RECT *rect, int flags, int x, int y, int radius_x, int radius_y, int type);
 DRWOBJ *GUI_SetProp2FilledEllipseSection(DRWOBJ *drw, RECT *rect, int flags, int x, int y, int radius_x, int radius_y, int type);
-	
+
 inline bool GUI_ColorIsTransparent(const char *color) {
 	return !color || color[3] == 0;
 }
@@ -919,6 +921,19 @@ int GUI_GetStringWidth(WSHDR *ws, int font_id);
 void *GUI_RamScreenBuffer();
 
 void GUI_HandleKeyPress(GBS_MSG *msg);
+
+/*
+ * Text Drawing
+ * */
+struct DrawTextState {
+	uint32_t pen;
+	uint32_t brush;
+	int default_font;
+	int font;
+	int flags;
+};
+
+void GUI_DrawObject_ScrollString(Painter *painter, DrawTextState *state, WSHDR *ws, RECT *rect, int x_offset);
 
 /*
  * SettingsAE

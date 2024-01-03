@@ -88,30 +88,6 @@ void Painter::drawMask(const uint8_t *mask, int x, int y, int w, int h, const ui
 }
 
 /*
- * Text
- * */
-
-void Painter::drawText(int x, int y, int w, int h, Font *font, uint16_t *text, int length, uint32_t fill_color, uint32_t stroke_color) {
-	int offset_x = 0;
-	for (int i = 0; i < length; i++) {
-		uint16_t ch = text[i];
-		
-		auto it = font->chars.find(ch);
-		if (it == font->chars.end()) {
-			printf("Unknown char: %04X\n", ch);
-			it = font->chars.find(0xFFFF); // fallback
-			assert(it != font->chars.end());
-		}
-		
-		drawBitmap(x + offset_x, y, it->second.w, it->second.h, it->second.bitmap, Bitmap::TYPE_WB, 0, 0, fill_color, stroke_color);
-		
-		offset_x += it->second.w;
-		
-		printf("U+%04X: %dx%d\n", ch, it->second.w, it->second.h);
-	}
-}
-
-/*
  * Bitmap
  * */
 void Painter::drawBitmap(int x, int y, int w, int h, uint8_t *bitmap, Bitmap::Type type, int offset_x, int offset_y, uint32_t fill_color, uint32_t stroke_color) {

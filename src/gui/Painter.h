@@ -6,7 +6,6 @@
 #include <vector>
 
 #include "gui/Bitmap.h"
-#include "gui/Font.h"
 
 class Painter {
 	public:
@@ -37,7 +36,6 @@ class Painter {
 		uint32_t m_blend_mode = BLEND_MODE_NORMAL;
 		uint8_t *m_buffer = nullptr;
 		std::vector<bool> m_mask;
-		std::map<int, Font *> m_fonts;
 		
 		static bool isInEllipseRange(int x, int y, int start, int end);
 		static std::tuple<int, int> getEllipseSectionRegion(int x1, int x2, int y1, int y2);
@@ -58,10 +56,6 @@ class Painter {
 			m_blend_mode = mode;
 		}
 		
-		inline void registerFont(int id, Font *font) {
-			m_fonts[id] = font;
-		}
-		
 		uint32_t blendColors(uint32_t old_color, uint32_t new_color);
 		uint32_t invertColor(uint32_t old_color);
 		
@@ -76,7 +70,6 @@ class Painter {
 		void drawLine(int x, int y, int w, int h, uint32_t color, bool dotted = false);
 		
 		void drawBitmap(int x, int y, int w, int h, uint8_t *bitmap, Bitmap::Type type, int offset_x = 0, int offset_y = 0, uint32_t fill_color = 0xFFFFFFFF, uint32_t stroke_color = 0xFF000000);
-		void drawText(int x, int y, int w, int h, Font *font, uint16_t *text, int length, uint32_t fill_color, uint32_t stroke_color);
 		
 		void strokeCircleSectionHelper(int x, int y, int x0, int y0, uint8_t option, uint32_t color);
 		void strokeCircleHelper(int x0, int y0, int rad, uint8_t option, uint32_t color);

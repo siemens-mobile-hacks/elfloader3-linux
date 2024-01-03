@@ -82,11 +82,26 @@ IMGHDR *Resources::getPicByUnicode(uint32_t num) {
 	return nullptr;
 }
 
-Font *Resources::getFont(int id) {
-	auto it = m_font_table.find(id);
-	if (it != m_font_table.end())
-		return it->second;
-	return nullptr;
+IMGHDR *Resources::getFontChar(int font_id, int16_t ch, bool allow_bitmaps) {
+	Font *font = m_fonts[font_id];
+	assert(font != nullptr);
+	
+	if ((ch & 0xFF00) == 0xE000) // Text modifiers
+		return &font->empty_char;
+	
+	if (allow_bitmaps) {
+		if ((ch & 0xFF00) == 0xE100) { // Bitmaps
+			return getPicByUnicode(ch) ?: &font->chars.at(0xFFFF);
+		} else if ((ch & 0xFF00) == 0xE200) { // Dyn images
+			return &font->chars.at(0xFFFF);
+		}
+	}
+	
+	auto it = font->chars.find(ch);
+	if (it != font->chars.end())
+		return &it->second;
+	
+	return &font->chars.at(0xFFFF);
 }
 
 void Resources::loadFonts() {
@@ -101,7 +116,7 @@ void Resources::loadFonts() {
 			int id = strToInt(m[1].str(), 10, 0);
 			Font *font = new Font;
 			if (loadFont(font, path)) {
-				m_font_table[id] = font;
+				m_fonts[id] = font;
 			} else {
 				delete font;
 			}
@@ -149,7 +164,8 @@ bool Resources::loadFont(Font *font, const std::string &path) {
 			int codepoint = unicode_start + ch_n;
 			int bitmap_size = ((w + 7) / 8) * h;
 			
-			FontChar *ch = &font->chars[codepoint];
+			IMGHDR *ch = &font->chars[codepoint];
+			ch->bpnum = IMGHDR_TYPE_WB;
 			ch->bitmap = new uint8_t[bitmap_size];
 			ch->w = w;
 			ch->h = h;
@@ -161,6 +177,11 @@ bool Resources::loadFont(Font *font, const std::string &path) {
 				return false;
 		}
 	}
+	
+	font->empty_char.w = 0;
+	font->empty_char.h = max_height;
+	font->empty_char.bitmap = nullptr;
+	font->empty_char.bpnum = IMGHDR_TYPE_WB;
 	
 	font->h = max_height;
 	font->w = max_width;

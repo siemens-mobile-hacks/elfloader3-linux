@@ -157,6 +157,7 @@ void loader_init_switab() {
 	switab_functions[0x0141]	= (void *) GUI_PendedRedrawGUI;
 	switab_functions[0x0172]	= (void *) GUI_REDRAW;
 	switab_functions[0x014C]	= (void *) GUI_DrawString;
+	switab_functions[0x0207]	= (void *) GUI_DrawScrollString;
 	switab_functions[0x0150]	= (void *) GUI_DrawRoundedFrame;
 	switab_functions[0x01B3]	= (void *) GUI_DrawLine;
 	switab_functions[0x01B4]	= (void *) GUI_DrawRectangle;
