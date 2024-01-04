@@ -86,7 +86,7 @@ IMGHDR *Resources::getFontChar(int font_id, int16_t ch, bool allow_bitmaps) {
 	Font *font = m_fonts[font_id];
 	assert(font != nullptr);
 	
-	if ((ch & 0xFF00) == 0xE000) // Text modifiers
+	if ((ch & 0xFF00) == 0xE000 || ch == 0x0A || ch == 0x0D)
 		return &font->empty_char;
 	
 	if (allow_bitmaps) {

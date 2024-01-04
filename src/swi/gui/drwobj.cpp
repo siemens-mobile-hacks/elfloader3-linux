@@ -23,7 +23,7 @@ DRWOBJ *GUI_SetProp2Text(DRWOBJ *drw, RECT *rect, int rect_flag, WSHDR *wshdr, i
 DRWOBJ *GUI_SetProp2ScrollingText(DRWOBJ *drw, RECT *rect, int rect_flag, WSHDR *wshdr, int xdisp, int font, int flags) {
 	assert(drw != nullptr && rect != nullptr && wshdr != nullptr);
 	
-	drw->type = DRWOBJ_TYPE_INLINE_TEXT;
+	drw->type = DRWOBJ_TYPE_SCROLLING_TEXT;
 	drw->rect_flags = rect_flag;
 	memcpy(&drw->rect, rect, sizeof(RECT));
 	
@@ -284,7 +284,7 @@ void GUI_DrawObject(DRWOBJ *drw) {
 		painter->setBlendMode(Painter::BLEND_MODE_INVERT);
 	
 	switch (drw->type) {
-		case DRWOBJ_TYPE_INLINE_TEXT:
+		case DRWOBJ_TYPE_SCROLLING_TEXT:
 		{
 			DrawTextState state = {
 				.pen			= GUI_Color2Int(drw->color1),
@@ -293,7 +293,6 @@ void GUI_DrawObject(DRWOBJ *drw) {
 				.font			= drw->text.font,
 				.flags			= drw->text.flags,
 			};
-			
 			GUI_DrawObject_ScrollString(painter, &state, drw->text.value, rect, drw->text.xdisp);
 		}
 		break;
@@ -307,8 +306,7 @@ void GUI_DrawObject(DRWOBJ *drw) {
 				.font			= drw->text.font,
 				.flags			= drw->text.flags,
 			};
-			
-			GUI_DrawObject_ScrollString(painter, &state, drw->text.value, rect, 1);
+			GUI_DrawObject_MultilineString(painter, &state, drw->text.value, rect);
 		}
 		break;
 		

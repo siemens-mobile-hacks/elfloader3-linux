@@ -115,6 +115,9 @@ void GUI_DrawScrollString(WSHDR *ws, int x1, int y1, int x2, int y2, int xdisp, 
 		
 		GUI_DrawScrollString(ws, rect.x + 1, rect.y + 1, rect.x2, rect.y2, xdisp, font_id, flags, pen, transparent);
 	} else {
+		rect.x2 += 1;
+		rect.y2 += 1;
+		
 		GUI_SetProp2ScrollingText(&drw, &rect, 0, ws, xdisp, font_id, flags);
 		GUI_DrawObjectSetColor(&drw, pen, brush);
 		GUI_DrawObject(&drw);

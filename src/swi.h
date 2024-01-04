@@ -622,7 +622,7 @@ enum {
 enum {
 	DRWOBJ_TYPE_RECT						= 0x00,
 	DRWOBJ_TYPE_MULTILINE_TEXT				= 0x01,
-	DRWOBJ_TYPE_INLINE_TEXT					= 0x03,
+	DRWOBJ_TYPE_SCROLLING_TEXT				= 0x03,
 	DRWOBJ_TYPE_RECT_EX						= 0x04,
 	DRWOBJ_TYPE_IMG							= 0x05,
 	DRWOBJ_TYPE_PIXEL						= 0x0B,
@@ -933,7 +933,9 @@ struct DrawTextState {
 	int flags;
 };
 
+std::pair<int, int> GUI_MeasureString(DrawTextState *state, uint16_t *str, int length);
 void GUI_DrawObject_ScrollString(Painter *painter, DrawTextState *state, WSHDR *ws, RECT *rect, int x_offset);
+void GUI_DrawObject_MultilineString(Painter *painter, DrawTextState *state, WSHDR *ws, RECT *rect);
 
 /*
  * SettingsAE
