@@ -923,21 +923,6 @@ void *GUI_RamScreenBuffer();
 void GUI_HandleKeyPress(GBS_MSG *msg);
 
 /*
- * Text Drawing
- * */
-struct DrawTextState {
-	uint32_t pen;
-	uint32_t brush;
-	int default_font;
-	int font;
-	int flags;
-};
-
-std::pair<int, int> GUI_MeasureString(DrawTextState *state, uint16_t *str, int length);
-void GUI_DrawObject_ScrollString(Painter *painter, DrawTextState *state, WSHDR *ws, RECT *rect, int x_offset);
-void GUI_DrawObject_MultilineString(Painter *painter, DrawTextState *state, WSHDR *ws, RECT *rect);
-
-/*
  * SettingsAE
  * */
 int SettingsAE_Update_ws(WSHDR * param1, int set, char *entry, char *keyword);

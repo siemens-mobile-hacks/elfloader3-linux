@@ -2,6 +2,7 @@
 #include "utils.h"
 #include "log.h"
 #include "gui/Painter.h"
+#include "TextRender.h"
 
 #include <cassert>
 
@@ -286,27 +287,23 @@ void GUI_DrawObject(DRWOBJ *drw) {
 	switch (drw->type) {
 		case DRWOBJ_TYPE_SCROLLING_TEXT:
 		{
-			DrawTextState state = {
-				.pen			= GUI_Color2Int(drw->color1),
-				.brush			= GUI_Color2Int(drw->color2),
-				.default_font	= drw->text.font,
-				.font			= drw->text.font,
-				.flags			= drw->text.flags,
-			};
-			GUI_DrawObject_ScrollString(painter, &state, drw->text.value, rect, drw->text.xdisp);
+			TextRender tr(painter, rect, drw->text.value->body->data, drw->text.value->body->len);
+			tr.setPen(GUI_Color2Int(drw->color1));
+			tr.setBrush(GUI_Color2Int(drw->color2));
+			tr.setFlags(drw->text.flags);
+			tr.setFont(drw->text.font);
+			tr.renderInline(drw->text.xdisp);
 		}
 		break;
 		
 		case DRWOBJ_TYPE_MULTILINE_TEXT:
 		{
-			DrawTextState state = {
-				.pen			= GUI_Color2Int(drw->color1),
-				.brush			= GUI_Color2Int(drw->color2),
-				.default_font	= drw->text.font,
-				.font			= drw->text.font,
-				.flags			= drw->text.flags,
-			};
-			GUI_DrawObject_MultilineString(painter, &state, drw->text.value, rect);
+			TextRender tr(painter, rect, drw->text.value->body->data, drw->text.value->body->len);
+			tr.setPen(GUI_Color2Int(drw->color1));
+			tr.setBrush(GUI_Color2Int(drw->color2));
+			tr.setFlags(drw->text.flags);
+			tr.setFont(drw->text.font);
+			tr.render();
 		}
 		break;
 		
