@@ -32,6 +32,7 @@ add_executable(elfloader3
 	src/swi/gui/utils.cpp
 	src/swi/gui/drwobj.cpp
 	src/swi/gui/painter.cpp
+	src/swi/gui/TextRender.cpp
 	src/swi/csm.cpp
 	src/swi/obs.cpp
 	src/swi/images.cpp

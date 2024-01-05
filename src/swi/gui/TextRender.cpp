@@ -41,34 +41,67 @@ void TextRender::parseWord(int start, int end) {
 	}
 }
 
+int TextRender::drawWord(Word *word, int x, int y) {
+	auto *res = Resources::instance();
+	int width = 0;
+	for (int j = word->start; j <= word->end; j++) {
+		auto *img = res->getFontChar(word->style.font, m_str[j]);
+		if (img->w > 0) {
+			m_painter->drawBitmap(x + width, y - img->h, img->w, img->h, img->bitmap, IMG_GetBitmapType(img->bpnum), 0, 0, word->style.brush, word->style.pen);
+			width += img->w;
+		}
+	}
+	return width;
+}
+
 void TextRender::renderLine() {
 	auto *res = Resources::instance();
 	
+	if (!m_words.size() > 0)
+		return;
+	
+	if (m_push_to_prev_line)
+		m_offset_y -= m_prev_line_height;
+	
+	int max_width = m_rect->x2 - m_rect->x + 1;
+	int align = getAlignFromStyle(&m_words.front().style);
+	
 	int x = 0;
+	if (align == ALIGN_CENTER) {
+		x = (max_width - m_line_width) / 2;
+	} else if (align == ALIGN_RIGHT) {
+		x = (max_width - m_line_width);
+	}
+	
+	if (align == ALIGN_LEFT || align == ALIGN_CENTER) {
+		m_prev_line_avail = max_width - (x + m_line_width);
+	} else {
+		m_prev_line_avail = 0;
+	}
+	m_prev_line_height = m_line_height;
+	
 	while (m_words.size() > 0) {
-		Word &word = m_words.front();
-		
-		for (int j = word.start; j <= word.end; j++) {
-			auto *img = res->getFontChar(word.style.font, m_str[j]);
-			if (img->w > 0) {
-				int y = m_offset_y + (m_line_height - img->h);
-				m_painter->drawBitmap(x, y, img->w, img->h, img->bitmap, IMG_GetBitmapType(img->bpnum), 0, 0, word.style.brush, word.style.pen);
-				x += img->w;
-			}
-		}
-		
+		x += drawWord(&m_words.front(), x, m_offset_y + m_line_height);
 		m_words.pop();
 	}
 	
 	m_offset_y += m_line_height;
 	m_line_width = 0;
 	m_line_height = 0;
+	m_push_to_prev_line = false;
 }
 
 void TextRender::onNewWord(int start, int end, int w, int h) {
 	int max_width = m_rect->x2 - m_rect->x + 1;
+	int align = getAlignFromStyle(&m_style);
 	
-	if (m_line_width + w > max_width)
+	if ((m_line_width + w > max_width) || align != m_prev_align)
+		renderLine();
+	
+	if (align != m_prev_align && align == ALIGN_RIGHT && m_prev_line_avail >= w)
+		m_push_to_prev_line = true;
+	
+	if (m_push_to_prev_line && (align != ALIGN_RIGHT || m_line_width + w > m_prev_line_avail))
 		renderLine();
 	
 	m_words.push({
@@ -84,6 +117,8 @@ void TextRender::onNewWord(int start, int end, int w, int h) {
 	
 	if (m_str[end] == 0x0A || m_str[end] == 0x0D)
 		renderLine();
+	
+	m_prev_align = getAlignFromStyle(&m_style);
 }
 
 void TextRender::renderInline(int x_offset) {
@@ -114,9 +149,13 @@ void TextRender::render() {
 	int word_start = 0;
 	uint16_t prev_ch = 0xE000;
 	
+	m_prev_align = getAlignFromStyle(&m_style);
 	m_line_height = 0;
 	m_line_width = 0;
 	m_offset_y = 0;
+	m_prev_line_avail = 0;
+	m_prev_line_height = 0;
+	m_push_to_prev_line = false;
 	
 	for (int i = 0; i < m_length; i++) {
 		uint16_t ch = m_str[i];
@@ -163,6 +202,14 @@ std::pair<int, int> TextRender::measureString(int font_id, uint16_t *str, int le
 	}
 	
 	return { line_width, line_height };
+}
+
+int TextRender::getAlignFromStyle(Style *style) {
+	if ((style->flags & TEXT_ALIGNRIGHT))
+		return ALIGN_RIGHT;
+	if ((style->flags & TEXT_ALIGNMIDDLE))
+		return ALIGN_CENTER;
+	return ALIGN_LEFT;
 }
 
 int TextRender::handleModifiers(Style *style, uint16_t *str, int length) {
