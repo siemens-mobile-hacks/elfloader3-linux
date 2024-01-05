@@ -22,59 +22,14 @@ void GUI_DrawString(WSHDR *ws, int x1, int y1, int x2, int y2, int font_id, int 
 		
 		flags &= ~(TEXT_INVERT | TEXT_INVERT2 | TEXT_OUTLINE);
 		
-		GUI_StoreXYXYtoRECT(&rect, rect.x, rect.y, rect.x2 - 2, rect.y2 - 2);
-		GUI_SetProp2Text(&drw, &rect, 0, ws, font_id, flags);
-		GUI_DrawObjectSetColor(&drw, brush, transparent);
-		GUI_DrawObject(&drw);
-		GUI_FreeDrawObject(&drw);
-		
-		GUI_StoreXYXYtoRECT(&rect, rect.x + 1, rect.y, rect.x2 - 1, rect.y2 - 2);
-		GUI_SetProp2Text(&drw, &rect, 0, ws, font_id, flags);
-		GUI_DrawObjectSetColor(&drw, brush, transparent);
-		GUI_DrawObject(&drw);
-		GUI_FreeDrawObject(&drw);
-		
-		GUI_StoreXYXYtoRECT(&rect, rect.x + 2, rect.y, rect.x2, rect.y2 - 2);
-		GUI_SetProp2Text(&drw, &rect, 0, ws, font_id, flags);
-		GUI_DrawObjectSetColor(&drw, brush, transparent);
-		GUI_DrawObject(&drw);
-		GUI_FreeDrawObject(&drw);
-		
-		GUI_StoreXYXYtoRECT(&rect, rect.x, rect.y + 1, rect.x2 - 2, rect.y2 - 1);
-		GUI_SetProp2Text(&drw, &rect, 0, ws, font_id, flags);
-		GUI_DrawObjectSetColor(&drw, brush, transparent);
-		GUI_DrawObject(&drw);
-		GUI_FreeDrawObject(&drw);
-		
-		GUI_StoreXYXYtoRECT(&rect, rect.x + 2, rect.y + 1, rect.x2, rect.y2 - 1);
-		GUI_SetProp2Text(&drw, &rect, 0, ws, font_id, flags);
-		GUI_DrawObjectSetColor(&drw, brush, transparent);
-		GUI_DrawObject(&drw);
-		GUI_FreeDrawObject(&drw);
-		
-		GUI_StoreXYXYtoRECT(&rect, rect.x, rect.y + 2, rect.x2 - 2, rect.y2);
-		GUI_SetProp2Text(&drw, &rect, 0, ws, font_id, flags);
-		GUI_DrawObjectSetColor(&drw, brush, transparent);
-		GUI_DrawObject(&drw);
-		GUI_FreeDrawObject(&drw);
-		
-		GUI_StoreXYXYtoRECT(&rect, rect.x + 1, rect.y + 2, rect.x2 - 1, rect.y2);
-		GUI_SetProp2Text(&drw, &rect, 0, ws, font_id, flags);
-		GUI_DrawObjectSetColor(&drw, brush, transparent);
-		GUI_DrawObject(&drw);
-		GUI_FreeDrawObject(&drw);
-		
-		GUI_StoreXYXYtoRECT(&rect, rect.x + 2, rect.y + 2, rect.x2, rect.y2);
-		GUI_SetProp2Text(&drw, &rect, 0, ws, font_id, flags);
-		GUI_DrawObjectSetColor(&drw, brush, transparent);
-		GUI_DrawObject(&drw);
-		GUI_FreeDrawObject(&drw);
-		
-		GUI_StoreXYXYtoRECT(&rect, rect.x + 1, rect.y + 1, rect.x2 - 1, rect.y2);
-		GUI_SetProp2Text(&drw, &rect, 0, ws, font_id, flags);
-		GUI_DrawObjectSetColor(&drw, pen, transparent);
-		GUI_DrawObject(&drw);
-		GUI_FreeDrawObject(&drw);
+		for (int y_offset = 0; y_offset < 3; y_offset++) {
+			for (int x_offset = 0; x_offset < 3; x_offset++) {
+				if (y_offset == 1 && x_offset == 1)
+					continue;
+				GUI_DrawString(ws, rect.x + x_offset, rect.y + y_offset, rect.x2 + x_offset, rect.y2 + y_offset, font_id, flags, brush, transparent);
+			}
+		}
+		GUI_DrawString(ws, rect.x + 1, rect.y + 1, rect.x2 + 1, rect.y2 + 1, font_id, flags, pen, transparent);
 	} else {
 		GUI_SetProp2Text(&drw, &rect, 0, ws, font_id, flags);
 		GUI_DrawObjectSetColor(&drw, pen, brush);
@@ -99,21 +54,14 @@ void GUI_DrawScrollString(WSHDR *ws, int x1, int y1, int x2, int y2, int xdisp, 
 		
 		flags &= ~(TEXT_INVERT | TEXT_INVERT2 | TEXT_OUTLINE);
 		
-		GUI_DrawScrollString(ws, rect.x, rect.y, rect.x2, rect.y2, xdisp, font_id, flags, brush, transparent);
-		GUI_DrawScrollString(ws, rect.x + 1, rect.y, rect.x2, rect.y2, xdisp, font_id, flags, brush, transparent);
-		GUI_DrawScrollString(ws, rect.x + 2, rect.y, rect.x2, rect.y2, xdisp, font_id, flags, brush, transparent);
-		GUI_DrawScrollString(ws, rect.x, rect.y + 1, rect.x2, rect.y2, xdisp, font_id, flags, brush, transparent);
-		GUI_DrawScrollString(ws, rect.x + 2, rect.y + 1, rect.x2, rect.y2, xdisp, font_id, flags, brush, transparent);
-		GUI_DrawScrollString(ws, rect.x, rect.y + 2, rect.x2, rect.y2, xdisp, font_id, flags, brush, transparent);
-		GUI_DrawScrollString(ws, rect.x + 1, rect.y + 2, rect.x2, rect.y2, xdisp, font_id, flags, brush, transparent);
-		GUI_DrawScrollString(ws, rect.x + 2, rect.y + 2, rect.x2, rect.y2, xdisp, font_id, flags, brush, transparent);
-		
-		if (xdisp > 1) {
-			xdisp = xdisp - 1;
-			rect.x = rect.x - 1;
+		for (int y_offset = 0; y_offset < 3; y_offset++) {
+			for (int x_offset = 0; x_offset < 3; x_offset++) {
+				if (y_offset == 1 && x_offset == 1)
+					continue;
+				GUI_DrawScrollString(ws, rect.x + x_offset, rect.y + y_offset, rect.x2 + x_offset, rect.y2 + y_offset, xdisp, font_id, flags, brush, transparent);
+			}
 		}
-		
-		GUI_DrawScrollString(ws, rect.x + 1, rect.y + 1, rect.x2, rect.y2, xdisp, font_id, flags, pen, transparent);
+		GUI_DrawScrollString(ws, rect.x + 1, rect.y + 1, rect.x2 + 1, rect.y2 + 1, xdisp, font_id, flags, pen, transparent);
 	} else {
 		rect.x2 += 1;
 		rect.y2 += 1;
