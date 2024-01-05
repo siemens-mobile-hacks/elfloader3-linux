@@ -252,7 +252,7 @@ int TextRender::handleModifiers(Style *style, uint16_t *str, int length) {
 			break;
 			
 			case UTF16_NO_INVERTION:
-				style->flags &= (TEXT_INVERT | TEXT_INVERT2);
+				style->flags &= ~(TEXT_INVERT | TEXT_INVERT2);
 			break;
 			
 			case UTF16_TEXT_COLOR_RGBA:
