@@ -12,12 +12,12 @@ void TextRender::parseWord(int start, int end) {
 	auto *res = Resources::instance();
 	
 	int max_width = m_rect->x2 - m_rect->x + 1;
+	int ctrl_chars = handleModifiers(&m_style, m_str + start, end - start + 1);
 	
 	int word_width = 0;
 	int word_height = 0;
-	int str_start = start;
+	int str_start = start + ctrl_chars;
 	
-	int ctrl_chars = handleModifiers(&m_style, m_str + start, end - start + 1);
 	for (int i = start + ctrl_chars; i <= end; i++) {
 		uint16_t ch = m_str[i];
 		auto *img = res->getFontChar(m_style.font, ch);
@@ -252,15 +252,25 @@ int TextRender::handleModifiers(Style *style, uint16_t *str, int length) {
 			break;
 			
 			case UTF16_TEXT_COLOR_RGBA:
+			{
 				if (i + 2 < length) {
-					style->pen = (str[i + 1] << 16) | str[i + 2];
+					uint8_t r = (str[i + 1] >> 8) & 0xFF;
+					uint8_t g = str[i + 1] & 0xFF;
+					uint8_t b = (str[i + 2] >> 8) & 0xFF;
+					uint8_t a = (str[i + 2] & 0xFF) * 0xFF / 0x64;
+					style->pen = (a << 24) | (r << 16) | (g << 8) | b;
 					i += 2;
 				}
+			}
 			break;
 			
 			case UTF16_BG_COLOR_RGBA:
 				if (i + 2 < length) {
-					style->brush = (str[i + 1] << 16) | str[i + 2];
+					uint8_t r = (str[i + 1] >> 8) & 0xFF;
+					uint8_t g = str[i + 1] & 0xFF;
+					uint8_t b = (str[i + 2] >> 8) & 0xFF;
+					uint8_t a = (str[i + 2] & 0xFF) * 0xFF / 0x64;
+					style->brush = (a << 24) | (r << 16) | (g << 8) | b;
 					i += 2;
 				}
 			break;
