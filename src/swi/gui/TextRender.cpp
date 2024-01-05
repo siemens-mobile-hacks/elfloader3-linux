@@ -22,7 +22,6 @@ void TextRender::parseWord(int start, int end) {
 		uint16_t ch = m_str[i];
 		auto *img = res->getFontChar(m_style.font, ch);
 		
-		// The current part of the word exceeds maximum line length
 		if (word_width + img->w > max_width) {
 			onNewWord(str_start, i - 1, word_width, word_height);
 			
@@ -35,7 +34,6 @@ void TextRender::parseWord(int start, int end) {
 		if (word_height < img->h)
 			word_height = img->h;
 		
-		// Handle end of word
 		if (i == end)
 			onNewWord(str_start, i, word_width, word_height);
 	}
@@ -83,13 +81,14 @@ void TextRender::renderLine() {
 	while (m_words.size() > 0) {
 		auto &word = m_words.front();
 		
-		if ((word.style.flags & TEXT_UNDERLINE))
-			has_underline = true;
-		
 		int word_width = drawWord(&word, x, m_offset_y + m_line_height);
-		
-		if ((word.style.flags & TEXT_UNDERLINE))
+		if ((word.style.flags & TEXT_UNDERLINE)) {
 			m_painter->drawLine(x, m_offset_y + m_line_height - 1, x + word_width + 1, m_offset_y + m_line_height - 1, word.style.pen);
+			has_underline = true;
+		}
+		
+		if ((word.style.flags & (TEXT_INVERT | TEXT_INVERT2)))
+			m_painter->invertArea(x, m_offset_y, word_width, m_line_height);
 		
 		x += word_width;
 		
@@ -149,6 +148,10 @@ void TextRender::renderInline(int x_offset) {
 		auto *img = res->getFontChar(m_style.font, m_str[i], false);
 		if (virtual_x >= (x_offset - 1)) {
 			m_painter->drawBitmap(x, 0, img->w, img->h, img->bitmap, IMG_GetBitmapType(img->bpnum), 0, 0, m_style.brush, m_style.pen);
+			
+			if ((m_style.flags & (TEXT_INVERT | TEXT_INVERT2)))
+				m_painter->invertArea(x, 0, img->w, img->h);
+			
 			if (line_height < img->h)
 				line_height = img->h;
 			
@@ -172,12 +175,6 @@ void TextRender::render() {
 	uint16_t prev_ch = 0xE000;
 	
 	m_prev_align = getAlignFromStyle(&m_style);
-	m_line_height = 0;
-	m_line_width = 0;
-	m_offset_y = 0;
-	m_prev_line_avail = 0;
-	m_prev_line_height = 0;
-	m_push_to_prev_line = false;
 	
 	for (int i = 0; i < m_length; i++) {
 		uint16_t ch = m_str[i];

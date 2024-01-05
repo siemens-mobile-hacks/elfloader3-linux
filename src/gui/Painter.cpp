@@ -399,6 +399,13 @@ void Painter::fillRect(int x, int y, int w, int h, uint32_t color) {
 		drawHLine(x, y + i, w, color);
 }
 
+void Painter::invertArea(int x, int y, int w, int h) {
+	BlendMode old_mode = m_blend_mode;
+	setBlendMode(BLEND_MODE_INVERT);
+	fillRect(x, y, w, h, 0xFF000000);
+	setBlendMode(old_mode);
+}
+
 /*
  * Pattern
  * */

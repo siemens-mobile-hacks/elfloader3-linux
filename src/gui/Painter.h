@@ -33,7 +33,7 @@ class Painter {
 		int m_window_x2 = 0;
 		int m_window_y2 = 0;
 		
-		uint32_t m_blend_mode = BLEND_MODE_NORMAL;
+		BlendMode m_blend_mode = BLEND_MODE_NORMAL;
 		uint8_t *m_buffer = nullptr;
 		std::vector<bool> m_mask;
 		
@@ -85,6 +85,7 @@ class Painter {
 		
 		void strokeRect(int x, int y, int w, int h, uint32_t color);
 		void fillRect(int x, int y, int w, int h, uint32_t color);
+		void invertArea(int x, int y, int w, int h);
 		
 		void drawPattern(int x, int y, int w, int h, uint8_t pattern, uint32_t fill_color, uint32_t stroke_color);
 		

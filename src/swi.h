@@ -100,40 +100,40 @@ uint32_t SWI_strlen(const char *param1);
 #pragma pack(1)
 typedef struct {
 #ifdef NEWSGOLD
-  void *priv;
-  char unk0[40 - sizeof(void *)];
-  uint32_t file_size;
-  short file_attr;
-  uint32_t create_date_time;
-  char unk1[2];
-  char folder_name[128];
-  char unk2;
-  char file_name[128];
-  char unk3[11];
-  short wsfolder_name[128+1];
-  short wsfile_name[128+1];
+	void *priv;
+	char unk0[40 - sizeof(void *)];
+	uint32_t file_size;
+	short file_attr;
+	uint32_t create_date_time;
+	char unk1[2];
+	char folder_name[128];
+	char unk2;
+	char file_name[128];
+	char unk3[11];
+	short wsfolder_name[128+1];
+	short wsfile_name[128+1];
 #else
-  void *priv;
-  char unk1[14 - sizeof(void *)];
-  short file_attr;
-  uint32_t create_date_time;
-  uint32_t file_size;
-  char unk2[16];
-  char folder_name[128];
-  char unk3;
-  char file_name[271];
+	void *priv;
+	char unk1[14 - sizeof(void *)];
+	short file_attr;
+	uint32_t create_date_time;
+	uint32_t file_size;
+	char unk2[16];
+	char folder_name[128];
+	char unk3;
+	char file_name[271];
 #endif
 } DIR_ENTRY;
 #pragma pack()
 
 typedef struct {
-  char unk1;
-  char unk2;
-  char unk3;
-  char unk4;
-  uint32_t size;
-  char unk5[28];
-  int file_attr;
+	char unk1;
+	char unk2;
+	char unk3;
+	char unk4;
+	uint32_t size;
+	char unk5[28];
+	int file_attr;
 } FSTATS;
 
 int FS_open(const char *path, uint32_t f, uint32_t m, uint32_t *errp);
