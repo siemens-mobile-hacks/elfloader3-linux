@@ -142,12 +142,16 @@ void TextRender::renderInline(int x_offset) {
 	int x = 0;
 	int virtual_x = 0;
 	int max_width = m_rect->x2 - m_rect->x + 1;
+	int line_height = 0;
 	
 	int ctrl_chars = handleModifiers(&m_style, m_str, m_length);
 	for (int i = ctrl_chars; i < m_length; i++) {
 		auto *img = res->getFontChar(m_style.font, m_str[i], false);
 		if (virtual_x >= (x_offset - 1)) {
 			m_painter->drawBitmap(x, 0, img->w, img->h, img->bitmap, IMG_GetBitmapType(img->bpnum), 0, 0, m_style.brush, m_style.pen);
+			if (line_height < img->h)
+				line_height = img->h;
+			
 			x += img->w;
 			
 			if (x >= max_width)
@@ -156,6 +160,9 @@ void TextRender::renderInline(int x_offset) {
 		
 		virtual_x += img->w;
 	}
+	
+	if ((m_style.flags & TEXT_UNDERLINE))
+		m_painter->drawLine(0, line_height - 1, virtual_x + 1, line_height - 1, m_style.pen);
 }
 
 void TextRender::render() {
