@@ -78,13 +78,28 @@ void TextRender::renderLine() {
 	} else {
 		m_prev_line_avail = 0;
 	}
-	m_prev_line_height = m_line_height;
 	
+	bool has_underline = false;
 	while (m_words.size() > 0) {
-		x += drawWord(&m_words.front(), x, m_offset_y + m_line_height);
+		auto &word = m_words.front();
+		
+		if ((word.style.flags & TEXT_UNDERLINE))
+			has_underline = true;
+		
+		int word_width = drawWord(&word, x, m_offset_y + m_line_height);
+		
+		if ((word.style.flags & TEXT_UNDERLINE))
+			m_painter->drawLine(x, m_offset_y + m_line_height - 1, x + word_width + 1, m_offset_y + m_line_height - 1, word.style.pen);
+		
+		x += word_width;
+		
 		m_words.pop();
 	}
 	
+	if (has_underline)
+		m_line_height++;
+	
+	m_prev_line_height = m_line_height;
 	m_offset_y += m_line_height;
 	m_line_width = 0;
 	m_line_height = 0;
