@@ -29,7 +29,7 @@ char __is_file_exist(const char *fl) {
 /*
  * Возвращает хеш имени
  */
-unsigned int name_hash(const char *name) {
+unsigned int loader_elf_hash(const char *name) {
 	unsigned int hash = 0;
 	unsigned int hi;
 	/* два раза *name требует больше времени */
@@ -55,11 +55,9 @@ unsigned int name_hash(const char *name) {
 /*
  * Находит в библиотеке требуемый експорт
  */
-Elf32_Word loader_find_export(Elf32_Exec *ex, const char *name) {
+Elf32_Word loader_find_export(Elf32_Exec *ex, const char *name, unsigned int hash) {
 	if (!ex || !ex->hashtab)
 		return 0;
-
-	long hash = name_hash(name);
 
 	Elf32_Word nbucket = ex->hashtab[0];
 	// Elf32_Word nchain = ex->hashtab[1];
@@ -105,10 +103,10 @@ Elf32_Word loader_find_export(Elf32_Exec *ex, const char *name) {
 	return func;
 }
 
-Elf32_Word loader_find_function(Elf32_Lib *lib, const char *name) {
+Elf32_Word loader_find_function(Elf32_Lib *lib, const char *name, unsigned int hash) {
 	if (!lib)
 		return 0;
-	return loader_find_export(lib->ex, name);
+	return loader_find_export(lib->ex, name, hash);
 }
 
 /*
@@ -186,7 +184,7 @@ Elf32_Lib *loader_lib_open(const char *name, Elf32_Exec *_ex) {
 		Elf32_Lib *lib = ready_libs->lib;
 
 		if (!strcmp(lib->soname, cmp_share_name)) {
-			EP3_DEBUG(" '%s' is olready loaded\n", cmp_share_name);
+			EP3_DEBUG(" '%s' is already loaded\n", cmp_share_name);
 			lib->users_cnt++;
 			memset(dlerr, 0, 2);
 			return lib;
@@ -342,6 +340,7 @@ try_again:
 	lib_top = global_ptr;
 
 	/* запустим контсрукторы */
+	printf("loader_run_INIT_Array %s\n", ex->fname);
 	loader_run_INIT_Array(ex);
 	ex->complete = 1;
 
@@ -480,8 +479,10 @@ Elf32_Word loader_dlsym(int handle, const char *name) {
 	if (0 > handle > handles_cnt - 1)
 		return 0;
 
-	if (handles && handles[handle])
-		return loader_find_function(handles[handle], name);
+	if (handles && handles[handle]) {
+		unsigned int hash = loader_elf_hash(name);
+		return loader_find_function(handles[handle], name, hash);
+	}
 
 	return 0;
 }

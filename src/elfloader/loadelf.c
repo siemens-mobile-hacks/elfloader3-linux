@@ -87,8 +87,6 @@ int loader_elf_close(Elf32_Exec *ex) {
 
 	if (ex->fname)
 		free(ex->fname);
-	if (ex->hashtab)
-		free(ex->hashtab);
 	if (ex->body_memory)
 		free(ex->body_memory);
 	if (ex->temp_env)

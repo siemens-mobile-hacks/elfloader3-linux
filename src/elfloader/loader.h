@@ -135,10 +135,9 @@ typedef int LIB_FUNC();
 int loader_check_elf(Elf32_Ehdr *ehdr);
 unsigned int loader_get_bin_size(Elf32_Exec *ex, Elf32_Phdr *phdrs);
 int loader_load_sections(Elf32_Exec *ex);
-int loader_do_reloc(Elf32_Exec *ex, Elf32_Phdr *phdr);
-unsigned long loader_elf_hash(const char *name);
-Elf32_Word loader_find_export(Elf32_Exec *ex, const char *name);
-Elf32_Word loader_find_function(Elf32_Lib *lib, const char *name);
+int loader_do_reloc(Elf32_Exec *ex, Elf32_Phdr *phdr, int is_iar_elf);
+Elf32_Word loader_find_export(Elf32_Exec *ex, const char *name, unsigned int hash);
+Elf32_Word loader_find_function(Elf32_Lib *lib, const char *name, unsigned int hash);
 
 void loader_set_debug(int flag);
 
@@ -150,6 +149,8 @@ void loader_lib_unref_clients(Elf32_Lib *lib);
 int loader_dlopen(const char *name);
 int loader_dlclose(int handle);
 Elf32_Word loader_dlsym(int handle, const char *name);
+
+unsigned int loader_elf_hash(const char *name);
 
 /* executable support */
 Elf32_Exec *loader_elf_open(const char *filenam);

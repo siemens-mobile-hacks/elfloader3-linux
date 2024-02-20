@@ -9,6 +9,7 @@
 #include <fcntl.h>
 #include <unistd.h>
 #include <sys/mman.h>
+#include <stdbool.h>
 
 int __ep3_debug = 0;
 int loader_warnings = 1;
@@ -51,7 +52,8 @@ unsigned int loader_get_bin_size(Elf32_Exec *ex, Elf32_Phdr *phdrs) {
 
 static AlignedMemory *_allocate_aligned(size_t size, size_t alignment) {
 	const size_t mask = alignment - 1;
-	AlignedMemory *mem = malloc(sizeof *mem + size + alignment);
+	const size_t alloc_size = sizeof(AlignedMemory) + size + alignment;
+	AlignedMemory *mem = malloc(alloc_size);
 	if (!mem)
 		return NULL;
 	mem->value = (void *) ((((uintptr_t) (mem + 1)) + mask) & ~mask);
@@ -87,32 +89,32 @@ static char *_load_data(Elf32_Exec *ex, int offset, int size) {
 }
 
 /* Вспомогательная функция */
-static inline unsigned int _look_sym(Elf32_Exec *ex, const char *name) {
+static inline unsigned int _look_sym(Elf32_Exec *ex, const char *name, unsigned int hash) {
 	Libs_Queue *lib = ex->libs;
 	unsigned int func = 0;
 	while (lib && !func) {
-		func = (unsigned int)loader_find_function(lib->lib, name);
+		func = (unsigned int)loader_find_function(lib->lib, name, hash);
 		lib = lib->next;
 	}
 	return func;
 }
 
 /* функция пролетается рекурсивно по либам которые в зависимостях */
-unsigned int try_search_in_base(Elf32_Exec *ex, const char *name, int bind_type) {
+unsigned int try_search_in_base(Elf32_Exec *ex, const char *name, unsigned int hash, int bind_type) {
 	EP3_DEBUG("'%s' Searching in libs... \n", name);
 	unsigned int address = 0;
 
 	if (ex->type == EXEC_LIB && !ex->dyn[DT_SYMBOLIC])
-		address = loader_find_export(ex, name);
+		address = loader_find_export(ex, name, hash);
 
 	if (!address)
-		address = (unsigned int)_look_sym(ex, name);
+		address = (unsigned int)_look_sym(ex, name, hash);
 
 	if (!address) {
 		if (!address && ex->meloaded) {
 			Elf32_Exec *mex = (Elf32_Exec *)ex->meloaded;
 			while (mex && !address && mex->type == EXEC_LIB) {
-				address = loader_find_export(mex, name);
+				address = loader_find_export(mex, name, hash);
 				mex = (Elf32_Exec *)mex->meloaded;
 			}
 		}
@@ -126,8 +128,36 @@ unsigned int try_search_in_base(Elf32_Exec *ex, const char *name, int bind_type)
 	return address;
 }
 
+static bool loader_resolve_builtin_symbols(Elf32_Exec *ex, unsigned int *addr, const char *name, unsigned int hash) {
+    switch (hash) {
+        case 0x000655C8:
+            /* запросили указатель на ELF */
+            if (strcmp(name, "__ex") == 0) {
+                ex->__is_ex_import = 1;
+                *addr = (unsigned int) ex;
+                return true;
+            }
+        break;
+        case 0x0AB11643:
+            /* запросили указатель на таблицу функций */
+            if (strcmp(name, "__sys_switab_addres") == 0) {
+                *addr = (unsigned int) ex->switab;
+                return true;
+            }
+        break;
+        case 0x06AE0C22:
+            /* запросили указатель на таблицу функций (указатель) */
+            if (strcmp(name, "__switab") == 0) {
+                *addr = (unsigned int) &ex->switab;
+                return true;
+            }
+        break;
+    }
+    return false;
+}
+
 // Релокация
-int loader_do_reloc(Elf32_Exec *ex, Elf32_Phdr *phdr) {
+int loader_do_reloc(Elf32_Exec *ex, Elf32_Phdr *phdr, int is_iar_elf) {
 	unsigned int i = 0;
 	Elf32_Word libs_needed[64] = {};
 	unsigned int libs_cnt = 0;
@@ -165,18 +195,7 @@ int loader_do_reloc(Elf32_Exec *ex, Elf32_Phdr *phdr) {
 	EP3_DEBUG("SYMTAB: %X %p\n", ex->dyn[DT_SYMTAB], ex->symtab);
 
 	if (ex->type == EXEC_LIB) {
-		Elf32_Word *hash_hdr = (Elf32_Word *)_load_data(ex, ex->dyn[DT_HASH], 8);
-		if (hash_hdr) {
-			int hash_size = hash_hdr[0] * sizeof(Elf32_Word) + hash_hdr[1] * sizeof(Elf32_Word) + 8;
-			ex->hashtab = (Elf32_Word *)_load_data(ex, ex->dyn[DT_HASH], hash_size);
-			free(hash_hdr);
-			if (!ex->hashtab)
-				goto __hash_err;
-		} else {
-		__hash_err:
-			EP3_ERROR("Hash tab is mising");
-			return E_HASTAB;
-		}
+		ex->hashtab = (Elf32_Word *) (Elf32_Sym *)(ex->body + ex->dyn[DT_HASH] - ex->v_addr);
 	}
 
 	// Загрузка библиотек
@@ -211,13 +230,12 @@ int loader_do_reloc(Elf32_Exec *ex, Elf32_Phdr *phdr) {
 		int reloc_type = 0;
 
 		// Таблица релокаций
-		Elf32_Rel *reltab = (Elf32_Rel *)_load_data(ex, phdr->p_offset + ex->dyn[DT_REL] - phdr->p_vaddr, ex->dyn[DT_RELSZ]);
-
-		if (!reltab) {
-			loader_elf_close(ex);
-			return E_RELOCATION;
+		Elf32_Rel *reltab = ex->body + ex->dyn[DT_REL] - ex->v_addr;
+		
+		if (is_iar_elf) {
+			reltab = (void *) ex->dynamic + ex->dyn[DT_REL];
 		}
-
+		
 		while (i * sizeof(Elf32_Rel) < ex->dyn[DT_RELSZ]) {
 			r_type = ELF32_R_TYPE(reltab[i].r_info);
 			symtab_index = ELF32_R_SYM(reltab[i].r_info);
@@ -234,8 +252,6 @@ int loader_do_reloc(Elf32_Exec *ex, Elf32_Phdr *phdr) {
 			case R_ARM_RABS32:
 				EP3_DEBUG("R_ARM_RABS32\n");
 				*addr += (unsigned int)(ex->body - ex->v_addr);
-				name = ex->strtab + sym->st_name;
-				EP3_DEBUG("*addr = %X\n", *addr);
 				break;
 			case R_ARM_ABS32:
 				EP3_DEBUG("R_ARM_ABS32\n");
@@ -259,31 +275,32 @@ int loader_do_reloc(Elf32_Exec *ex, Elf32_Phdr *phdr) {
 					/* имя требуемой функции */
 					name = ex->strtab + sym->st_name;
 
-					// Если нужен указатель на эльф
-					if (name[4] == 0 && name[0] == '_' && name[1] == '_' && name[2] == 'e' && name[3] == 'x') {
-						ex->__is_ex_import = 1;
-						*addr = (unsigned int)ex;
+					// Сразу посчитаем хэш
+					unsigned int hash = loader_elf_hash(name);
+					
+					if (loader_resolve_builtin_symbols(ex, &func, name, hash)) {
+						EP3_DEBUG("Builtin symbol %s resolved.\n", name);
+						*addr += func;
 						break;
 					}
-
+					
 					switch (reloc_type) {
-					case STT_NOTYPE:
-						EP3_DEBUG("STT_NOTYPE\n");
-						if (bind_type != STB_LOCAL)
-							func = (unsigned int) (ex->body + sym->st_value);
-						else
-							func = (unsigned int) (sym->st_value);
+						case STT_NOTYPE:
+							EP3_DEBUG("STT_NOTYPE\n");
+							if (bind_type != STB_LOCAL)
+								func = (unsigned int) (ex->body + sym->st_value);
+							else
+								func = (unsigned int) (sym->st_value);
 
-						goto skeep_err;
+							goto skip_err;
 
-					default:
-						if (sym->st_value)
-							func = (unsigned int)ex->body + sym->st_value;
-						else
-							func = try_search_in_base(ex, name, bind_type);
-						break;
+						default:
+							if (sym->st_value)
+								func = (unsigned int)ex->body + sym->st_value;
+							else
+								func = try_search_in_base(ex, name, hash, bind_type);
+							break;
 					}
-
 				} else {
 					func = 0;
 				}
@@ -294,10 +311,7 @@ int loader_do_reloc(Elf32_Exec *ex, Elf32_Phdr *phdr) {
 					return E_UNDEF;
 				}
 
-			skeep_err:
-				if (func < 0x6D00) {
-					EP3_DEBUG("WARNING: SEEE HEER!!!! %s\n", name);
-				}
+			skip_err:
 				/* в ABS32 релоке в *addr всегда должен быть 0 */
 				*addr += func;
 				EP3_DEBUG("*addr = %X\n", *addr);
@@ -316,13 +330,11 @@ int loader_do_reloc(Elf32_Exec *ex, Elf32_Phdr *phdr) {
 
 				if (!ex->symtab) {
 					EP3_ERROR("Relocation R_ARM_GLOB_DAT cannot run without symtab");
-					free(reltab);
 					return E_SYMTAB;
 				}
 
 				if (!ex->strtab) {
 					EP3_ERROR("Relocation R_ARM_GLOB_DAT cannot run without strtab");
-					free(reltab);
 					return E_STRTAB;
 				}
 
@@ -331,9 +343,16 @@ int loader_do_reloc(Elf32_Exec *ex, Elf32_Phdr *phdr) {
 				} else
 					name = 0;
 
-				EP3_DEBUG(" strtab: '%s' \n", name);
-
 				if (symtab_index && name) {
+					// Сразу посчитаем хэш
+					unsigned int hash = loader_elf_hash(name);
+					
+					if (loader_resolve_builtin_symbols(ex, &func, name, hash)) {
+						EP3_DEBUG("Builtin symbol %s resolved.\n", name);
+						*addr += func;
+						break;
+					}
+					
 					switch (reloc_type) {
 					case STT_NOTYPE:
 						EP3_DEBUG("STT_NOTYPE\n");
@@ -341,14 +360,15 @@ int loader_do_reloc(Elf32_Exec *ex, Elf32_Phdr *phdr) {
 							func = (unsigned int) (ex->body + sym->st_value);
 						else
 							func = sym->st_value;
-						goto skeep_err1;
+						goto skip_err1;
 
 					default:
 						if (sym->st_value)
 							func = (unsigned int)ex->body + sym->st_value;
 						else {
 							EP3_DEBUG("Searching in libs...\n");
-							func = try_search_in_base(ex, name, bind_type);
+							unsigned int hash = loader_elf_hash(name);
+							func = try_search_in_base(ex, name, hash, bind_type);
 						}
 						break;
 					}
@@ -358,8 +378,7 @@ int loader_do_reloc(Elf32_Exec *ex, Elf32_Phdr *phdr) {
 						return E_UNDEF;
 					}
 
-				skeep_err1:
-
+				skip_err1:
 					/* В доках написано что бинды типа STB_WEAK могут быть нулевыми */
 					*addr = func;
 
@@ -403,8 +422,6 @@ int loader_do_reloc(Elf32_Exec *ex, Elf32_Phdr *phdr) {
 			}
 			++i;
 		}
-
-		free(reltab);
 	}
 
 	// Биндим функции
@@ -416,8 +433,9 @@ int loader_do_reloc(Elf32_Exec *ex, Elf32_Phdr *phdr) {
 			Elf32_Sym *sym = &ex->symtab[sym_idx];
 			Elf32_Word func = 0;
 			int bind_type = ELF_ST_BIND(sym->st_info);
+			unsigned int hash = loader_elf_hash(name);
 
-			func = try_search_in_base(ex, name, bind_type);
+			func = try_search_in_base(ex, name, hash, bind_type);
 			if (!func && bind_type != STB_WEAK) {
 				EP3_ERROR("[3] Undefined reference to `%s'\n", name);
 				return E_UNDEF;
@@ -502,12 +520,26 @@ int loader_load_sections(Elf32_Exec *ex) {
 					if (phdr.p_filesz == 0)
 						break; // Пропускаем пустые сегменты
 
-					EP3_DEBUG("Load data dynamic segment: %d - %d\n", phdr.p_offset, phdr.p_filesz);
-					ex->dynamic = (Elf32_Dyn *) (ex->body + phdr.p_vaddr - ex->v_addr);
+					int is_iar_elf = 0;
+					if (!phdr.p_memsz) {
+						EP3_DEBUG("Load data dynamic segment: %d - %d\n", phdr.p_offset, phdr.p_filesz);
+						ex->dynamic = (Elf32_Dyn *) _load_data(ex, phdr.p_offset, phdr.p_filesz);
+						is_iar_elf = 1;
+					} else {
+						ex->dynamic = (Elf32_Dyn *) (ex->body + phdr.p_vaddr - ex->v_addr);
+						is_iar_elf = 0;
+					}
 					
-					if (!loader_do_reloc(ex, &phdr))
+					int ret = loader_do_reloc(ex, &phdr, is_iar_elf);
+					
+					if (is_iar_elf) {
+						free(ex->dynamic);
+						ex->dynamic = NULL;
+					}
+					
+					if (ret == 0)
 						break;
-
+					
 					// Если что-то пошло не так...
 					free(ex->body_memory);
 					ex->body = 0;
