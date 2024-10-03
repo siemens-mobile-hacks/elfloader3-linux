@@ -136,7 +136,7 @@ int main(int argc, char **argv) {
 	GUI_Init();
 	
 	loader_init_switab();
-	loader_set_debug(false);
+	loader_set_debug(true);
 	loader_gdb_init();
 	
 	GBS_RunInContext(MMI_CEPID, [=]() {
@@ -156,9 +156,11 @@ int main(int argc, char **argv) {
 			fname = SieFs::path2sie(std::filesystem::canonical(elf_arg));
 		
 		auto entry = (int (*)(const char *, const char *, const void *)) loader_elf_entry(ex);
-		printf("run entry at %p (exe=%s, fname=%s)\n", entry, exe_name.c_str(), fname.c_str());
+		fprintf(stderr, "run entry at %p (exe=%s, fname=%s)\n", entry, exe_name.c_str(), fname.c_str());
 		int ret = entry(exe_name.c_str(), fname.c_str(), nullptr);
 		LOGD("entry ret = %d\n", ret);
+		
+		// loader_elf_close(ex);
 	});
 	
 	LOGD("Running loop...\n");

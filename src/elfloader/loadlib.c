@@ -360,6 +360,7 @@ try_again:
  * Вычесть общее количество клиентов либ
  */
 void loader_lib_unref_clients(Elf32_Lib *lib) {
+	printf("loader_lib_unref_clients(%s)=%d\n", lib->soname, lib->users_cnt-1);
 	lib->users_cnt--;
 }
 

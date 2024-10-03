@@ -116,7 +116,7 @@ void GBS_CreateProc(int cepid, const char *name, GbsProcCallback msg_handler, in
 	thread2cepid[gbs_processes[cepid]->threadId()] = cepid;
 }
 
-int GBS_GetCurCepid(void) {
+short GBS_GetCurCepid(void) {
 	auto tid = std::this_thread::get_id();
 	if (thread2cepid.find(tid) != thread2cepid.end())
 		return thread2cepid[tid];

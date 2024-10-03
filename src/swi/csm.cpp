@@ -103,5 +103,11 @@ CSM_RAM *CSM_Current() {
 }
 
 void CloseCSM(int id) {
-	fprintf(stderr, "%s not implemented!\n", __func__);
+	if (FindCSMbyID(id)) {
+		fprintf(stderr, "%s !!!!!\n", __func__);
+		FindCSMbyID(id)->state = CSM_STATE_CLOSED;
+		CSM_GarbageCollector();
+	} else {
+		fprintf(stderr, "%s not implemented!\n", __func__);
+	}
 }

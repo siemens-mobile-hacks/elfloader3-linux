@@ -206,8 +206,7 @@ void loader_init_switab() {
 	switab_functions[0x818A - 0x8000]	= (void *) GUI_HeaderH();
 	switab_functions[0x818B - 0x8000]	= (void *) GUI_SoftkeyH();
 	switab_functions[0x80E0 - 0x8000]	= (void *) GUI_RamScreenBuffer();
-	switab_functions[0x80F5 - 0x8000]	= (void *) GUI_RamMainLCDLayer();
-	switab_functions[0x80F6 - 0x8000]	= (void *) GUI_RamMMILCDLayer();
+	switab_functions[0x83D8 - 0x8000]	= (void *) GUI_GetLCDLayerList();
 	
 	// SettingsAE
 	switab_functions[0x02E4]	= (void *) SettingsAE_Update_ws;

@@ -217,7 +217,6 @@ std::pair<int, int> TextRender::measureString(int font_id, uint16_t *str, int le
 		line_width += img->w;
 		if (line_height < img->h)
 			line_height = img->h;
-		i++;
 	}
 	
 	return { line_width, line_height };

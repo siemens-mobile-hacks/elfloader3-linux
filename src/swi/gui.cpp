@@ -15,7 +15,9 @@
 
 // Currently we have only one layer
 static LCDLAYER mmi_layer = {};
-static LCDLAYER *mmi_layer_ptr = &mmi_layer;
+static LCDLAYER *mmi_layers[10] = {
+	&mmi_layer, nullptr
+};
 
 static std::queue<GUI_RAM *> gui_to_destroy;
 static std::map<int, GUI_RAM *> id2gui = {};
@@ -127,8 +129,11 @@ int GUI_CreateWithDummyCSM_30or2(GUI *gui, int flag) { // WTF
 
 void GUI_HandleKeyPress(GBS_MSG *msg) {
 	int top_id = GUI_GetTopID();
-	if (top_id < 0)
+	if (top_id < 0 && msg->submess == 60) {
+		LOGD("msg %d\n", msg->submess);
+		CloseCSM(0);
 		return;
+	}
 	
 	GUI_RAM *gui_ram = GUI_GetById(top_id);
 	
@@ -138,7 +143,7 @@ void GUI_HandleKeyPress(GBS_MSG *msg) {
 	if (gui_ram->gui->state == CSM_GUI_STATE_FOCUSED) {
 		LOGD("[GUI:%d] onKey\n", gui_ram->id);
 		int ret = gui_ram->gui->methods->onKey(gui_ram->gui, &gui_msg);
-		if (ret) {
+		if (ret||1) {
 			LOGD("[GUI:%d] onKey ret=%d (gui close)\n", gui_ram->id, ret);
 			int id = gui_ram->id;
 			GBS_RunInContext(MMI_CEPID, [id]() {
@@ -293,13 +298,8 @@ void GUI_REDRAW() {
 	GUI_DirectRedrawGUI();
 }
 
-LCDLAYER *GUI_RamMainLCDLayer() {
-	// Not implemented
-	return nullptr;
-}
-
-LCDLAYER **GUI_RamMMILCDLayer() {
-	return &mmi_layer_ptr;
+LCDLAYER **GUI_GetLCDLayerList() {
+	return mmi_layers;
 }
 
 void GUI_SetDepthBuffer(uint8_t depth) {

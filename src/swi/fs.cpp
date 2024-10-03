@@ -63,55 +63,36 @@ int FS_open(const char *path, uint32_t f, uint32_t m, uint32_t *errp) {
 		ret = open(SieFs::sie2path(path).c_str(), flags, mode);
 	}
 	
-	if (SWI_TRACE) {
-		fprintf(stderr, "[strace] open(%s, %d, %d) = %d\n", SieFs::sie2path(path).c_str(), flags, mode, ret);
-	}
-	
 	_set_errno(ret, errp);
 	return ret;
 }
 
 int FS_read(int fd, void *buff, int count, uint32_t *errp) {
 	int ret = read(fd, buff, count);
-	if (SWI_TRACE) {
-		fprintf(stderr, "[strace] read(%d, %p, %d) = %d\n", fd, buff, count, ret);
-	}
 	_set_errno(ret, errp);
 	return ret;
 }
 
 int FS_write(int fd, const void *buff, int count, uint32_t *errp) {
 	int ret = write(fd, buff, count);
-	if (SWI_TRACE) {
-		fprintf(stderr, "[strace] write(%d, %p, %d) = %d\n", fd, buff, count, ret);
-	}
 	_set_errno(ret, errp);
 	return ret;
 }
 
 int FS_close(int fd, uint32_t *errp) {
 	int ret = close(fd);
-	if (SWI_TRACE) {
-		fprintf(stderr, "[strace] close(%d) = %d\n", fd, ret);
-	}
 	_set_errno(ret, errp);
 	return ret;
 }
 
 int FS_flush(int fd, uint32_t *errp) {
 	int ret = fsync(fd);
-	if (SWI_TRACE) {
-		fprintf(stderr, "[strace] fsync(%d) = %d\n", fd, ret);
-	}
 	_set_errno(ret, errp);
 	return ret;
 }
 
 long FS_lseek(int fd, uint32_t offset, uint32_t origin, uint32_t *errp, uint32_t *errp2) {
 	int ret = lseek(fd, offset, origin);
-	if (SWI_TRACE) {
-		fprintf(stderr, "[strace] lseek(%d, %d, %d) = %d\n", fd, offset, origin, ret);
-	}
 	_set_errno(ret, errp);
 	_set_errno(ret, errp2);
 	return ret;
@@ -119,29 +100,26 @@ long FS_lseek(int fd, uint32_t offset, uint32_t origin, uint32_t *errp, uint32_t
 
 int FS_mkdir(const char *pathname, uint32_t *errp) {
 	int ret = mkdir(SieFs::sie2path(pathname).c_str(), 0755);
-	if (SWI_TRACE) {
-		fprintf(stderr, "[strace] mkdir(%s) = %d\n", SieFs::sie2path(pathname).c_str(), ret);
-	}
 	_set_errno(ret, errp);
 	return ret;
 }
 
-int FS_GetFileAttrib(const char *cFileName, uint8_t *cAttribute, uint32_t *ErrorNumber) {
+int FS_GetFileAttrib(const char *filename, uint8_t *attrs, uint32_t *errp) {
 	fprintf(stderr, "%s not implemented!\n", __func__);
 	abort();
 	return 0;
 }
 
-int FS_SetFileAttrib(const char *cFileName, uint8_t cAttribute, uint32_t *ErrorNumber) {
+int FS_SetFileAttrib(const char *filename, uint8_t attrs, uint32_t *errp) {
 	fprintf(stderr, "%s not implemented!\n", __func__);
 	abort();
 	return 0;
 }
 
-int FS_setfilesize(int FileHandler, uint32_t iNewFileSize, uint32_t *ErrorNumber) {
-	fprintf(stderr, "%s not implemented!\n", __func__);
-	abort();
-	return 0;
+int FS_setfilesize(int fd, uint32_t new_size, uint32_t *errp) {
+	int ret = ftruncate(fd, new_size);
+	_set_errno(ret, errp);
+	return ret;
 }
 
 static void _fillDirEntry(DIR_ENTRY *de, const std::string &file) {
@@ -241,27 +219,18 @@ int FS_fmove(const char *src, const char *dst, uint32_t *errp) {
 	std::string src_path = SieFs::sie2path(src);
 	std::string dst_path = SieFs::sie2path(dst);
 	int ret = rename(src_path.c_str(), dst_path.c_str());
-	if (SWI_TRACE) {
-		fprintf(stderr, "[strace] fmove(%s, %s) = %d\n", src_path.c_str(), dst_path.c_str(), ret);
-	}
 	_set_errno(ret, errp);
 	return ret;
 }
 
 int FS_rmdir(const char *path, uint32_t *errp) {
 	int ret = rmdir(SieFs::sie2path(path).c_str());
-	if (SWI_TRACE) {
-		fprintf(stderr, "[strace] rmdir(%s) = %d\n", SieFs::sie2path(path).c_str(), ret);
-	}
 	_set_errno(ret, errp);
 	return ret;
 }
 
 int FS_unlink(const char *path, uint32_t *errp) {
 	int ret = unlink(SieFs::sie2path(path).c_str());
-	if (SWI_TRACE) {
-		fprintf(stderr, "[strace] unlink(%s) = %d\n", SieFs::sie2path(path).c_str(), ret);
-	}
 	_set_errno(ret, errp);
 	return ret;
 }
@@ -276,9 +245,7 @@ int FS_isdir(const char *path, uint32_t *errp) {
 	std::string file = SieFs::sie2path(path);
 	struct stat st;
 	int ret = lstat(file.c_str(), &st);
-	if (SWI_TRACE) {
-		fprintf(stderr, "[strace] stat(%s) = %d\n", SieFs::sie2path(path).c_str(), ret);
-	}
+	
 	if (ret == 0) {
 		return ((st.st_mode & S_IFMT) == S_IFDIR);
 	} else {
@@ -291,9 +258,7 @@ int FS_GetFileStats(const char *siemens_file, FSTATS *out_st, uint32_t *errp) {
 	std::string file = SieFs::sie2path(siemens_file);
 	struct stat st;
 	int ret = lstat(file.c_str(), &st);
-	if (SWI_TRACE) {
-		fprintf(stderr, "[strace] stat(%s) = %d\n", file.c_str(), ret);
-	}
+	
 	if (ret == 0) {
 		if (errp)
 			*errp = 0;
