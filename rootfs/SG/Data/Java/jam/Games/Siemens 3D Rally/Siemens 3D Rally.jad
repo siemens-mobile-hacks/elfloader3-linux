@@ -1,0 +1,15 @@
+MIDlet-Name: Siemens 3D Rally
+MIDlet-1: Siemens 3D Rally, /icon_1.png, com.superscape.m3g.SiemensRally.SiemensRallylet
+MIDlet-Version: 1.6.5LG3
+MIDlet-Vendor: Superscape
+MIDlet-Jar-URL: http://139.23.38.140/otap/download/preinstalled.asp?dlid=L16R2KLDVT1T9MQ48C50W2855MAHDJQB
+MIDlet-Jar-Size: 316003
+MIDlet-Info-URL: http://wap.siemens-mobile.com
+MIDlet-Description: Siemens 3D Rally
+MIDlet-Icon: /icon_1.png
+MIDlet-IntVersion: 100600500
+MicroEdition-Profile: MIDP-2.0
+MicroEdition-Configuration: CLDC-1.1
+Siemens-Jad-URL: http://139.23.38.140/otap/download/dl.jad?dlid=L16R2KLDVT1T9MQ48C50W2855MAHDJQB
+Content: /com/superscape/m3g/SiemensRally/content/
+Lang: /com/superscape/m3g/SiemensRally/lang/

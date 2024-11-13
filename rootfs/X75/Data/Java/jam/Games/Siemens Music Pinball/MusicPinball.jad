@@ -1,0 +1,10 @@
+MIDlet-Name: Music Pinball
+MIDlet-Version: 1.0.9 LG92
+MIDlet-Vendor: Mr. Goodliving Ltd
+MIDlet-1: Music Pinball, /i.png, S
+MIDlet-Icon: /i.png
+MIDlet-Info-URL: http://wap.siemens.com
+MIDlet-Permissions: 
+Siemens-Jad-URL: http://siemens.annyway.net/dm/direct/1006500.jad
+MIDlet-Jar-Size: 163378
+MIDlet-Jar-URL: http://siemens.annyway.net/dm/direct/1006500.jar

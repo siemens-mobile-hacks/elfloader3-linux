@@ -1,9 +1,9 @@
 000028:T:OwnGreeting.OnOff=1
 000026:T:OwnGreeting.Text=
-000050:T:OwnGreeting.FactoryText=BenQ-Siemens EL71
+000037:T:OwnGreeting.FactoryText=EL71
 000035:T:CallSetupUI.AnyKeyAnswer=0
 000035:T:TimeChargeUI.AutoDisplay=0
-000033:T:SecurityUI.AutoKeyLock=0
+000034:T:SecurityUI.AutoKeyLock=60
 000033:T:CallSetupUI.MinuteBeep=0
 000034:T:CallSetupUI.CallWaiting=0
 000043:T:NetworkSetupUI.FastNetworkSearch=0

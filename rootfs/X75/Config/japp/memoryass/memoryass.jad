@@ -1,0 +1,13 @@
+MIDlet-Name: memoryass
+MIDlet-Version: 1.0.0
+MIDlet-Vendor: Siemens ICM MP
+MIDlet-Jar-Size: 0
+MIDlet-1: Memory Assistant,,com.siemens.mp.app.memoryassistant.MemoryAssistant
+MicroEdition-Configuration: CLDC-1.1
+MicroEdition-Profile: MIDP-2.0
+Creation-date: 040303
+Creation-time: 143914
+Creation-user: swc8
+Creation-host: lhotse
+Used-debug: no
+Used-obfuscate: yes

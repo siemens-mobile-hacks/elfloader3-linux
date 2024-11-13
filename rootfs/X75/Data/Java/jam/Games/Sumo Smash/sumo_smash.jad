@@ -1,0 +1,13 @@
+MIDlet-Name: Sumo Smash!
+MicroEdition-Configuration: CLDC-1.1
+MicroEdition-Profile: MIDP-2.0
+MIDlet-Version: 1.48.3 LG92
+MIDlet-Vendor: Siemens AG + Digital Chocolate
+MIDlet-1: Sumo Smash!,/icon.png,Main
+MIDlet-Data-Size: 1024
+MIDlet-Description: Sumo Smash!
+MIDlet-Info-URL: <http://wap.siemens.com> http://wap.siemens.com
+MIDlet-Icon: /icon.png
+MIDlet-Jar-URL: <http://siemens.annyway.net/dm/direct/1006502.jar> http://siemens.annyway.net/dm/direct/1006502.jar
+Siemens-Jad-URL: <http://siemens.annyway.net/dm/direct/1006502.jad> http://siemens.annyway.net/dm/direct/1006502.jad
+MIDlet-Jar-Size: 73106

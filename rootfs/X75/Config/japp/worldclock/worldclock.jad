@@ -1,0 +1,15 @@
+MIDlet-Name: worldclock
+MIDlet-Version: 1.0.0
+MIDlet-Vendor: Siemens ICM MP
+MIDlet-Jar-Size: 0
+MIDlet-1: World Clock,,com.siemens.mp.app.worldclock.WorldClock
+MIDlet-2: World Clock (init),,com.siemens.mp.app.worldclock.WorldClockInit
+MIDlet-3: World Clock (NITZ),,com.siemens.mp.app.worldclock.WorldClockNITZ
+MicroEdition-Configuration: CLDC-1.1
+MicroEdition-Profile: MIDP-2.0
+Creation-date: 040303
+Creation-time: 143914
+Creation-user: swc8
+Creation-host: lhotse
+Used-debug: no
+Used-obfuscate: yes

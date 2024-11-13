@@ -1,2 +1,2 @@
-EL71_2_ru-RussianRetail_41_0456
-Thu Sep 21 12:13:54 CEST 2006
+EL71_2_ua-retail_38_0445
+Fri Sep  1 13:18:02 CEST 2006

@@ -1,0 +1,13 @@
+MIDlet-1: PhotoGuess, /res/guess.png, com.softexdigital.photoguess.AppMIDlet
+MIDlet-Name: PhotoGuess
+MIDlet-Version: 2.0.2 LG92
+MIDlet-Vendor: Siemens AG + Softex Digital
+MIDlet-Permissions: javax.microedition.io.Connector.file.read,javax.microedition.io.Connector.file.write, javax.microedition.io.Connector.http,javax.microedition.io.Connector.sms,javax.wireless.messaging.sms.receive,javax.wireless.messaging.sms.send, javax.microedition.io.Connector.mms,javax.wireless.messaging.mms.receive,javax.wireless.messaging.mms.send,com.siemens.mp.io.File.read,com.siemens.mp.io.File.readwrite,javax.microedition.media.control.VideoControl.getSnapshot  			
+MIDlet-Jar-URL: http://siemens.annyway.net/dm/direct/1006462.jar
+MIDlet-Jar-Size: 266506
+MIDlet-Icon: /res/guess.png
+MIDlet-Description: Matching game
+MIDlet-Info-URL: http://wap.siemens-mobile.com
+MicroEdition-Profile: MIDP-2.0
+MicroEdition-Configuration: CLDC-1.1 
+Siemens-Jad-URL: http://siemens.annyway.net/dm/direct/1006462.jad

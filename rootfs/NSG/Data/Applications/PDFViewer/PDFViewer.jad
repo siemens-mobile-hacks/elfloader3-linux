@@ -1,0 +1,27 @@
+App-Splash3-Image: /resources/pdfviewer_176x132.png
+MIDlet-Version: 1.0.9 lg91
+App-Splash2-Image: /resources/zesium_176x132.png
+App-Drive-Icon: /resources/drive.png
+MIDlet-Jar-Size: 284261
+App-Splash1-Image: /resources/siemens_176x132.png
+MIDlet-Info-URL: http://wap.siemens.com
+MIDlet-Icon: /resources/icon_32.png 
+MicroEdition-Configuration: CLDC-1.1
+MIDlet-Jar-URL: http://siemens.annyway.net/dm/direct/1047378.jar
+App-PDF-Headline-Icon: /resources/icon_16.png
+MIDlet-Name: PDFViewer
+App-Folder-Icon: /resources/folder.png
+App-File-Icon: /resources/file.png
+MIDlet-1: PDFViewer, /resources/icon_32.png , com.zesium.comp4me.DocumentMidlet
+App-PDF-Icon: /resources/pdf.png
+build-Version: 1.0.2
+App-Mmc-Icon: /resources/icon_mmc.png
+Siemens-Jad-URL: http://siemens.annyway.net/dm/direct/1047378.jad
+MIDlet-Description: PDF Viewer
+App-Build-Date: 01.12.2005 09:47
+MIDlet-Permissions: javax.microedition.io.Connector.file.read, javax.microedition.io.Connector.file.write
+MIDlet-Vendor: Zesium mobile GmbH
+MicroEdition-Profile: MIDP-2.0
+App-Root-Folder: 0:/Misc/
+MIDlet-Certificate-1-1: MIID2jCCAsKgAwIBAgIERjuubDANBgkqhkiG9w0BAQUFADBJMQswCQYDVQQGEwJERTEXMBUGA1UECgwOU2llbWVuc19tb2JpbGUxITAfBgNVBAMMGE1hbnVmYWN0dXJlciBEb21haW4gUm9vdDAeFw0wNDAyMjAxMzI1MzJaFw0xNDAyMjAxMzI1MzJaMFIxCzAJBgNVBAYTAkRFMRcwFQYDVQQKDA5TaWVtZW5zX21vYmlsZTEqMCgGA1UEAwwhTWFudWZhY3R1cmVyIEFwcGxpY2F0aW9uIFNlcnZpY2VzMIGfMA0GCSqGSIb3DQEBAQUAA4GNADCBiQKBgQCweUdKonEPxwSOkCT0O1qJoaqyqMzPVMqmTnweIZmkqxP6tFmNPHsXq35U2im8jzlQSC6IJ5/VGJ0gTSL0jcTgcIqh6LZcRx4jA/cCsHGXsRJhnlvgpfnFHXmMya4vDyKA+IsMnlsoDGMSLhdxtaFsTjNn0Q49gK3mKP1xRJ9fkwIDAQABo4IBQzCCAT8wHQYDVR0OBBYEFCQXxorvHCFyJkE/v3O4ZfHLgG21MA4GA1UdDwEB/wQEAwIHgDAWBgNVHSUBAf8EDDAKBggrBgEFBQcDAzBQBgNVHR8ESTBHMEWgQ6BBhj9odHRwczovL21vYmlsZS5wa2ktc2VydmljZXMuc2llbWVucy5jb20vbW9iaWxlLU1hbnVmYWN0dXJlci5jcmwwGAYDVR0gBBEwDzANBgsrBgEEAaFpCAEIFTAMBgNVHRMBAf8EAjAAMB8GA1UdIwQYMBaAFDgIcKzapV2j2HSK7w8djI/NpX/1MFsGCCsGAQUFBwEBBE8wTTBLBggrBgEFBQcwAoY/aHR0cHM6Ly9tb2JpbGUucGtpLXNlcnZpY2VzLnNpZW1lbnMuY29tL21vYmlsZS1NYW51ZmFjdHVyZXIuY3J0MA0GCSqGSIb3DQEBBQUAA4IBAQBfJvn77SikmBT4suZ5vIpB+U1BN2rpFSsxlWMq3WteO1F2FNH/MA/FcWoSfLa2Vt4TTEGEOIUQe1KOsn0kLpDeL+EwgkK8FDOfYgiGcHlQarq6qlRCXlxfER5U/WDTahz/q/Gk8i7ufEhAZr7RiXpd2UP23Qpy2DhYH+sxaBi5kUUGxcdf2U+Be8jbtW1yNnhMc8W7IbX7e/dCKechq5KpW3JVyygtUF2YJukZig+vc8G87yX4CWSlwedp1YX5q5OQnHpfnXe2zOyRYlu1MZXHp+OlMT9kPHJSlDfeW2NXl+pnA2bJmkDjncPtA0Aro8gW6El3LPjpuIhPClesOdEM
+MIDlet-Jar-RSA-SHA1: aDjPyZIYGn05zuQCPkrd6sMN1C5f3WYwCkQlcKjXxe+uGptpVgIgpWQ/pk2wroYarzVt0LL7rs4kZSjTK59lPYVKA0GKefroKvvlYKNdi5yj5Z0M+4FJ91uO3OjqU3ySzx8B7zBooeOHrkyC/LJCwT+JOoYm9GJuyNNb5lI2+kY=

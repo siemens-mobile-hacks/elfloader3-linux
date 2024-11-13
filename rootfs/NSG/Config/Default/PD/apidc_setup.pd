@@ -1,14 +1,14 @@
 000028:T:OwnGreeting.OnOff=1
 000026:T:OwnGreeting.Text=
-000036:T:OwnGreeting.FactoryText=C81
+000049:T:OwnGreeting.FactoryText=BenQ-Siemens C81
 000037:T:CallSetupUI.AlertCallsFrom=0
 000035:T:CallSetupUI.AnyKeyAnswer=0
 000035:T:TimeChargeUI.AutoDisplay=0
-000034:T:SecurityUI.AutoKeyLock=60
+000033:T:SecurityUI.AutoKeyLock=0
 000033:T:CallSetupUI.MinuteBeep=0
 000034:T:CallSetupUI.CallWaiting=0
 000043:T:NetworkSetupUI.FastNetworkSearch=0
 000037:T:Screensaver.CodeProtection=0
-000040:T:Screensaver.Style=Digital clock
+000040:T:Screensaver.Style=Energy saving
 000030:T:Screensaver.Timeout=2
 000026:T:ShowClock.OnOff=1

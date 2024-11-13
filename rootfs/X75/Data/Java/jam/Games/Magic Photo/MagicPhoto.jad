@@ -1,0 +1,13 @@
+MIDlet-1: MagicPhoto, /res/appicon.png, com.softexdigital.magicphoto.MagicPhoto
+MIDlet-Name: MagicPhoto
+MIDlet-Version: 2.0.5 LG92
+MIDlet-Vendor: Siemens AG + Softex Digital
+MIDlet-Jar-URL: http://siemens.annyway.net/dm/direct/1006464.jar
+MIDlet-Jar-Size: 177508
+MIDlet-Icon: /res/appicon.png
+MIDlet-Description: Puzzle game
+MIDlet-Info-URL: http://wap.siemens-mobile.com
+MicroEdition-Profile: MIDP-2.0
+MicroEdition-Configuration: CLDC-1.1 
+MIDlet-Permissions: javax.microedition.io.Connector.file.read,javax.microedition.io.Connector.file.write, javax.microedition.io.Connector.http,javax.microedition.io.Connector.comm,javax.microedition.io.Connector.sms,javax.wireless.messaging.sms.receive,javax.wireless.messaging.sms.send, javax.microedition.io.Connector.mms,javax.wireless.messaging.mms.receive,javax.wireless.messaging.mms.send,com.siemens.mp.io.File.read,com.siemens.mp.io.File.readwrite,javax.microedition.media.control.VideoControl.getSnapshot
+Siemens-Jad-URL: http://siemens.annyway.net/dm/direct/1006464.jad

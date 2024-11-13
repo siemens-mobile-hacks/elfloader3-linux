@@ -56,7 +56,7 @@
 000050:T:phone:siemens.messaging..2.read-receipt=0
 000055:T:app:messaging.default-SMIL-slide-duration=6000
 000049:T:app:messaging.receiving-option=immediate
-000047:T:app:protocol.mms.max-num-bytes=1000000
+000046:T:app:protocol.mms.max-num-bytes=302080
 000039:T:app:mms.read-receipt.disable=0
 000042:T:app:mms.delivery-report.disable=0
 000046:T:app:siemens.mms.creation-mode=warning

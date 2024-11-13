@@ -1,0 +1,14 @@
+MIDlet-1: SurvivalDictionary,/icon.png, com.softexdigital.SurvivalDictionary.SurvivalDictionary
+MIDlet-Icon: /icon.png
+MIDlet-Description: Survival Dictionary
+MIDlet-Name: SurvivalDictionary
+MIDlet-Version: 1.0.1 LG3
+MIDlet-Vendor: Siemens AG + Softex Digital
+MIDlet-Info-URL: http://wap.siemens-mobile.com
+MIDlet-Jar-URL: http://139.23.38.140/otap/download/preinstalled.asp?dlid=WNVEU55XDBRS9G9UX8X1E65CKNPQ3GUC
+Siemens-Jad-URL: http://139.23.38.140/otap/download/dl.jad?dlid=WNVEU55XDBRS9G9UX8X1E65CKNPQ3GUC
+MIDlet-Jar-Size: 82387
+MicroEdition-Profile: MIDP-2.0
+MicroEdition-Configuration: CLDC-1.1
+
+  		
