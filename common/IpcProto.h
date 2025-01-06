@@ -497,7 +497,7 @@ enum IpcKeyCode {
 #pragma pack(push, 1)
 struct IpcPacket {
 	IpcCmd cmd;
-	int8_t size;
+	uint8_t size;
 };
 
 struct IpcPacketKeyEvent {

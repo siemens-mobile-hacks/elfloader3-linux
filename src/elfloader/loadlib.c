@@ -8,7 +8,8 @@
 #include "env.h"
 #include "loader.h"
 
-#include <unistd.h>
+#include <stdint.h>
+#include <swilib/file.h>
 
 #define __e_div(a, b) (b % a)
 
@@ -22,8 +23,10 @@ int handles_cnt = 0;
 /*
  * Существует ли файл
  */
-char __is_file_exist(const char *fl) {
-	return access(fl, 0) != -1;
+char __is_file_exist(const char *fname) {
+	FSTATS fs;
+	uint32_t err;
+	return sys_stat(fname, &fs, &err) >= 0;
 }
 
 /*
@@ -146,7 +149,6 @@ char *envparse(const char *str, char *buf, int num) {
  */
 const char *findShared(const char *name) {
 	const char *env = loader_getenv("LD_LIBRARY_PATH");
-
 	for (int i = 0;; ++i) {
 		if (!envparse(env, tmp, i))
 			return NULL;
@@ -167,7 +169,8 @@ Elf32_Lib *loader_lib_open(const char *name, Elf32_Exec *_ex) {
 	if (!name || !*name)
 		return 0;
 	EP3_DEBUG("Starting loading shared library '%s'...\n", name);
-	int fp, _size = 0;
+	int fp = 0;
+	size_t _size = 0;
 	Elf32_Ehdr ehdr;
 	Elf32_Exec *ex;
 	char __mem[256];
@@ -221,33 +224,37 @@ Elf32_Lib *loader_lib_open(const char *name, Elf32_Exec *_ex) {
 try_again:
 
 	/* Открываем */
-	if (((fp = open(ld_path, O_RDONLY)) < 0)) {
+	uint32_t err;
+	if (((fp = sys_open(ld_path, A_ReadOnly | A_BIN, P_READ, &err)) < 0)) {
 		strcpy(dlerr, NO_FILEORDIR);
 		return 0;
 	}
 	
 	/* Читаем хедер */
-	if ((_size = read(fp, &ehdr, sizeof(Elf32_Ehdr))) <= 0) {
+	int ret = sys_read(fp, &ehdr, sizeof(Elf32_Ehdr), &err);
+	if (ret <= 0) {
 		strcpy(dlerr, BADFILE);
 		return 0;
 	}
 
+	_size = ret;
+
 	/* Проверяем шо это вообще такое */
 	if (_size < sizeof(Elf32_Ehdr) || loader_check_elf(&ehdr)) { // не эльф? о_О мб симлинк?!
-		int ns = lseek(fp, 0, SEEK_END); // если длина файл больше 256 байт то нахрен такой путь...
+		int ns = sys_lseek(fp, 0, SEEK_END, &err, &err); // если длина файл больше 256 байт то нахрен такой путь...
 		if (ns < 256 && ns > 0) {
-			lseek(fp, 0, SEEK_SET);
-			if (read(fp, tmp, ns) != ns) {
-				close(fp);
+			sys_lseek(fp, 0, SEEK_SET, &err, &err);
+			if (sys_read(fp, tmp, ns, &err) != ns) {
+				sys_close(fp, &err);
 				return 0;
 			}
 			tmp[ns] = 0;
 			ld_path = tmp;
-			close(fp);
+			sys_close(fp, &err);
 			goto try_again;
 		}
 		strcpy(dlerr, BADFILE);
-		close(fp);
+		sys_close(fp, &err);
 		return 0;
 	}
 
@@ -279,13 +286,13 @@ try_again:
 	/* Начинаем копать структуру либы */
 	if (loader_load_sections(ex)) {
 		strcpy(dlerr, BADFILE);
-		close(fp);
+		sys_close(fp, &err);
 		loader_elf_close(ex);
 		return 0;
 	}
 
 	/* Он уже не нужен */
-	close(fp);
+	sys_close(fp, &err);
 
 	/* Глобальная база либ */
 	Elf32_Lib *lib;
@@ -340,7 +347,7 @@ try_again:
 	lib_top = global_ptr;
 
 	/* запустим контсрукторы */
-	printf("loader_run_INIT_Array %s\n", ex->fname);
+	EP3_DEBUG("loader_run_INIT_Array %s\n", ex->fname);
 	loader_run_INIT_Array(ex);
 	ex->complete = 1;
 
@@ -360,7 +367,7 @@ try_again:
  * Вычесть общее количество клиентов либ
  */
 void loader_lib_unref_clients(Elf32_Lib *lib) {
-	printf("loader_lib_unref_clients(%s)=%d\n", lib->soname, lib->users_cnt-1);
+	EP3_DEBUG("loader_lib_unref_clients(%s)=%d\n", lib->soname, lib->users_cnt-1);
 	lib->users_cnt--;
 }
 
@@ -393,7 +400,7 @@ int loader_lib_close(Elf32_Lib *lib, int immediate) {
 
 			if (tmp)
 				tmp->prev = glob_queue->prev;
-			if (tmp = glob_queue->prev)
+			if ((tmp = glob_queue->prev))
 				tmp->next = glob_queue->next;
 			free(glob_queue);
 		}
@@ -406,9 +413,9 @@ end:
 }
 
 /*
- * POSIX-подобная loader_loader_loader_dlclose
+ * POSIX-подобная dlopen
  */
-int loader_loader_loader_dlclose(const char *name) {
+int loader_dlopen(const char *name) {
 	int handle = -1;
 
 	if (!name)
@@ -459,7 +466,7 @@ int loader_loader_loader_dlclose(const char *name) {
  * POSIX-подобная loader_dlclose
  */
 int loader_dlclose(int handle) {
-	if (0 > handle > handles_cnt - 1 || !handles)
+	if (handle < 0 || handle > handles_cnt - 1 || !handles)
 		return -1;
 
 	if (handles[handle]) {
@@ -477,10 +484,10 @@ int loader_dlclose(int handle) {
  * POSIX-подобная loader_dlsym
  */
 Elf32_Word loader_dlsym(int handle, const char *name) {
-	if (0 > handle > handles_cnt - 1)
+	if (handle < 0 || handle > handles_cnt - 1 || !handles)
 		return 0;
 
-	if (handles && handles[handle]) {
+	if (handles[handle]) {
 		unsigned int hash = loader_elf_hash(name);
 		return loader_find_function(handles[handle], name, hash);
 	}
@@ -491,7 +498,7 @@ Elf32_Word loader_dlsym(int handle, const char *name) {
 /*
  * POSIX-подобная dlerror
  */
-const char *dlerror() {
+const char *loader_dlerror() {
 	return dlerr;
 }
 

@@ -5,7 +5,7 @@
 #include <utility>
 #include <vector>
 
-#include "gui/Bitmap.h"
+#include "src/gui/Bitmap.h"
 
 class Painter {
 	public:
@@ -17,8 +17,9 @@ class Painter {
 		};
 		
 		enum BlendMode {
-			BLEND_MODE_NORMAL	= 0,
-			BLEND_MODE_INVERT	= 1,
+			BLEND_MODE_NONE,
+			BLEND_MODE_NORMAL,
+			BLEND_MODE_INVERT,
 		};
 	
 	protected:
@@ -33,6 +34,7 @@ class Painter {
 		int m_window_x2 = 0;
 		int m_window_y2 = 0;
 		
+		Bitmap::Type m_buffer_type = Bitmap::TYPE_BGR565;
 		BlendMode m_blend_mode = BLEND_MODE_NORMAL;
 		uint8_t *m_buffer = nullptr;
 		std::vector<bool> m_mask;
@@ -42,8 +44,8 @@ class Painter {
 		
 		void getLinePoints(std::vector<std::pair<int, int>> &result, int x1, int y1, int x2, int y2);
 	public:
-		Painter(uint8_t *buffer, int width, int height);
-		
+		void setBuffer(uint8_t *buffer, int width, int height, Bitmap::Type buffer_type);
+
 		void startPerfectDrawing(uint32_t color);
 		void stopPerfectDrawing();
 		

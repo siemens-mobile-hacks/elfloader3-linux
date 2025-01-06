@@ -1,15 +1,14 @@
-#include "swi.h"
-
+#include "src/swi/ll.h"
 #include <cstdlib>
 
-void linked_list_init(LLQ *q) {
+void LL_Init(LLQ *q) {
 	q->first = nullptr;
 	q->last = nullptr;
 	q->data_mfree = free;
 }
 
-void linked_list_push(LLQ *head, void *item_ptr) {
-	LLIST *item = (LLIST *) item_ptr;
+void LL_Push(LLQ *head, void *itemPtr) {
+	LLIST *item = (LLIST *) itemPtr;
 	
 	item->next = nullptr;
 	item->prev = head->last;
@@ -24,8 +23,8 @@ void linked_list_push(LLQ *head, void *item_ptr) {
 	head->last = item;
 }
 
-void linked_list_remove(LLQ *head, void *item_ptr) {
-	LLIST *item = (LLIST *) item_ptr;
+void LL_Remove(LLQ *head, void *itemPtr) {
+	LLIST *item = (LLIST *) itemPtr;
 	
 	LLIST *prev = (LLIST *) item->prev;
 	LLIST *next = (LLIST *) item->next;

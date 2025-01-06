@@ -1,5 +1,8 @@
 #include "TextRender.h"
-#include "charset.h"
+
+#include "src/Resources.h"
+#include "src/swi/gui.h"
+#include "src/swi/image.h"
 
 TextRender::TextRender(Painter *painter, RECT *rect, uint16_t *str, int length) {
 	m_rect = rect;
@@ -53,9 +56,7 @@ int TextRender::drawWord(Word *word, int x, int y) {
 }
 
 void TextRender::renderLine() {
-	auto *res = Resources::instance();
-	
-	if (!m_words.size() > 0)
+	if (m_words.size() == 0)
 		return;
 	
 	if (m_push_to_prev_line)
@@ -169,8 +170,6 @@ void TextRender::renderInline(int x_offset) {
 }
 
 void TextRender::render() {
-	auto *res = Resources::instance();
-	
 	int word_start = 0;
 	uint16_t prev_ch = 0xE000;
 	
@@ -280,14 +279,14 @@ int TextRender::handleModifiers(Style *style, uint16_t *str, int length) {
 			
 			case UTF16_TEXT_COLOR:
 				if (i + 1 < length) {
-					style->pen = GUI_Color2Int(GUI_GetPaletteAdrByColorIndex(str[i + 1]));
+					style->pen = GUI_Color2Int(GetPaletteAdrByColorIndex(str[i + 1]));
 					i++;
 				}
 			break;
 			
 			case UTF16_BG_COLOR:
 				if (i + 1 < length) {
-					style->brush = GUI_Color2Int(GUI_GetPaletteAdrByColorIndex(str[i + 1]));
+					style->brush = GUI_Color2Int(GetPaletteAdrByColorIndex(str[i + 1]));
 					i++;
 				}
 			break;

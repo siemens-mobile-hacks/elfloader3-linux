@@ -30,13 +30,14 @@
 //
 ///////////////////////////////////////////////////////////////////////////////
 
+#include "ws_printf.h"
+
 #include <stdbool.h>
 #include <cstdint>
 #include <cstddef>
 
-#include "ws_printf.h"
-#include "../swi.h"
-#include "../charset.h"
+#include <swilib/wstring.h>
+#include "src/utils/charset.h"
 
 // 'ntoa' conversion buffer size, this must be big enough to hold one converted
 // numeric number including padded zeros (dynamically created on stack)
@@ -838,10 +839,10 @@ static int _vsnprintf(out_fct_type out, char* buffer, const size_t maxlen, const
 
 			case 'w' : { // UTF-16 string
 				const WSHDR* ws_p = va_arg(va, WSHDR*);
-				unsigned int ws_l = precision && precision < ws_p->body->len ? precision : ws_p->body->len;
+				unsigned int ws_l = precision && precision < wstrlen(ws_p) ? precision : wstrlen(ws_p);
 				
 				char *utf8_p = new char[ws_l * 4 + 1];
-				unsigned int l = utf16_to_utf8(ws_p->body->data, ws_l, utf8_p, ws_l * 4);
+				unsigned int l = utf16_to_utf8(wsbody(ws_p)->data, ws_l, utf8_p, ws_l * 4);
 				utf8_p[l] = 0;
 				
 				const char *p = utf8_p;

@@ -1,4 +1,7 @@
 #!/bin/bash
 # T10884xxxxxxxxxxxxxxxxxxxxx
-gdb-multiarch -ex 'target remote localhost:12309' -ex 'b abort' \
--ex 'c' ./elfloader3
+gdb -ex 'set debuginfod enabled on' \
+-ex 'target remote localhost:1234' \
+-ex 'set follow-fork-mode parent' \
+-ex 'b abort' \
+-ex 'c' ./build/elfloader3

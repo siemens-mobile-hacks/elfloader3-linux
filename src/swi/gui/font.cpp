@@ -1,23 +1,19 @@
-#include "swi.h"
-#include "utils.h"
-#include "log.h"
-#include "charset.h"
-#include "gui/Painter.h"
-#include "swi/gui/TextRender.h"
-#include "Resources.h"
+#include <swilib/gui.h>
+#include <swilib/wstring.h>
+#include <spdlog/spdlog.h>
 
-#include <cassert>
-#include <vector>
+#include "src/Resources.h"
+#include "src/swi/gui/TextRender.h"
 
-int GUI_GetStringWidth(WSHDR *ws, int font_id) {
-	auto [line_width, line_height] = TextRender::measureString(font_id, ws->body->data, ws->body->len);
-	return line_width;
-}
-
-int GUI_GetFontYSIZE(int font_id) {
+int GetFontYSIZE(int font_id) {
 	return Resources::instance()->getFont(font_id)->h;
 }
 
-int GUI_GetSymbolWidth(int ch, int font_id) {
-	return Resources::instance()->getFontChar(font_id, ch)->w;
+int GetSymbolWidth(int character, int font_id) {
+	return Resources::instance()->getFontChar(font_id, character)->w;
+}
+
+int Get_WS_width(const WSHDR *text, int font_id) {
+	auto [line_width, line_height] = TextRender::measureString(font_id, wsbody(text)->data, wsbody(text)->len);
+	return line_width;
 }

@@ -1,3 +1,5 @@
+build
+host-helper/build
 CMakeCache.txt
 CMakeFiles/
 Makefile
@@ -6,3 +8,10 @@ elfloader3
 format.sh
 gdb.txt
 gen-stub.php
+.cache
+.cache/
+shit
+.kdev4
+*.elf
+g.txt
+*.core

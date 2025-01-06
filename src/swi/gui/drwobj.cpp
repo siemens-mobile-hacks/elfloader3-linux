@@ -1,28 +1,33 @@
-#include "swi.h"
-#include "utils.h"
-#include "log.h"
-#include "gui/Painter.h"
-#include "TextRender.h"
+#include <cstdint>
+#include <cstring>
+#include <swilib/gui.h>
+#include <swilib/wstring.h>
+#include <spdlog/spdlog.h>
 
-#include <cassert>
+#include "src/gui/Painter.h"
+#include "src/swi/gui.h"
+#include "src/swi/gui/TextRender.h"
+#include "src/swi/image.h"
 
-DRWOBJ *GUI_SetProp2Text(DRWOBJ *drw, RECT *rect, int rect_flag, WSHDR *wshdr, int font, int flags) {
-	assert(drw != nullptr && rect != nullptr && wshdr != nullptr);
+static Painter painter;
+
+void DrwObj_InitText(DRWOBJ *drwobj, const RECT *rect, int flags, const WSHDR *text, int font, int text_flags) {
+	auto *drw = (DRWOBJ_PRIVATE *) drwobj;
+	assert(drw != nullptr && rect != nullptr && text != nullptr);
 	
 	drw->type = DRWOBJ_TYPE_MULTILINE_TEXT;
-	drw->rect_flags = rect_flag;
+	drw->rect_flags = flags;
 	memcpy(&drw->rect, rect, sizeof(RECT));
 	
-	drw->text.flags = flags;
+	drw->text.flags = text_flags;
 	drw->text.font = font;
-	drw->text.value = AllocWS(wshdr->body->len + 1);
-	memcpy(drw->text.value->wsbody, wshdr->wsbody, (wshdr->body->len + 1) * sizeof(uint16_t));
-	
-	return drw;
+	drw->text.value = AllocWS(wsbody(text)->len + 1);
+	memcpy(drw->text.value->wsbody, text->wsbody, (wsbody(text)->len + 1) * sizeof(uint16_t));
 }
 
-DRWOBJ *GUI_SetProp2ScrollingText(DRWOBJ *drw, RECT *rect, int rect_flag, WSHDR *wshdr, int xdisp, int font, int flags) {
-	assert(drw != nullptr && rect != nullptr && wshdr != nullptr);
+void DrwObj_InitScrollingText(DRWOBJ *drwobj, const RECT *rect, int rect_flag, const WSHDR *text, int xdisp, int font, int flags) {
+	auto *drw = (DRWOBJ_PRIVATE *) drwobj;
+	assert(drw != nullptr && rect != nullptr && text != nullptr);
 	
 	drw->type = DRWOBJ_TYPE_SCROLLING_TEXT;
 	drw->rect_flags = rect_flag;
@@ -30,14 +35,13 @@ DRWOBJ *GUI_SetProp2ScrollingText(DRWOBJ *drw, RECT *rect, int rect_flag, WSHDR 
 	
 	drw->text.flags = flags;
 	drw->text.font = font;
-	drw->text.value = AllocWS(wshdr->body->len + 1);
+	drw->text.value = AllocWS(wsbody(text)->len + 1);
 	drw->text.xdisp = xdisp;
-	memcpy(drw->text.value->wsbody, wshdr->wsbody, (wshdr->body->len + 1) * sizeof(uint16_t));
-	
-	return drw;
+	memcpy(drw->text.value->wsbody, text->wsbody, (wsbody(text)->len + 1) * sizeof(uint16_t));
 }
 
-DRWOBJ *GUI_SetProp2ImageOrCanvas(DRWOBJ *drw, RECT *rect, int flags, IMGHDR *img, int offset_x, int offset_y) {
+void DrwObj_InitTiledImage(DRWOBJ *drwobj, const RECT *rect, int flags, const IMGHDR *img, int offset_x, int offset_y) {
+	auto *drw = (DRWOBJ_PRIVATE *) drwobj;
 	assert(drw != nullptr);
 	assert(rect != nullptr);
 	assert(img != nullptr);
@@ -50,11 +54,10 @@ DRWOBJ *GUI_SetProp2ImageOrCanvas(DRWOBJ *drw, RECT *rect, int flags, IMGHDR *im
 	drw->img.flags = flags;
 	drw->img.offset_x = offset_x;
 	drw->img.offset_y = offset_y;
-	
-	return drw;
 }
 
-DRWOBJ *GUI_SetProp2Image(DRWOBJ *drw, RECT *rect, int flags, IMGHDR *img) {
+void DrwObj_InitImage(DRWOBJ *drwobj, const RECT *rect, int flags, const IMGHDR *img) {
+	auto *drw = (DRWOBJ_PRIVATE *) drwobj;
 	assert(drw != nullptr);
 	assert(rect != nullptr);
 	assert(img != nullptr);
@@ -67,11 +70,10 @@ DRWOBJ *GUI_SetProp2Image(DRWOBJ *drw, RECT *rect, int flags, IMGHDR *img) {
 	drw->img.flags = flags;
 	drw->img.offset_x = 0;
 	drw->img.offset_y = 0;
-	
-	return drw;
 }
 
-DRWOBJ *GUI_SetProp2Triangle(DRWOBJ *drw, int x1, int y1, int x2, int y2, int x3, int y3, int flags, char *pen, char *brush) {
+void DrwObj_InitTriangle(DRWOBJ *drwobj, int x1, int y1, int x2, int y2, int x3, int y3, int flags, const char *pen, const char *brush) {
+	auto *drw = (DRWOBJ_PRIVATE *) drwobj;
 	assert(drw != nullptr);
 	
 	drw->type = DRWOBJ_TYPE_TRIANGLE;
@@ -85,42 +87,33 @@ DRWOBJ *GUI_SetProp2Triangle(DRWOBJ *drw, int x1, int y1, int x2, int y2, int x3
 	drw->triangle.x3 = x3;
 	drw->triangle.y3 = y3;
 	
-	drw->rect = {
-		.x = std::min({x1, x2, x3}),
-		.y = std::min({y1, y2, y3}),
-		.x2 = std::max({x1, x2, x3}),
-		.y2 = std::max({y1, y2, y3})
-	};
-	
-	GUI_DrawObjectSetColor(drw, pen, brush);
-	
-	return drw;
+	StoreXYXYtoRECT(&drw->rect, std::min({x1, x2, x3}), std::min({y1, y2, y3}), std::max({x1, x2, x3}), std::max({y1, y2, y3}));
+	DrwObj_SetColor(drwobj, pen, brush);
 }
 
-DRWOBJ *GUI_SetProp2Rect(DRWOBJ *drw, RECT *rect, int flags) {
+void DrwObj_InitRect(DRWOBJ *drwobj, const RECT *rect, int flags) {
+	auto *drw = (DRWOBJ_PRIVATE *) drwobj;
 	assert(drw != nullptr);
 	
 	drw->type = DRWOBJ_TYPE_RECT;
 	memcpy(&drw->rect, rect, sizeof(RECT));
 	drw->rect_flags = flags;
-	
-	return drw;
 }
 
-DRWOBJ *GUI_SetProp2RectEx(DRWOBJ *drw, RECT *rect, int flags, int fill_mode, int fill_value) {
+void DrwObj_InitRectEx(DRWOBJ *drwobj, const RECT *rect, int flags, int fill_type, int fill_pattern) {
+	auto *drw = (DRWOBJ_PRIVATE *) drwobj;
 	assert(drw != nullptr);
 	
 	drw->type = DRWOBJ_TYPE_RECT_EX;
 	drw->rect_flags = flags;
 	memcpy(&drw->rect, rect, sizeof(RECT));
 	
-	drw->rectangle.fill_mode = fill_mode;
-	drw->rectangle.fill_value = fill_value;
-	
-	return drw;
+	drw->rectangle.fill_mode = fill_type;
+	drw->rectangle.fill_value = fill_pattern;
 }
 
-DRWOBJ *GUI_SetProp2Arc(DRWOBJ *drw, RECT *rect, int flags, int x, int y, int w, int h, int start, int end) {
+void DrwObj_InitArc(DRWOBJ *drwobj, const RECT *rect, int flags, int x, int y, int w, int h, int start, int end) {
+	auto *drw = (DRWOBJ_PRIVATE *) drwobj;
 	assert(drw != nullptr);
 	
 	drw->type = DRWOBJ_TYPE_ARC;
@@ -134,11 +127,10 @@ DRWOBJ *GUI_SetProp2Arc(DRWOBJ *drw, RECT *rect, int flags, int x, int y, int w,
 	drw->arc.start = start;
 	drw->arc.end = end;
 	drw->arc.flags = 0;
-	
-	return drw;
 }
 
-DRWOBJ *GUI_SetProp2Pie(DRWOBJ *drw, RECT *rect, int flags, int x, int y, int w, int h, int start, int end) {
+void DrwObj_InitPie(DRWOBJ *drwobj, const RECT *rect, int flags, int x, int y, int w, int h, int start, int end) {
+	auto *drw = (DRWOBJ_PRIVATE *) drwobj;
 	assert(drw != nullptr);
 	
 	drw->type = DRWOBJ_TYPE_PIE;
@@ -152,11 +144,10 @@ DRWOBJ *GUI_SetProp2Pie(DRWOBJ *drw, RECT *rect, int flags, int x, int y, int w,
 	drw->arc.start = start;
 	drw->arc.end = end;
 	drw->arc.flags = flags;
-	
-	return drw;
 }
 
-DRWOBJ *GUI_SetProp2Pixel(DRWOBJ *drw, RECT *rect, int flags, int x, int y) {
+void DrwObj_InitPixel(DRWOBJ *drwobj, const RECT *rect, int flags, int x, int y) {
+	auto *drw = (DRWOBJ_PRIVATE *) drwobj;
 	assert(drw != nullptr);
 	
 	drw->type = DRWOBJ_TYPE_PIXEL;
@@ -165,11 +156,10 @@ DRWOBJ *GUI_SetProp2Pixel(DRWOBJ *drw, RECT *rect, int flags, int x, int y) {
 	
 	drw->line.x = x;
 	drw->line.y = y;
-	
-	return drw;
 }
 
-DRWOBJ *GUI_SetProp2Line(DRWOBJ *drw, RECT *rect, int flags, int x, int y, int x2, int y2) {
+void DrwObj_InitLine(DRWOBJ *drwobj, const RECT *rect, int flags, int x, int y, int x2, int y2) {
+	auto *drw = (DRWOBJ_PRIVATE *) drwobj;
 	assert(drw != nullptr);
 	
 	drw->type = DRWOBJ_TYPE_LINE;
@@ -180,11 +170,10 @@ DRWOBJ *GUI_SetProp2Line(DRWOBJ *drw, RECT *rect, int flags, int x, int y, int x
 	drw->line.y = y;
 	drw->line.x2 = x2;
 	drw->line.y2 = y2;
-	
-	return drw;
 }
 
-DRWOBJ *GUI_SetProp2EImage(DRWOBJ *drw, RECT *rect, int flags, EIMGHDR *img, int offset_x, int offset_y) {
+void DrwObj_InitTiledImageEx(DRWOBJ *drwobj, const RECT *rect, int flags, const EIMGHDR *img, int offset_x, int offset_y) {
+	auto *drw = (DRWOBJ_PRIVATE *) drwobj;
 	assert(drw != nullptr);
 	assert(rect != nullptr);
 	assert(img != nullptr);
@@ -197,29 +186,32 @@ DRWOBJ *GUI_SetProp2EImage(DRWOBJ *drw, RECT *rect, int flags, EIMGHDR *img, int
 	drw->eimg.flags = flags;
 	drw->eimg.offset_x = offset_x;
 	drw->eimg.offset_y = offset_y;
-	
-	return drw;
 }
 
-DRWOBJ *GUI_DrawObjectSetColor(DRWOBJ *drw, const char *color1, const char *color2) {
+void DrwObj_SetColor(DRWOBJ *drwobj, const char *pen, const char *brush) {
+	auto *drw = (DRWOBJ_PRIVATE *) drwobj;
 	assert(drw != nullptr);
 	
-	if (color1) {
-		memcpy(drw->color1, color1, 4);
+	if (pen) {
+		memcpy(drw->color1, pen, 4);
 	} else {
 		memset(drw->color1, 0, 4);
 	}
 	
-	if (color2) {
-		memcpy(drw->color2, color2, 4);
+	if (brush) {
+		memcpy(drw->color2, brush, 4);
 	} else {
 		memset(drw->color2, 0, 4);
 	}
-	
-	return drw;
 }
 
-void GUI_FreeDrawObject(DRWOBJ *drw) {
+void DrwObj_GetWH(DRWOBJ *drwobj, int *w, int *h) {
+	// auto *drw = (DRWOBJ_PRIVATE *) drwobj;
+	spdlog::debug("{}: not implemented!", __func__);
+}
+
+void DrwObj_Free(DRWOBJ *drwobj) {
+	auto *drw = (DRWOBJ_PRIVATE *) drwobj;
 	assert(drw != nullptr);
 	if (drw->type == DRWOBJ_TYPE_MULTILINE_TEXT) {
 		if (drw->text.value) {
@@ -229,7 +221,8 @@ void GUI_FreeDrawObject(DRWOBJ *drw) {
 	}
 }
 
-DRWOBJ *GUI_SetProp2StrokeEllipseSection(DRWOBJ *drw, RECT *rect, int flags, int x, int y, int radius_x, int radius_y, int type) {
+void DrwObj_InitStrokeEllipseSection(DRWOBJ *drwobj, const RECT *rect, int flags, int x, int y, int radius_x, int radius_y, int type) {
+	auto *drw = (DRWOBJ_PRIVATE *) drwobj;
 	assert(drw != nullptr);
 	
 	drw->type = DRWOBJ_TYPE_STROKE_ELLIPSE_SECTION;
@@ -241,11 +234,10 @@ DRWOBJ *GUI_SetProp2StrokeEllipseSection(DRWOBJ *drw, RECT *rect, int flags, int
 	drw->ellipse_section.radius_x = radius_x;
 	drw->ellipse_section.radius_y = radius_y;
 	drw->ellipse_section.flags = type;
-	
-	return drw;
 }
 
-DRWOBJ *GUI_SetProp2FilledEllipseSection(DRWOBJ *drw, RECT *rect, int flags, int x, int y, int radius_x, int radius_y, int type) {
+void DrwObj_InitFilledEllipseSection(DRWOBJ *drwobj, const RECT *rect, int flags, int x, int y, int radius_x, int radius_y, int type) {
+	auto *drw = (DRWOBJ_PRIVATE *) drwobj;
 	assert(drw != nullptr);
 	
 	drw->type = DRWOBJ_TYPE_FILLED_ELLIPSE_SECTION;
@@ -257,8 +249,6 @@ DRWOBJ *GUI_SetProp2FilledEllipseSection(DRWOBJ *drw, RECT *rect, int flags, int
 	drw->ellipse_section.radius_x = radius_x;
 	drw->ellipse_section.radius_y = radius_y;
 	drw->ellipse_section.flags = type;
-	
-	return drw;
 }
 
 static int _ellipseHelperFlagsToPainter(int type) {
@@ -271,23 +261,42 @@ static int _ellipseHelperFlagsToPainter(int type) {
 	return -1;
 }
 
-void _explodeStringToWords(WSHDR *ws);
+void DrawObject(DRWOBJ *drwobj) {
+	LCDLAYER *layer = LCD_GetCurrentLayer();
+	if (layer)
+		DrawObject2Layer(layer, drwobj);
+}
 
-void GUI_DrawObject(DRWOBJ *drw) {
+void DrawObject2Layer(LCDLAYER *layer, DRWOBJ *drwobj) {
+	if (!layer || !drwobj)
+		return;
+	while (PushDRWOBJOnLAYER(drwobj, layer) != 0);
+	LCDLAYER_Redraw(layer);
+}
+
+int PushDRWOBJOnLAYER(DRWOBJ *drwobj, LCDLAYER *layer) {
+	auto *drw = (DRWOBJ_PRIVATE *) drwobj;
 	assert(drw != nullptr);
 	
-	Painter *painter = GUI_GetPainter();
-	
+	// TODO: merge DRWOBJ rect + LCDLAYER rect?
+
 	RECT *rect = &drw->rect;
-	painter->setWindow(rect->x, rect->y, rect->x2, rect->y2);
-	
-	if ((drw->rect_flags & DRWOBJ_RECT_FLAG_INVERT_BG))
-		painter->setBlendMode(Painter::BLEND_MODE_INVERT);
+	spdlog::debug("DRAW [ {}, {}, {}, {} ]", rect->x, rect->y, rect->x2, rect->y2);
+	painter.setBuffer(reinterpret_cast<uint8_t *>(layer->buffer), layer->w, layer->h, LCDLAYER_GetBitmapType(layer));
+	painter.setWindow(rect->x, rect->y, rect->x2, rect->y2);
+
+	LCDLAYER_InvalidateRegion(layer, rect->x, rect->y, rect->x2, rect->y2);
+
+	if ((drw->rect_flags & DRWOBJ_RECT_FLAG_INVERT_BG)) {
+		painter.setBlendMode(Painter::BLEND_MODE_INVERT);
+	} else {
+		painter.setBlendMode(Painter::BLEND_MODE_NORMAL);
+	}
 	
 	switch (drw->type) {
 		case DRWOBJ_TYPE_SCROLLING_TEXT:
 		{
-			TextRender tr(painter, rect, drw->text.value->body->data, drw->text.value->body->len);
+			TextRender tr(&painter, rect, wsbody(drw->text.value)->data, wsbody(drw->text.value)->len);
 			tr.setPen(GUI_Color2Int(drw->color1));
 			tr.setBrush(GUI_Color2Int(drw->color2));
 			tr.setFlags(drw->text.flags);
@@ -298,7 +307,7 @@ void GUI_DrawObject(DRWOBJ *drw) {
 		
 		case DRWOBJ_TYPE_MULTILINE_TEXT:
 		{
-			TextRender tr(painter, rect, drw->text.value->body->data, drw->text.value->body->len);
+			TextRender tr(&painter, rect, wsbody(drw->text.value)->data, wsbody(drw->text.value)->len);
 			tr.setPen(GUI_Color2Int(drw->color1));
 			tr.setBrush(GUI_Color2Int(drw->color2));
 			tr.setFlags(drw->text.flags);
@@ -311,8 +320,8 @@ void GUI_DrawObject(DRWOBJ *drw) {
 		{
 			int w = rect->x2 - rect->x + 1;
 			int h = rect->y2 - rect->y + 1;
-			painter->fillRect(0, 0, w, h, GUI_Color2Int(drw->color1));
-			painter->strokeRect(0, 0, w, h, GUI_Color2Int(drw->color2));
+			painter.fillRect(0, 0, w, h, GUI_Color2Int(drw->color1));
+			painter.strokeRect(0, 0, w, h, GUI_Color2Int(drw->color2));
 		}
 		break;
 		
@@ -322,16 +331,16 @@ void GUI_DrawObject(DRWOBJ *drw) {
 			int h = rect->y2 - rect->y + 1;
 			
 			switch (drw->rectangle.fill_mode) {
-				case DRWOBJ_RECT_BG_TYPE_FILL:
-					painter->fillRect(0, 0, w, h, GUI_Color2Int(drw->color1));
+				case DRWOBJ_RECT_FILL_TYPE_PEN:
+					painter.fillRect(0, 0, w, h, GUI_Color2Int(drw->color1));
 				break;
 				
-				case DRWOBJ_RECT_BG_TYPE_FILL2:
-					painter->fillRect(0, 0, w, h, GUI_Color2Int(drw->color2));
+				case DRWOBJ_RECT_FILL_TYPE_BRUSH:
+					painter.fillRect(0, 0, w, h, GUI_Color2Int(drw->color2));
 				break;
 				
-				case DRWOBJ_RECT_BG_TYPE_PATTERN:
-					painter->drawPattern(0, 0, w, h, drw->rectangle.fill_value, GUI_Color2Int(drw->color1), GUI_Color2Int(drw->color2));
+				case DRWOBJ_RECT_FILL_TYPE_PATTERN:
+					painter.drawPattern(0, 0, w, h, drw->rectangle.fill_value, GUI_Color2Int(drw->color1), GUI_Color2Int(drw->color2));
 				break;
 			}
 		}
@@ -339,8 +348,8 @@ void GUI_DrawObject(DRWOBJ *drw) {
 		
 		case DRWOBJ_TYPE_IMG:
 		{
-			IMGHDR *img = drw->img.value;
-			painter->drawBitmap(0, 0, img->w, img->h, img->bitmap, IMG_GetBitmapType(img->bpnum),
+			const IMGHDR *img = drw->img.value;
+			painter.drawBitmap(0, 0, img->w, img->h, img->bitmap, IMG_GetBitmapType(img->bpnum),
 				drw->img.offset_x, drw->img.offset_y, GUI_Color2Int(drw->color1), GUI_Color2Int(drw->color2));
 		}
 		break;
@@ -370,53 +379,53 @@ void GUI_DrawObject(DRWOBJ *drw) {
 				break;
 				
 				default:
-					LOGE("Invalid drw->ellipse_section.flags: %d\n", drw->ellipse_section.flags);
+					spdlog::error("Invalid drw->ellipse_section.flags: {}", drw->ellipse_section.flags);
 					abort();
 				break;
 			}
 			
 			uint32_t color = GUI_Color2Int(drw->color1);
-			painter->startPerfectDrawing(color);
+			painter.startPerfectDrawing(color);
 			if (drw->type == DRWOBJ_TYPE_FILLED_ELLIPSE_SECTION) {
-				painter->fillEllipseHelper(x, y, drw->ellipse_section.radius_x - 1, drw->ellipse_section.radius_y - 1, draw_position, GUI_Color2Int(drw->color1));
+				painter.fillEllipseHelper(x, y, drw->ellipse_section.radius_x - 1, drw->ellipse_section.radius_y - 1, draw_position, GUI_Color2Int(drw->color1));
 			} else {
-				painter->strokeEllipseHelper(x, y, drw->ellipse_section.radius_x - 1, drw->ellipse_section.radius_y - 1, draw_position, GUI_Color2Int(drw->color1));
+				painter.strokeEllipseHelper(x, y, drw->ellipse_section.radius_x - 1, drw->ellipse_section.radius_y - 1, draw_position, GUI_Color2Int(drw->color1));
 			}
-			painter->stopPerfectDrawing();
+			painter.stopPerfectDrawing();
 		}
 		break;
 		
 		case DRWOBJ_TYPE_PIXEL:
-			painter->drawPixel(drw->line.x - rect->x, drw->line.y - rect->y, GUI_Color2Int(drw->color1));
+			painter.drawPixel(drw->line.x - rect->x, drw->line.y - rect->y, GUI_Color2Int(drw->color1));
 		break;
 		
 		case DRWOBJ_TYPE_LINE:
 		{
 			bool dotted = (drw->rect_flags & (LINE_DOTTED | LINE_DOTTED2)) != 0;
-			painter->drawLine(drw->line.x - rect->x, drw->line.y - rect->y, drw->line.x2 - rect->x, drw->line.y2 - rect->y, GUI_Color2Int(drw->color1), dotted);
+			painter.drawLine(drw->line.x - rect->x, drw->line.y - rect->y, drw->line.x2 - rect->x, drw->line.y2 - rect->y, GUI_Color2Int(drw->color1), dotted);
 		}
 		break;
 		
 		case DRWOBJ_TYPE_PIE:
-			painter->fillArc(drw->arc.x - rect->x, drw->arc.y - rect->y, drw->arc.w, drw->arc.h, drw->arc.start, drw->arc.end, GUI_Color2Int(drw->color1));
+			painter.fillArc(drw->arc.x - rect->x, drw->arc.y - rect->y, drw->arc.w, drw->arc.h, drw->arc.start, drw->arc.end, GUI_Color2Int(drw->color1));
 		break;
 		
 		case DRWOBJ_TYPE_ARC:
 		{
 			bool dotted = (drw->arc.flags & RECT_DOT_OUTLINE) != 0;
-			painter->strokeArc(drw->arc.x - rect->x, drw->arc.y - rect->y, drw->arc.w, drw->arc.h, drw->arc.start, drw->arc.end, GUI_Color2Int(drw->color1), dotted);
+			painter.strokeArc(drw->arc.x - rect->x, drw->arc.y - rect->y, drw->arc.w, drw->arc.h, drw->arc.start, drw->arc.end, GUI_Color2Int(drw->color1), dotted);
 		}
 		break;
 		
 		case DRWOBJ_TYPE_TRIANGLE:
 		{
-			painter->fillTriangle(
+			painter.fillTriangle(
 				drw->triangle.x1 - rect->x, drw->triangle.y1 - rect->y,
 				drw->triangle.x2 - rect->x, drw->triangle.y2 - rect->y,
 				drw->triangle.x3 - rect->x, drw->triangle.y3 - rect->y,
 				GUI_Color2Int(drw->color2)
 			);
-			painter->strokeTriangle(
+			painter.strokeTriangle(
 				drw->triangle.x1 - rect->x, drw->triangle.y1 - rect->y,
 				drw->triangle.x2 - rect->x, drw->triangle.y2 - rect->y,
 				drw->triangle.x3 - rect->x, drw->triangle.y3 - rect->y,
@@ -425,9 +434,6 @@ void GUI_DrawObject(DRWOBJ *drw) {
 		}
 		break;
 	}
-	
-	if ((drw->rect_flags & DRWOBJ_RECT_FLAG_INVERT_BG))
-		painter->setBlendMode(Painter::BLEND_MODE_NORMAL);
-	
-	GUI_IpcRedrawScreen();
+
+	return 0;
 }

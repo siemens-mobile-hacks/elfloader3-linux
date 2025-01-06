@@ -1,3 +1,21 @@
 [submodule "third_party/stb"]
 	path = third_party/stb
 	url = https://github.com/nothings/stb
+[submodule "third_party/openssl-0.9.5a"]
+	path = third_party/openssl-0.9.5a
+	url = https://github.com/siemens-mobile-hacks/openssl-0.9.5a
+[submodule "third_party/libpng-1.2.5"]
+	path = third_party/libpng-1.2.5
+	url = https://github.com/siemens-mobile-hacks/libpng-1.2.5
+[submodule "third_party/zlib-1.2.1"]
+	path = third_party/zlib-1.2.1
+	url = https://github.com/siemens-mobile-hacks/zlib-1.2.1
+[submodule "third_party/FreeRTOS-Kernel"]
+	path = third_party/FreeRTOS-Kernel
+	url = https://github.com/siemens-mobile-hacks/FreeRTOS-Kernel
+[submodule "third_party/argparse"]
+	path = third_party/argparse
+	url = https://github.com/p-ranav/argparse
+[submodule "third_party/spdlog"]
+	path = third_party/spdlog
+	url = https://github.com/gabime/spdlog

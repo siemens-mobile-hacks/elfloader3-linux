@@ -1,13 +1,16 @@
 #include "Resources.h"
 
+#include <spdlog/spdlog.h>
 #include <string>
 #include <cassert>
 #include <regex>
 #include <filesystem>
-#include <iostream>
 
-#include "SieFs.h"
-#include "utils.h"
+#include "src/FFS.h"
+#include "src/swi/image.h"
+#include "src/utils/fs.h"
+#include "src/utils/string.h"
+#include "src/utils/BinaryStream.h"
 
 static const int E1XX_PICS[] = {
 #if defined(ELKA)
@@ -68,8 +71,8 @@ void Resources::load() {
 
 int Resources::getPicIdByUnicode(uint32_t num) {
 	if ((num & 0xFF00) == 0xE100) {
-		int index = num & 0xFF;
-		if (index < COUNT_OF(E1XX_PICS))
+		size_t index = num & 0xFF;
+		if (index < std::size(E1XX_PICS))
 			return E1XX_PICS[index];
 	}
 	return -1;
@@ -192,8 +195,11 @@ bool Resources::loadFont(Font *font, const std::string &path) {
 void Resources::loadPictures() {
 	std::smatch m;
 	std::regex pic_re("^(\\d+)\\.png$", std::regex_constants::ECMAScript | std::regex_constants::icase);
-	std::string path = SieFs::sie2path("0:\\ZBin\\img");
+	std::string path = FFS::dos2unix("0:\\ZBin\\img");
 	
+	if (!std::filesystem::exists(path))
+		return;
+
 	for (const auto &entry: std::filesystem::directory_iterator(path)) {
 		std::string fname = entry.path().filename();
 		std::string path = entry.path();
@@ -221,7 +227,7 @@ void Resources::loadColorTheme() {
 	std::smatch m;
 	std::regex color_re("^\\s*(\\d+)\\s+(\\d+)\\s+(\\d+)\\s+(\\d+)\\s*$", std::regex_constants::ECMAScript | std::regex_constants::icase);
 	
-	std::string col = readFile(SieFs::sie2path("2:\\Default\\ColorControls.col"));
+	std::string col = readFile(FFS::dos2unix("2:\\Default\\ColorControls.col"));
 	
 	bool color_data_started = false;
 	for (auto line: strSplit("\n", col)) {
@@ -229,14 +235,17 @@ void Resources::loadColorTheme() {
 		if (!color_data_started) {
 			color_data_started = strStartsWith(line, "Data");
 		} else if (line.size() > 0) {
-			assert(color_index < MAX_EXT_PALETTE_COLORS);
-			assert(std::regex_match(line, m, color_re));
-			
+			if (!std::regex_match(line, m, color_re))
+				throw std::runtime_error(std::format("Invalid color scheme line: {}", line));
+
 			m_ext_pallete[color_index][0] = strToInt(m[1].str(), 10, 0);
 			m_ext_pallete[color_index][1] = strToInt(m[2].str(), 10, 0);
 			m_ext_pallete[color_index][2] = strToInt(m[3].str(), 10, 0);
 			m_ext_pallete[color_index][3] = strToInt(m[4].str(), 10, 0);
 			color_index++;
+
+			if (color_index >= MAX_EXT_PALETTE_COLORS)
+				break;
 		}
 	}
 }

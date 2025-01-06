@@ -1,172 +1,267 @@
+#include <cstdint>
 #include <cstdlib>
 #include <cstdio>
-#include <cstddef>
-#include <unistd.h>
-#include <string>
+#include <cstdarg>
+#include <csignal>
+#include <cstring>
+#include <cerrno>
+#include <ctime>
 #include <filesystem>
-#include <thread>
-
-#include <sys/types.h>
+#include <sched.h>
+#include <swilib.h>
 #include <sys/shm.h>
+#include <unistd.h>
+#include <argparse/argparse.hpp>
+#include <spdlog/spdlog.h>
 
-#include "elfloader/loader.h"
-#include "elfloader/env.h"
-#include "swi.h"
-#include "log.h"
-#include "utils.h"
+#include "src/main.h"
+#include "src/IPC.h"
+#include "src/elfloader/loader.h"
+#include "src/elfloader/env.h"
+#include "src/Resources.h"
+#include "src/FFS.h"
+#include "src/io/Loop.h"
+#include "src/swi/gbs.h"
+#include "src/swi/gbs/MOPIProcessGroup.h"
+#include "src/swi/info.h"
+#include "src/swi/init.h"
+#include "src/swilib/switab.h"
+#include "src/utils/fs.h"
+#include "src/utils/string.h"
 
-#include "Resources.h"
-#include "Loop.h"
-#include "IPC.h"
-#include "SieFs.h"
+static volatile sig_atomic_t sigalrm_called = 0;
+static std::string buildLibraryPathEnv(const std::vector<std::string> &library_path);
 
-static void mrpropper() {
-	IPC::instance()->stop();
-}
-
-static std::string normalizeLibraryPath(const std::string &library_path_env) {
-	std::vector<std::string> new_library_path_env;
-	for (auto &path: strSplit(";", library_path_env)) {
-		if (isDir(path)) {
-			std::string new_path = std::string(std::filesystem::canonical(path)) + "/";
-			new_library_path_env.push_back(new_path);
-		} else {
-			fprintf(stderr, "Warning: libdir '%s' not found\n", path.c_str());
-		}
-	}
-	return strJoin(";", new_library_path_env);
-}
-
-static uint8_t *createSharedMemory(int *mem_id) {
-	*mem_id = shmget(IPC_PRIVATE, 4, IPC_CREAT | 0600);
-	if (*mem_id < 0) {
-		perror("shmget()");
-		return nullptr;
-	}
-	
-	auto mem = reinterpret_cast<uint8_t *>(shmat(*mem_id, NULL, 0));
-	if (mem == (uint8_t *) -1) {
-		perror("shmat()");
-		return nullptr;
-	}
-	
-	return mem;
-}
+/*
+ *
+ * $HOME/.cache/elfloader3/NSG
+ *
+ * -b --bind
+ * -f --file
+ * -a --arg
+ * -r --root
+ * -s --sdk
+ * --reset
+ *
+ * elfloader -f test.elf -a <fname>
+ * elfloader -r ~/rootfs
+ *
+ */
 
 int main(int argc, char **argv) {
-	std::atexit(mrpropper);
-	
-	if (argc < 2) {
-		fprintf(stderr, "usage: %s path/to/file.elf <fname>\n", argv[0]);
-		return 1;
-	}
-	
-	std::string filename = argv[1];
-	std::string elf_arg = argc >= 3 ? argv[2] : "";
-	
-	if (!isFileExists(filename)) {
-		LOGE("ELF not found: %s\n", filename.c_str());
-		return 1;
-	}
-	
-	filename = std::filesystem::canonical(filename);
-	
-	std::string exe_dir = std::filesystem::canonical(std::filesystem::path(filename).parent_path());
-	std::string self_dir = std::filesystem::canonical(std::filesystem::path(argv[0]).parent_path());
-	
-	std::vector<std::string> lib_dirs;
-	
-	#if defined(ELKA)
-		std::string rootfs_dir = self_dir + "/rootfs/ELKA/";
-		lib_dirs.push_back(self_dir + "/../sdk/lib/ELKA");
-		lib_dirs.push_back(self_dir + "/../sdk/lib/NSG");
-		lib_dirs.push_back(self_dir + "/../sdk/lib");
-		lib_dirs.push_back(rootfs_dir + "Data/ZBin/lib");
-	#elif defined(NEWSGOLD)
-		std::string rootfs_dir = self_dir + "/rootfs/NSG/";
-		lib_dirs.push_back(self_dir + "/../sdk/lib/NSG");
-		lib_dirs.push_back(self_dir + "/../sdk/lib");
-		lib_dirs.push_back(rootfs_dir + "Data/ZBin/lib");
-	#else
-		std::string rootfs_dir = self_dir + "/rootfs/SG/";
-		lib_dirs.push_back(self_dir + "/../sdk/lib/SG");
-		lib_dirs.push_back(self_dir + "/../sdk/lib");
-		lib_dirs.push_back(rootfs_dir + "Data/ZBin/lib");
-	#endif
-	
-	std::string library_path_env;
-	if (getenv("SDK_PATH")) {
-		library_path_env = strprintf("%s/lib/NSG;%s/lib;%s/lib/legacy", getenv("SDK_PATH"), getenv("SDK_PATH"), getenv("SDK_PATH"));
-	} else if (getenv("EL3_LIBRARY_PATH")) {
-		library_path_env = getenv("EL3_LIBRARY_PATH");
-	} else {
-		library_path_env = strJoin(";", lib_dirs);
-	}
-	
-#if defined(ELKA) || defined(NEWSGOLD)
-	SieFs::mount("0", rootfs_dir + "Data");
-	SieFs::mount("1", rootfs_dir + "Cache");
-	SieFs::mount("2", rootfs_dir + "Config");
-	SieFs::mount("4", "");
-#else
-	SieFs::mount("0", rootfs_dir + "Data");
-	SieFs::mount("a", rootfs_dir + "Cache");
-	SieFs::mount("b", rootfs_dir + "Config");
-	SieFs::mount("4", "");
-#endif
-	
-	library_path_env = normalizeLibraryPath(library_path_env);
-	loader_setenv("LD_LIBRARY_PATH", library_path_env.c_str(), true);
-	LOGD("EL3_LIBRARY_PATH: %s\n", loader_getenv("LD_LIBRARY_PATH"));
-	
-	Loop *loop = new Loop();
-	loop->init();
-	Loop::setInstance(loop);
-	
-	IPC *ipc = IPC::instance();
-	ipc->setWindowSize(SCREEN_WIDTH, SCREEN_HEIGHT);
-	ipc->setHelperPath(self_dir + "/host-helper/elfloader3-helper");
-	ipc->start();
-	
-	GBS_Init();
-	MMI_Init();
-	Helper_Init();
-	Resources::init(self_dir);
-	CSM_Init();
-	GUI_Init();
-	
-	loader_init_switab();
-	loader_set_debug(true);
-	loader_gdb_init();
-	
-	GBS_RunInContext(MMI_CEPID, [=]() {
-		LOGD("Loading ELF: %s\n", filename.c_str());
-		
-		printf("---------------------------------------------------------\n");
-		Elf32_Exec *ex = loader_elf_open(filename.c_str());
-		if (!ex) {
-			LOGE("loader_elf_open failed.\n");
-			return;
+	spdlog::set_level(spdlog::level::debug);
+
+	std::set_terminate([]() {
+		try {
+			if (std::current_exception()) {
+				std::rethrow_exception(std::current_exception());
+			} else {
+				spdlog::error("[exception] process terminated!");
+			}
+		} catch (const std::exception &e) {
+			spdlog::error("[exception] {}", e.what());
+			std::rethrow_exception(std::current_exception());
+		} catch (...) {
+			spdlog::error("[exception] unknown exception occurred!");
+			std::rethrow_exception(std::current_exception());
 		}
-		
-		std::string exe_name = SieFs::path2sie(filename);
-		std::string fname = "";
-		
-		if (elf_arg.size() > 0)
-			fname = SieFs::path2sie(std::filesystem::canonical(elf_arg));
-		
-		auto entry = (int (*)(const char *, const char *, const void *)) loader_elf_entry(ex);
-		fprintf(stderr, "run entry at %p (exe=%s, fname=%s)\n", entry, exe_name.c_str(), fname.c_str());
-		int ret = entry(exe_name.c_str(), fname.c_str(), nullptr);
-		LOGD("entry ret = %d\n", ret);
-		
-		// loader_elf_close(ex);
 	});
-	
-	LOGD("Running loop...\n");
-	loop->run();
-	
-	ipc->stop();
-	
+
+	std::string default_root_path = getUnixCacheDir() + "/elfloader3/" + getPlatformName();
+	std::string default_sdk_path;
+	std::string resources_dir = std::filesystem::canonical(std::filesystem::path(argv[0]).parent_path() / "..").string();
+
+	if (std::filesystem::exists(resources_dir + "/../sdk/swilib/include"))
+		default_sdk_path = std::filesystem::canonical(resources_dir + "/../sdk");
+
+	std::string host_helper_path = resources_dir + "/elfloader3-helper";
+	if (std::filesystem::exists(resources_dir + "/host-helper/build/elfloader3-helper"))
+		host_helper_path = resources_dir + "/host-helper/build/elfloader3-helper";
+
+	argparse::ArgumentParser program("elfloader", "1.0.0");
+	program.add_argument("-f", "--file")
+		.help("Path to file.elf")
+		.required()
+		.nargs(1);
+	program.add_argument("-a", "--arg")
+		.help("Open file with elf")
+		.default_value("")
+		.nargs(1);
+	program.add_argument("-r", "--root")
+		.help("Path to filesystem dir")
+		.default_value(default_root_path)
+		.nargs(1);
+	program.add_argument("-s", "--sdk")
+		.help("Path to ELF SDK")
+		.default_value(default_sdk_path)
+		.nargs(1);
+	program.add_argument("-L", "--lib-dir")
+		.default_value<std::vector<std::string>>({})
+		.append()
+		.help("Path to dir with .so libraries");
+	program.add_argument("-V", "--verbose")
+		.help("Verbose log output")
+		.default_value(false)
+		.implicit_value(true)
+		.nargs(0);
+
+	try {
+		program.parse_args(argc, argv);
+	} catch (const std::exception &err) {
+		std::cerr << err.what() << std::endl;
+		std::cerr << program;
+		return EXIT_FAILURE;
+	}
+
+	if (program.get<bool>("--verbose")) {
+		spdlog::set_level(spdlog::level::debug);
+	} else {
+		spdlog::set_level(spdlog::level::info);
+	}
+
+	// Init FFS
+	std::string default_fs_content = resources_dir + "/rootfs/" + getPlatformName();
+	std::string root_path = program.get<std::string>("--root");
+
+	FFS::mountAndInit("0:", root_path + "/Data", default_fs_content + "/Data");
+#ifdef NEWSGOLD
+	FFS::mountAndInit("1:", root_path + "/Cache", default_fs_content + "/Cache");
+	FFS::mountAndInit("2:", root_path + "/Config", default_fs_content + "/Config");
+#else
+	FFS::mountAndInit("a:", root_path + "/Cache", default_fs_content + "/Cache");
+	FFS::mountAndInit("b:", root_path + "/Config", default_fs_content + "/Config");
+#endif
+	FFS::mountAndInit("4:", root_path + "/MMCard", default_fs_content + "/MMCard");
+	FFS::mount("5:", getUnixHomeDir());
+	FFS::mount("6:", "");
+
+	std::vector<std::string> library_path;
+	library_path.push_back(root_path + "/Data/ZBin/lib");
+	library_path.push_back(root_path + "/MMCard/ZBin/lib");
+
+	std::string elf_file = FFS::any2unix(program.get<std::string>("--file"));
+	std::string open_file_with_elf = FFS::any2unix(program.get<std::string>("--arg"));
+
+	if (!std::filesystem::exists(elf_file)) {
+		spdlog::error("ELF not found: {}", elf_file);
+		return EXIT_FAILURE;
+	}
+	elf_file = std::filesystem::canonical(elf_file);
+
+	if (open_file_with_elf.size() > 0) {
+		if (!std::filesystem::exists(open_file_with_elf)) {
+			spdlog::error("File not found: {}", open_file_with_elf);
+			return EXIT_FAILURE;
+		}
+		open_file_with_elf = std::filesystem::canonical(open_file_with_elf);
+	}
+
+	std::string sdk_path = program.get<std::string>("--sdk");
+	if (sdk_path.size() == 0) {
+		spdlog::warn("SDK path is not set!");
+		spdlog::warn("Please, set --sdk=path/to/sdk for correct work.");
+		spdlog::warn("You can get SDK with this command:");
+		spdlog::warn("git clone https://github.com/siemens-mobile-hacks/sdk");
+	} else if (!std::filesystem::exists(sdk_path + "/swilib/include")) {
+		spdlog::error("SDK not found: {}", sdk_path);
+		spdlog::warn("Please, set --sdk=path/to/sdk for correct work.");
+		spdlog::warn("You can get SDK with this command:");
+		spdlog::warn("git clone https://github.com/siemens-mobile-hacks/sdk");
+		return EXIT_FAILURE;
+	} else {
+		spdlog::debug("SDK: {}", sdk_path);
+	}
+
+	if (sdk_path.size() > 0) {
+#if defined(ELKA)
+		library_path.push_back(sdk_path + "/lib/ELKA");
+		library_path.push_back(sdk_path + "/lib/NSG");
+		library_path.push_back(sdk_path + "/lib");
+#elif defined(NEWSGOLD)
+		library_path.push_back(sdk_path + "/lib/NSG");
+		library_path.push_back(sdk_path + "/lib");
+#elif defined(X75)
+		library_path.push_back(sdk_path + "/lib/X75");
+		library_path.push_back(sdk_path + "/lib/SG");
+		library_path.push_back(sdk_path + "/lib");
+#else
+		library_path.push_back(sdk_path + "/lib/SG");
+		library_path.push_back(sdk_path + "/lib");
+#endif
+	}
+
+	for (auto dir: program.get<std::vector<std::string>>("--lib-dir")) {
+		library_path.push_back(std::filesystem::canonical(dir).string());
+	}
+
+	auto library_path_env = buildLibraryPathEnv(library_path);
+	spdlog::debug("LD_LIBRARY_PATH={}", library_path_env);
+	loader_setenv("LD_LIBRARY_PATH", library_path_env.c_str(), true);
+
+	spdlog::debug("Loading ELF: {}", elf_file);
+	spdlog::debug("First argument: {}", open_file_with_elf.size() > 0 ? open_file_with_elf : "<none>");
+
+	std::string arg0 = FFS::unix2dos(elf_file);
+	std::string arg1 = open_file_with_elf.size() > 0 ? FFS::unix2dos(open_file_with_elf) : "";
+
+	auto *ipc = IPC::instance();
+	ipc->setWindowSize(ScreenW(), ScreenH());
+	ipc->setHelperPath(host_helper_path);
+	ipc->start();
+
+	loader_install_swihook();
+	loader_init_swilib();
+
+	Resources::init(resources_dir);
+	OS_Init();
+
+	Loop::instance()->setTimeout([=]() {
+		GBS_RunInContext(MMI_CEPID, [=]() {
+			Elf32_Exec *ex = loader_elf_open(arg0.c_str());
+			if (!ex) {
+				spdlog::error("Invalid ELF: {}", elf_file);
+				exit(1);
+			}
+
+			auto entry = (int (*)(const char *, const char *, const void *)) loader_elf_entry(ex);
+			spdlog::debug("Run entry at {} (exe={}, fname={})", (void *) entry, arg0, arg1);
+			int ret = entry(arg0.c_str(), arg1.c_str(), nullptr);
+			spdlog::debug("int main() = {}", ret);
+		});
+	});
+
+	Loop::instance()->run();
+	spdlog::debug("Loop exit...");
+
+	std::signal(SIGALRM, [](int signal) {
+		const char err[] = "Program hangs at exit, sending SIGKILL...\n";
+		write(2, err, strlen(err));
+		kill(getpid(), SIGKILL);
+	});
+	alarm(10);
+
+	MOPIProcessGroup::cleanup();
+
 	return 0;
+}
+
+static std::string makeTempDir() {
+	std::string temp_dir = std::filesystem::temp_directory_path().string() + "/elfloader3-XXXXXX";
+	if (!mkdtemp(temp_dir.data()))
+		throw std::runtime_error(std::format("mkdtemp(): {}", strerror(errno)));
+	return temp_dir;
+}
+
+std::string tempDir() {
+	static std::string temp_dir = makeTempDir();
+	return temp_dir;
+}
+
+static std::string buildLibraryPathEnv(const std::vector<std::string> &library_path) {
+	std::vector<std::string> new_library_path;
+	for (auto &path: library_path) {
+		auto unix_path = FFS::any2unix(path);
+		new_library_path.push_back(FFS::any2dos(unix_path) + "\\");
+	}
+	return strJoin(";", new_library_path);
 }

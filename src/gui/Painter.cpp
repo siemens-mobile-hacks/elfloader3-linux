@@ -1,18 +1,18 @@
 #include "Painter.h"
+#include "src/gui/Bitmap.h"
+#include "src/utils/cast.h"
 
 #include <cassert>
 #include <cmath>
-#include <new>
-#include <fstream>
-#include <ostream>
+#include <cstdint>
 
-Painter::Painter(uint8_t *buffer, int width, int height) {
+void Painter::setBuffer(uint8_t *buffer, int width, int height, Bitmap::Type buffer_type) {
+	if (m_mask.size() < toUnsigned(m_width * m_height))
+		m_mask.resize(m_width * m_height);
+	m_buffer_type = buffer_type;
 	m_buffer = buffer;
 	m_width = width;
 	m_height = height;
-	m_mask.resize(m_width * m_height);
-	setWindow(0, 0, m_width - 1, m_height - 1);
-	clear(0xFFFFFFFF);
 }
 
 void Painter::startPerfectDrawing(uint32_t color) {
@@ -154,12 +154,24 @@ void Painter::drawPixel(int x, int y, uint32_t color) {
 		m_mask[index] = 1;
 	}
 	
-	if (m_blend_mode == BLEND_MODE_NORMAL) {
-		uint16_t *rgb565_pixels = reinterpret_cast<uint16_t *>(m_buffer);
-		rgb565_pixels[index] = Bitmap::RGB8888toRGB565(blendColors(Bitmap::RGB565toRGB8888(rgb565_pixels[index]), color));
-	} else if (m_blend_mode == BLEND_MODE_INVERT) {
-		uint16_t *rgb565_pixels = reinterpret_cast<uint16_t *>(m_buffer);
-		rgb565_pixels[index] = Bitmap::RGB8888toRGB565(invertColor(Bitmap::RGB565toRGB8888(rgb565_pixels[index])));
+	switch (m_blend_mode) {
+		case BLEND_MODE_NORMAL:
+		{
+			uint32_t currentColor = Bitmap::getBitmapPixel(m_buffer_type, x, y, m_width, m_height, m_buffer);
+			Bitmap::setBitmapPixel(m_buffer_type, x, y, m_width, m_height, m_buffer, blendColors(currentColor, color));
+		}
+		break;
+
+		case BLEND_MODE_INVERT:
+		{
+			uint32_t currentColor = Bitmap::getBitmapPixel(m_buffer_type, x, y, m_width, m_height, m_buffer);
+			Bitmap::setBitmapPixel(m_buffer_type, x, y, m_width, m_height, m_buffer, invertColor(currentColor));
+		}
+		break;
+
+		case BLEND_MODE_NONE:
+			Bitmap::setBitmapPixel(m_buffer_type, x, y, m_width, m_height, m_buffer, color);
+		break;
 	}
 }
 
@@ -174,7 +186,6 @@ void Painter::drawVLine(int x, int y, int height, uint32_t color) {
 }
 
 void Painter::getLinePoints(std::vector<std::pair<int, int>> &result, int x1, int y1, int x2, int y2) {
-	int tmp;
 	int x,y;
 	int dx, dy;
 	int err;
@@ -234,7 +245,6 @@ void Painter::getLinePoints(std::vector<std::pair<int, int>> &result, int x1, in
 
 // From u8g2
 void Painter::drawLine(int x1, int y1, int x2, int y2, uint32_t color, bool dotted) {
-	int tmp;
 	int x,y;
 	int dx, dy;
 	int err;
@@ -596,7 +606,7 @@ void Painter::fillTriangle(int x1, int y1, int x2, int y2, int x3, int y3, uint3
 			max_x[key] = it.first;
 	}
 	
-	for (int i = 0; i < min_x.size(); i++) {
+	for (size_t i = 0; i < min_x.size(); i++) {
 		if (min_x[i] != -1)
 			drawHLine(min_x[i], y1 + i, max_x[i] - min_x[i] + 1, color);
 	}

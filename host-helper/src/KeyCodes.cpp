@@ -182,7 +182,7 @@ uint32_t AppWindow::toIpcKeyCode(QKeyEvent *e) {
 		case Qt::Key_twosuperior: return IPC_KEY_TWOSUPERIOR;
 		case Qt::Key_threesuperior: return IPC_KEY_THREESUPERIOR;
 		case Qt::Key_acute: return IPC_KEY_ACUTE;
-		case Qt::Key_mu: return IPC_KEY_MU;
+		case Qt::Key_micro: return IPC_KEY_MU;
 		case Qt::Key_paragraph: return IPC_KEY_PARAGRAPH;
 		case Qt::Key_periodcentered: return IPC_KEY_PERIODCENTERED;
 		case Qt::Key_cedilla: return IPC_KEY_CEDILLA;

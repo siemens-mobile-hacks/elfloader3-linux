@@ -1,51 +1,40 @@
-#include "swi.h"
-#include "utils.h"
-#include "log.h"
-#include "IPC.h"
-#include "Resources.h"
-#include "gui/Painter.h"
+#include "src/gui/Painter.h"
+#include "src/swi/gbs.h"
+#include "src/swi/ll.h"
+#include "src/swi/gui.h"
+#include "src/swi/csm.h"
 
-#include <map>
-#include <queue>
-#include <vector>
+#include <cstdint>
 #include <cstdio>
 #include <cstdlib>
 #include <cassert>
-#include <functional>
-
-// Currently we have only one layer
-static LCDLAYER mmi_layer = {};
-static LCDLAYER *mmi_layers[10] = {
-	&mmi_layer, nullptr
-};
+#include <cstring>
+#include <queue>
+#include <unordered_map>
+#include <spdlog/spdlog.h>
+#include <swilib/gui.h>
+#include <swilib/system.h>
 
 static std::queue<GUI_RAM *> gui_to_destroy;
-static std::map<int, GUI_RAM *> id2gui = {};
-static std::map<int, CSM_RAM *> id2csm = {};
-static std::map<int, size_t> id2gui_index = {};
+static std::unordered_map<int, GUI_RAM *> id2gui = {};
+static std::unordered_map<int, CSM_RAM *> id2csm = {};
+static std::unordered_map<int, size_t> id2gui_index = {};
 static std::vector<GUI_RAM *> sorted_gui_list = {};
 static Painter *painter = nullptr;
-static bool screen_redraw_requested = false;
 
 static int global_gui_id = 1;
 
 void GUI_Init() {
-	uint8_t *buffer = IPC::instance()->getScreenBuffer();
-	painter = new Painter(buffer, SCREEN_WIDTH, SCREEN_HEIGHT);
-	
-	mmi_layer.buffer = buffer;
-	mmi_layer.w = SCREEN_WIDTH;
-	mmi_layer.h = SCREEN_HEIGHT;
-	mmi_layer.depth = LCDLAYER_DEPTH_TYPE_16BIT;
-	GUI_StoreXYWHtoRECT(&mmi_layer.rc, 0, 0, SCREEN_WIDTH, SCREEN_HEIGHT);
+	LCDLAYER_Init();
 }
 
 void GUI_SyncStates() {
+	LockSched();
 	id2csm.clear();
 	id2gui.clear();
 	id2gui_index.clear();
 	sorted_gui_list.clear();
-	
+
 	CSM_RAM *cursor = (CSM_RAM *) CSM_root()->csm_q->csm.first;
 	while (cursor) {
 		GUI_RAM *gui_cursor = (GUI_RAM *) cursor->gui_ll.first;
@@ -54,14 +43,15 @@ void GUI_SyncStates() {
 			id2gui[gui_cursor->id] = gui_cursor;
 			id2csm[gui_cursor->id] = cursor;
 			sorted_gui_list.push_back(gui_cursor);
-			
+
 			gui_cursor = gui_cursor->next;
 		}
-		cursor = cursor->next;
+		cursor = (CSM_RAM *) cursor->next;
 	}
-	
+
 	if (sorted_gui_list.size() > 0)
-		LOGD("GUI on top: %d\n", sorted_gui_list.back()->id);
+		spdlog::debug("GUI on top: {}", sorted_gui_list.back()->id);
+	UnlockSched();
 }
 
 int GUI_GetTopID() {
@@ -84,137 +74,27 @@ bool GUI_IsOnTop(int id) {
 	return sorted_gui_list.back()->id == id;
 }
 
-int GUI_Create_ID(GUI *gui, int id) {
-	CSM_RAM *csm = CSM_Current();
-	int prev_top_gui = GUI_GetTopID();
-	
-	assert(csm != nullptr);
-	
-	GUI_RAM *gui_ram = (GUI_RAM *) malloc(sizeof(GUI_RAM));
-	memset(gui_ram, 0, sizeof(gui_ram));
-	
-	gui_ram->id = id;
-	gui_ram->gui = gui;
-	
-	linked_list_push(&csm->gui_ll, gui_ram);
-	
-	GUI_SyncStates();
-	
-	if (prev_top_gui >= 0)
-		GUI_DoUnFocus(prev_top_gui);
-	
-	gui->methods->onCreate(gui, malloc);
-	
-	GUI_DirectRedrawGUI();
-	
-	return id;
-}
-
-int GUI_Create(GUI *gui) {
-	int id = global_gui_id++;
-	return GUI_Create_ID(gui, id);
-}
-
-int GUI_Create_30or2(GUI *gui) { // WTF
-	return GUI_Create(gui);
-}
-
-int GUI_CreateWithDummyCSM(GUI *gui, int flag) { // WTF
-	return GUI_Create(gui);
-}
-
-int GUI_CreateWithDummyCSM_30or2(GUI *gui, int flag) { // WTF
-	return GUI_Create(gui);
-}
-
-void GUI_HandleKeyPress(GBS_MSG *msg) {
-	int top_id = GUI_GetTopID();
-	if (top_id < 0 && msg->submess == 60) {
-		LOGD("msg %d\n", msg->submess);
-		CloseCSM(0);
-		return;
-	}
-	
-	GUI_RAM *gui_ram = GUI_GetById(top_id);
-	
-	GUI_MSG gui_msg = {};
-	gui_msg.gbsmsg = msg;
-	
-	if (gui_ram->gui->state == CSM_GUI_STATE_FOCUSED) {
-		LOGD("[GUI:%d] onKey\n", gui_ram->id);
-		int ret = gui_ram->gui->methods->onKey(gui_ram->gui, &gui_msg);
-		if (ret||1) {
-			LOGD("[GUI:%d] onKey ret=%d (gui close)\n", gui_ram->id, ret);
-			int id = gui_ram->id;
-			GBS_RunInContext(MMI_CEPID, [id]() {
-				GUI_GeneralFunc_flag1(id, 1);
-			});
-		}
-	}
-}
-
-Painter *GUI_GetPainter() {
-	return painter;
-}
-
 void GUI_DoFocus(int id) {
 	GUI_RAM *gui_ram = GUI_GetById(id);
-	
+
 	assert(gui_ram->gui->state != CSM_GUI_STATE_CLOSED);
-	
+
 	if (gui_ram->gui->state != CSM_GUI_STATE_FOCUSED) {
-		LOGD("[GUI:%d] onFocus\n", gui_ram->id);
-		gui_ram->gui->methods->onFocus(gui_ram->gui, malloc, free);
+		spdlog::debug("[GUI:{}] onFocus", gui_ram->id);
+		auto *gui_methods = (GUI_METHODS *) gui_ram->gui->methods;
+		gui_methods->onFocus(gui_ram->gui, malloc, free);
 	}
 }
 
 void GUI_DoUnFocus(int id) {
 	GUI_RAM *gui_ram = GUI_GetById(id);
-	
+
 	assert(gui_ram->gui->state != CSM_GUI_STATE_CLOSED);
-	
+
 	if (gui_ram->gui->state == CSM_GUI_STATE_FOCUSED) {
-		LOGD("[GUI:%d] onUnfocus\n", gui_ram->id);
-		gui_ram->gui->methods->onUnfocus(gui_ram->gui, free);
-	}
-}
-
-void GUI_Close(int id) {
-	GUI_RAM *gui_ram = GUI_GetById(id);
-	
-	assert(gui_ram->gui->state != CSM_GUI_STATE_CLOSED);
-	
-	if (gui_ram->gui->state == CSM_GUI_STATE_FOCUSED)
-		GUI_DoUnFocus(gui_ram->id);
-	
-	LOGD("[GUI:%d] onClose\n", gui_ram->id);
-	gui_ram->gui->methods->onClose(gui_ram->gui, free);
-	
-	if (gui_ram->gui->state == CSM_GUI_STATE_CLOSED) {
-		linked_list_remove(&id2csm[id]->gui_ll, gui_ram);
-		GUI_SyncStates();
-		
-		gui_to_destroy.push(gui_ram);
-		
-		int next_top = GUI_GetTopID();
-		if (next_top >= 0) {
-			GUI_DoFocus(next_top);
-			GUI_DirectRedrawGUI_ID(next_top);
-		}
-	}
-}
-
-void GUI_GarbageCollector() {
-	while (gui_to_destroy.size() > 0) {
-		GUI_RAM *gui_ram = gui_to_destroy.front();
-		
-		assert(gui_ram->gui->state == CSM_GUI_STATE_CLOSED);
-		
-		LOGD("[GUI:%d] destroy\n", gui_ram->id);
-		gui_ram->gui->methods->onDestroy(gui_ram->gui, free);
-		free(gui_ram);
-		
-		gui_to_destroy.pop();
+		spdlog::debug("[GUI:{}] onUnfocus", gui_ram->id);
+		auto *gui_methods = (GUI_METHODS *) gui_ram->gui->methods;
+		gui_methods->onUnfocus(gui_ram->gui, free);
 	}
 }
 
@@ -231,67 +111,291 @@ GUI_RAM *GUI_GetPrev(int id) {
 
 GUI_RAM *GUI_GetNext(int id) {
 	int gui_index = id2gui_index[id];
-	if (gui_index < sorted_gui_list.size() - 1)
+	if (gui_index < (int) sorted_gui_list.size() - 1)
 		return sorted_gui_list[gui_index + 1];
 	return nullptr;
 }
 
-void GUI_DirectRedrawGUI() {
-	GUI_DirectRedrawGUI_ID(GUI_GetTopID());
+void GUI_Close(int id) {
+	GUI_RAM *gui_ram = GUI_GetById(id);
+
+	assert(gui_ram->gui->state != CSM_GUI_STATE_CLOSED);
+
+	if (gui_ram->gui->state == CSM_GUI_STATE_FOCUSED)
+		GUI_DoUnFocus(gui_ram->id);
+
+	spdlog::debug("[GUI:{}] onClose", gui_ram->id);
+	auto *gui_methods = (GUI_METHODS *) gui_ram->gui->methods;
+	gui_methods->onClose(gui_ram->gui, free);
+
+	if (gui_ram->gui->state == CSM_GUI_STATE_CLOSED) {
+		LL_Remove(&id2csm[id]->gui_ll, gui_ram);
+		GUI_SyncStates();
+
+		gui_to_destroy.push(gui_ram);
+
+		int next_top = GUI_GetTopID();
+		if (next_top >= 0) {
+			GUI_DoFocus(next_top);
+			DirectRedrawGUI_ID(next_top);
+		}
+	}
 }
 
-void GUI_DirectRedrawGUI_ID(int id) {
+void GUI_HandleKeyPress(GBS_MSG *msg) {
+	int top_id = GUI_GetTopID();
+	if (top_id < 0 && msg->submess == 60) {
+		spdlog::debug("msg {}", msg->submess);
+		CloseCSM(0);
+		return;
+	}
+
+	GUI_RAM *gui_ram = GUI_GetById(top_id);
+
+	GUI_MSG gui_msg = {};
+	gui_msg.gbsmsg = msg;
+
+	if (gui_ram->gui->state == CSM_GUI_STATE_FOCUSED) {
+		spdlog::debug("[GUI:{}] onKey", gui_ram->id);
+		auto *gui_methods = (GUI_METHODS *) gui_ram->gui->methods;
+		int ret = gui_methods->onKey(gui_ram->gui, &gui_msg);
+		if (ret) {
+			spdlog::debug("[GUI:{}] onKey ret={} (gui close)", gui_ram->id, ret);
+			int id = gui_ram->id;
+			GBS_RunInContext(MMI_CEPID, [id]() {
+				GeneralFunc_flag1(id, 1);
+			});
+		}
+	}
+}
+
+void GUI_GarbageCollector() {
+	while (gui_to_destroy.size() > 0) {
+		GUI_RAM *gui_ram = gui_to_destroy.front();
+
+		assert(gui_ram->gui->state == CSM_GUI_STATE_CLOSED);
+
+		spdlog::debug("[GUI:{}] destroy", gui_ram->id);
+		auto *gui_methods = (GUI_METHODS *) gui_ram->gui->methods;
+		gui_methods->onDestroy(gui_ram->gui, free);
+		free(gui_ram);
+
+		gui_to_destroy.pop();
+	}
+}
+
+uint32_t GUI_Color2Int(const char *color) {
+	color = color ?: GetPaletteAdrByColorIndex(23); // fallback
+	const uint8_t *u8 = reinterpret_cast<const uint8_t *>(color);
+	uint32_t a = static_cast<uint32_t>(u8[3]) * 0xFF / 0x64;
+	return (a << 24) | (u8[0] << 16) | (u8[1] << 8) | u8[2]; // ABGR8888
+}
+
+Painter *GUI_GetPainter() {
+	return painter;
+}
+
+/*
+ * Firmware methods
+ */
+
+char *RamPressedKey() {
+	// spdlog::debug("{}: not implemented!", __func__);
+	return NULL;
+}
+
+void *RamScreenBuffer() {
+	// spdlog::debug("{}: not implemented!", __func__);
+	return NULL;
+}
+
+void *BuildCanvas(void) {
+	// spdlog::debug("{}: not implemented!", __func__);
+	return NULL;
+}
+
+void *Ram_LCD_Overlay_Layer() {
+	// spdlog::debug("{}: not implemented!", __func__);
+	return NULL;
+}
+
+void AddKeybMsgHook(KeybMsgHookProc callback) {
+	spdlog::debug("{}: not implemented!", __func__);
+}
+
+int AddKeybMsgHook_end(KeybMsgHookProc callback) {
+	spdlog::debug("{}: not implemented!", __func__);
+	return -1;
+}
+
+void RemoveKeybMsgHook(KeybMsgHookProc callback) {
+	spdlog::debug("{}: not implemented!", __func__);
+}
+
+int IsGuiOnTop(int id) {
+	spdlog::debug("{}: not implemented!", __func__);
+	return -1;
+}
+
+int CreateGUI_ID(void *gui, int id) {
+	spdlog::debug("{}: not implemented!", __func__);
+	return -1;
+}
+
+int CreateGUI(void *gui_ptr) {
+	auto *gui = (GUI *) gui_ptr;
+
+	LockSched();
+	CSM_RAM *csm = CSM_Current();
+	int prev_top_gui = GUI_GetTopID();
+
+	assert(csm != nullptr);
+
+	GUI_RAM *gui_ram = (GUI_RAM *) malloc(sizeof(GUI_RAM));
+	memset(gui_ram, 0, sizeof(GUI_RAM));
+
+	gui_ram->id = global_gui_id++;
+	gui_ram->gui = gui;
+
+	LL_Push(&csm->gui_ll, gui_ram);
+
+	GUI_SyncStates();
+	UnlockSched();
+
+	if (prev_top_gui >= 0)
+		GUI_DoUnFocus(prev_top_gui);
+
+	auto *gui_methods = (GUI_METHODS *) gui->methods;
+	gui_methods->onCreate(gui, malloc);
+	DirectRedrawGUI();
+
+	return gui_ram->id;
+}
+
+int CreateGUI_30or2(void *gui) {
+	return CreateGUI(gui);
+}
+
+int CreateGUIWithDummyCSM(void *gui, int flag) {
+	spdlog::debug("{}: not implemented!", __func__);
+	return -1;
+}
+
+int CreateGUIWithDummyCSM_30or2(void *gui, int flag) {
+	spdlog::debug("{}: not implemented!", __func__);
+	return -1;
+}
+
+void GeneralFuncF1(int cmd) {
+	int id = GUI_GetTopID();
+	if (id != -1)
+		GeneralFunc_flag1(id, cmd);
+}
+
+void GeneralFuncF0(int cmd) {
+	int id = GUI_GetTopID();
+	if (id != -1)
+		GeneralFunc_flag0(id, cmd);
+}
+
+void GeneralFunc_flag1(int id, int cmd) {
+	GUI_Close(id);
+	GBS_SendMessage(MMI_CEPID, MSG_GUI_DESTROYED, 0, (void *) id, (void *) cmd);
+}
+
+void GeneralFunc_flag0(int id, int cmd) {
+	GUI_Close(id);
+	GBS_SendMessage(MMI_CEPID, MSG_GUI_DESTROYED, 0, (void *) id, (void *) cmd);
+}
+
+void DirectRedrawGUI(void) {
+	DirectRedrawGUI_ID(GUI_GetTopID());
+}
+
+void DirectRedrawGUI_ID(int id) {
 	GUI_RAM *gui_ram = GUI_GetById(id);
 	GUI_RAM *prev_gui_ram = GUI_GetPrev(id);
-	
+
 	GUI_DoFocus(id);
-	
+
 	if (gui_ram->gui->state != CSM_GUI_STATE_FOCUSED)
 		return;
-	
+
 	if (prev_gui_ram)
-		GUI_DirectRedrawGUI_ID(prev_gui_ram->id);
-	
-	LOGD("[GUI:%d] onRedraw\n", gui_ram->id);
-	
-	RECT *rect = gui_ram->gui->canvas;
-	painter->setWindow(rect->x, rect->y, rect->x2, rect->y2);
-	
-	gui_ram->gui->methods->onRedraw(gui_ram->gui);
-	
+		DirectRedrawGUI_ID(prev_gui_ram->id);
+
+	spdlog::debug("[GUI:{}] onRedraw", gui_ram->id);
+
+	auto *layer = LCD_GetCurrentLayer();
+	layer->rect = *gui_ram->gui->canvas;
+
+	auto *gui_methods = (GUI_METHODS *) gui_ram->gui->methods;
+	gui_methods->onRedraw(gui_ram->gui);
+
 	if (!GUI_IsOnTop(id))
 		GUI_DoUnFocus(id);
 }
 
-void GUI_PendedRedrawGUI() {
+void PendedRedrawGUI(void) {
 	GBS_RunInContext(MMI_CEPID, []() {
-		GUI_DirectRedrawGUI_ID(GUI_GetTopID());
+		DirectRedrawGUI_ID(GUI_GetTopID());
 	});
 }
 
-void GUI_GeneralFuncF0(int code) {
-	int id = GUI_GetTopID();
-	if (id != -1)
-		GUI_GeneralFunc_flag0(id, code);
+GUI *GetTopGUI(void) {
+	spdlog::debug("{}: not implemented!", __func__);
+	return NULL;
 }
 
-void GUI_GeneralFuncF1(int code) {
-	int id = GUI_GetTopID();
-	if (id != -1)
-		GUI_GeneralFunc_flag1(id, code);
+void REDRAW(void) {
+	DirectRedrawGUI();
 }
 
-void GUI_GeneralFunc_flag0(int id, int code) {
-	fprintf(stderr, "%s: unimplemented!\n", __func__);
-	GUI_GeneralFunc_flag1(id, code);
+void *FindGUIbyId(int id, CSM_RAM **csm) {
+	spdlog::debug("{}: not implemented!", __func__);
+	return NULL;
 }
 
-void GUI_GeneralFunc_flag1(int id, int code) {
-	fprintf(stderr, "%s: destroy GUI\n", __func__);
-	
-	GUI_Close(id);
-	GBS_SendMessage(MMI_CEPID, MSG_GUI_DESTROYED, 0, (void *) id, (void *) code);
+int GetCurGuiID() {
+	spdlog::debug("{}: not implemented!", __func__);
+	return -1;
 }
+
+void FocusGUI(int id) {
+	spdlog::debug("{}: not implemented!", __func__);
+}
+
+void UnfocusGUI(void) {
+	spdlog::debug("{}: not implemented!", __func__);
+}
+
+int GUI_NewTimer(void *gui) {
+	spdlog::debug("{}: not implemented!", __func__);
+	return -1;
+}
+
+int GUI_DeleteTimer(void *gui, int id) {
+	spdlog::debug("{}: not implemented!", __func__);
+	return -1;
+}
+
+void GUI_StartTimerProc(void *gui, int id, long timeout_ms, GUI_TimerProc callback) {
+	spdlog::debug("{}: not implemented!", __func__);
+}
+
+#if 0
+// Currently we have only one layer
+static LCDLAYER mmi_layer = {};
+static LCDLAYER *mmi_layers[10] = {
+	&mmi_layer, nullptr
+};
+
+
+
+
+
+
+
 
 void GUI_REDRAW() {
 	// WTF?
@@ -300,36 +404,6 @@ void GUI_REDRAW() {
 
 LCDLAYER **GUI_GetLCDLayerList() {
 	return mmi_layers;
-}
-
-void GUI_SetDepthBuffer(uint8_t depth) {
-	fprintf(stderr, "%s not implemented!\n", __func__);
-	abort();
-}
-
-void GUI_SetDepthBufferOnLCDLAYER(LCDLAYER *layer, uint8_t depth) {
-	fprintf(stderr, "%s not implemented!\n", __func__);
-	abort();
-}
-
-void GUI_SetIDLETMR(int time_ms, int msg) {
-	// stub
-}
-
-void GUI_RestartIDLETMR(void) {
-	// stub
-}
-
-void GUI_DisableIDLETMR(void) {
-	// stub
-}
-
-void GUI_DisableIconBar(int disable) {
-	// stub
-}
-
-void GUI_AddIconToIconBar(int pic, short *num) {
-	// stub
 }
 
 void *GUI_RamScreenBuffer() {
@@ -345,3 +419,4 @@ void GUI_IpcRedrawScreen() {
 		});
 	}
 }
+#endif

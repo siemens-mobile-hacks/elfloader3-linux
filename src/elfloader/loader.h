@@ -18,10 +18,8 @@ extern "C" {
 
 #define ELF_NAME_MAX_LEN 128
 
-extern int __ep3_debug;
-
-#define EP3_ERROR(fmt, ...) do { fprintf(stderr, "[EP3] [error] " fmt "\n", ## __VA_ARGS__); } while (0)
-#define EP3_DEBUG(fmt, ...) do { if (__ep3_debug) { fprintf(stderr, "[EP3] [debug] " fmt, ## __VA_ARGS__); } } while (0)
+#define EP3_ERROR(fmt, ...) loader_log_error(fmt, ## __VA_ARGS__)
+#define EP3_DEBUG(fmt, ...) loader_log_debug(fmt, ## __VA_ARGS__)
 
 #include "elf.h"
 
@@ -119,7 +117,6 @@ typedef struct {
 	// Все доп. поля кидаем в конец структуры, чтобы не нарушать бинарную совместимость
 	struct link_map linkmap;
 	Elf32_Dyn *dynamic;
-	void *body_memory;
 } Elf32_Exec;
 
 typedef struct {
@@ -131,6 +128,12 @@ typedef struct {
 
 typedef int ELF_ENTRY(const char *, void *);
 typedef int LIB_FUNC();
+
+__attribute__((__format__(__printf__, 1, 2)))
+void loader_log_error(const char *format, ...);
+
+__attribute__((__format__(__printf__, 1, 2)))
+void loader_log_debug(const char *format, ...);
 
 int loader_check_elf(Elf32_Ehdr *ehdr);
 unsigned int loader_get_bin_size(Elf32_Exec *ex, Elf32_Phdr *phdrs);
@@ -149,6 +152,7 @@ void loader_lib_unref_clients(Elf32_Lib *lib);
 int loader_dlopen(const char *name);
 int loader_dlclose(int handle);
 Elf32_Word loader_dlsym(int handle, const char *name);
+const char *loader_dlerror();
 
 unsigned int loader_elf_hash(const char *name);
 

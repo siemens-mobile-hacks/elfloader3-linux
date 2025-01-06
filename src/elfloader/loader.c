@@ -11,13 +11,8 @@
 #include <sys/mman.h>
 #include <stdbool.h>
 
-int __ep3_debug = 0;
 int loader_warnings = 1;
 int realtime_libclean = 1;
-
-void loader_set_debug(int flag) {
-	__ep3_debug = flag;
-}
 
 // Проверка валидности эльфа
 int loader_check_elf(Elf32_Ehdr *ehdr) {
@@ -50,29 +45,13 @@ unsigned int loader_get_bin_size(Elf32_Exec *ex, Elf32_Phdr *phdrs) {
 	return maxadr - ex->v_addr;
 }
 
-static AlignedMemory *_allocate_aligned(size_t size, size_t alignment) {
-	const size_t mask = alignment - 1;
-	const size_t alloc_size = sizeof(AlignedMemory) + size + alignment;
-	AlignedMemory *mem = malloc(alloc_size);
-	if (!mem)
+static void *_allocate_body(size_t size) {
+	void *body = aligned_alloc(getpagesize(), size);
+	if (mprotect(body, size, PROT_READ | PROT_EXEC | PROT_WRITE) != 0) {
+		free(body);
 		return NULL;
-	mem->value = (void *) ((((uintptr_t) (mem + 1)) + mask) & ~mask);
-	return mem;
-}
-
-static int _allocate_body(Elf32_Exec *ex, size_t size) {
-	AlignedMemory *mem = _allocate_aligned(size, getpagesize());
-	if (!mem)
-		return 0;
-	if (mprotect(mem->value, size, PROT_READ | PROT_EXEC | PROT_WRITE) != 0) {
-		free(mem);
-		return 0;
 	}
-	
-	ex->body = mem->value;
-	ex->body_memory = mem;
-	
-	return 1;
+	return body;
 }
 
 static char *_load_data(Elf32_Exec *ex, int offset, int size) {
@@ -161,7 +140,6 @@ int loader_do_reloc(Elf32_Exec *ex, Elf32_Phdr *phdr, int is_iar_elf) {
 	unsigned int i = 0;
 	Elf32_Word libs_needed[64] = {};
 	unsigned int libs_cnt = 0;
-	char dbg[128];
 
 	// Вытаскиваем теги
 	while (ex->dynamic[i].d_tag != DT_NULL) {
@@ -222,7 +200,7 @@ int loader_do_reloc(Elf32_Exec *ex, Elf32_Phdr *phdr, int is_iar_elf) {
 	if (ex->dyn[DT_RELSZ]) {
 		i = 0;
 		unsigned int *addr;
-		char *name;
+		char *name = NULL;
 		Elf32_Word r_type;
 		unsigned int func = 0;
 		int symtab_index = 0;
@@ -467,9 +445,8 @@ int loader_load_sections(Elf32_Exec *ex) {
 			break;
 		if (read(ex->fp, &phdrs[i], sizeof(Elf32_Phdr)) != sizeof(Elf32_Phdr)) {
 			/* кривой заголовок, шлём нафиг этот эльф */
-			free(ex->body_memory);
+			free(ex->body);
 			ex->body = 0;
-			ex->body_memory = 0;
 			free(phdrs);
 			return E_PHDR;
 		}
@@ -492,7 +469,8 @@ int loader_load_sections(Elf32_Exec *ex) {
 	if (i == ex->ehdr.e_phnum) { // Если прочитались все заголовки
 		// ex->bin_size = loader_get_bin_size(ex, phdrs);
 
-		if (_allocate_body(ex, ex->bin_size + 1)) { // Если хватило рамы
+		ex->body = _allocate_body(ex->bin_size + 1);
+		if (ex->body) { // Если хватило рамы
 			memset(ex->body, 0, ex->bin_size + 1);
 			memset(ex->dyn, 0, sizeof(ex->dyn));
 
@@ -505,14 +483,14 @@ int loader_load_sections(Elf32_Exec *ex) {
 						break; // Пропускаем пустые сегменты
 					EP3_DEBUG("PT_LOAD: %08X - %08X | %08X - %08X\n", phdr.p_offset, phdr.p_offset + phdr.p_filesz, phdr.p_vaddr - ex->v_addr, phdr.p_vaddr - ex->v_addr + phdr.p_filesz);
 					if (lseek(ex->fp, phdr.p_offset, SEEK_SET) != -1) {
-						if (read(ex->fp, ex->body + phdr.p_vaddr - ex->v_addr, phdr.p_filesz) == phdr.p_filesz)
+						int ret = read(ex->fp, ex->body + phdr.p_vaddr - ex->v_addr, phdr.p_filesz);
+						if (ret >= 0 && (size_t) ret == phdr.p_filesz)
 							break;
 					}
 
 					// Не прочитали сколько нужно
-					free(ex->body_memory);
+					free(ex->body);
 					ex->body = 0;
-					ex->body_memory = 0;
 					free(phdrs);
 					return E_SECTION;
 
@@ -541,9 +519,8 @@ int loader_load_sections(Elf32_Exec *ex) {
 						break;
 					
 					// Если что-то пошло не так...
-					free(ex->body_memory);
+					free(ex->body);
 					ex->body = 0;
-					ex->body_memory = 0;
 					free(phdrs);
 					return E_SECTION;
 				}
@@ -556,9 +533,8 @@ int loader_load_sections(Elf32_Exec *ex) {
 		}
 	}
 
-	free(ex->body_memory);
+	free(ex->body);
 	ex->body = 0;
-	ex->body_memory = 0;
 	free(phdrs);
 	return E_RAM;
 }
@@ -572,7 +548,7 @@ void loader_run_INIT_Array(Elf32_Exec *ex) {
 
 	EP3_DEBUG("init_array sz: %d\n", sz);
 
-	for (int i = 0; i < sz; ++i) {
+	for (size_t i = 0; i < sz; ++i) {
 		EP3_DEBUG("init %d: 0x%p\n", i, arr[i]);
 		((void (*)())arr[i])();
 	}
@@ -587,7 +563,7 @@ void loader_run_FINI_Array(Elf32_Exec *ex) {
 
 	EP3_DEBUG("fini_array sz: %d\n", sz);
 
-	for (int i = 0; i < sz; ++i) {
+	for (size_t i = 0; i < sz; ++i) {
 		EP3_DEBUG("fini %d: 0x%p\n", i, arr[i]);
 		((void (*)())arr[i])();
 	}

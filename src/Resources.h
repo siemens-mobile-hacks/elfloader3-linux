@@ -1,7 +1,6 @@
 #pragma once
 
-#include "swi.h"
-#include "BinaryStream.h"
+#include <swilib/image.h>
 
 #include <cassert>
 #include <cstdint>
@@ -10,9 +9,9 @@
 
 class Resources {
 	protected:
-		static constexpr uint32_t MAX_FONTS = 32;
-		static constexpr uint32_t MAX_EXT_PALETTE_COLORS = 60;
-		static constexpr uint32_t MAX_INT_PALETTE_COLORS = 24;
+		static constexpr int MAX_FONTS = 32;
+		static constexpr int MAX_EXT_PALETTE_COLORS = 60;
+		static constexpr int MAX_INT_PALETTE_COLORS = 24;
 		
 		struct Font {
 			int w;

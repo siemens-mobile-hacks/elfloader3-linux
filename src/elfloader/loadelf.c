@@ -6,8 +6,8 @@
 
 #include "loader.h"
 
-#include <unistd.h>
-#include <fcntl.h>
+#include <stdint.h>
+#include <swilib/file.h>
 
 // Загрузка эльфа
 Elf32_Exec *loader_elf_open(const char *filename) {
@@ -15,10 +15,11 @@ Elf32_Exec *loader_elf_open(const char *filename) {
 	Elf32_Ehdr ehdr;
 	Elf32_Exec *ex;
 
-	if ((fp = open(filename, O_RDONLY)) < 0)
+	uint32_t err;
+	if ((fp = sys_open(filename, A_ReadOnly | A_BIN, P_READ, &err)) < 0)
 		return 0;
 
-	if (read(fp, &ehdr, sizeof(Elf32_Ehdr)) == sizeof(Elf32_Ehdr)) {
+	if (sys_read(fp, &ehdr, sizeof(Elf32_Ehdr), &err) == sizeof(Elf32_Ehdr)) {
 		if (!loader_check_elf(&ehdr)) {
 			ex = malloc(sizeof(Elf32_Exec));
 			
@@ -27,7 +28,6 @@ Elf32_Exec *loader_elf_open(const char *filename) {
 				ex->v_addr = (unsigned int)-1;
 				ex->fp = fp;
 				ex->body = 0;
-				ex->body_memory = 0;
 				ex->type = EXEC_ELF;
 				ex->libs = 0;
 				ex->hashtab = 0;
@@ -49,7 +49,7 @@ Elf32_Exec *loader_elf_open(const char *filename) {
 
 				if (!loader_load_sections(ex)) {
 					ex->complete = 1;
-					close(fp);
+					sys_close(fp, &err);
 					return ex;
 				} else {
 					loader_elf_close(ex);
@@ -57,7 +57,7 @@ Elf32_Exec *loader_elf_open(const char *filename) {
 			}
 		}
 	}
-	close(fp);
+	sys_close(fp, &err);
 	return 0;
 }
 
@@ -87,8 +87,8 @@ int loader_elf_close(Elf32_Exec *ex) {
 
 	if (ex->fname)
 		free(ex->fname);
-	if (ex->body_memory)
-		free(ex->body_memory);
+	if (ex->body)
+		free(ex->body);
 	if (ex->temp_env)
 		free(ex->temp_env);
 	free(ex);

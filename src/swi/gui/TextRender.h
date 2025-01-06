@@ -1,8 +1,9 @@
 #pragma once
 
-#include "swi.h"
-#include "Resources.h"
 #include <queue>
+#include <swilib/gui.h>
+
+#include "src/gui/Painter.h"
 
 class TextRender {
 	protected:
@@ -21,8 +22,8 @@ class TextRender {
 		};
 		
 		struct Word {
-			uint16_t start;
-			uint16_t end;
+			int start;
+			int end;
 			int w;
 			int h;
 			Style style;
