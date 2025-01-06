@@ -209,11 +209,11 @@ int main(int argc, char **argv) {
 	ipc->setHelperPath(host_helper_path);
 	ipc->start();
 
-	loader_install_swihook();
-	loader_init_swilib();
-
 	Resources::init(resources_dir);
 	OS_Init();
+
+	loader_install_swihook();
+	loader_init_swilib();
 
 	Loop::instance()->setTimeout([=]() {
 		GBS_RunInContext(MMI_CEPID, [=]() {

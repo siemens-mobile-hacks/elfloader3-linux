@@ -26,6 +26,7 @@ void MMI_Init() {
 		}
 	}, 0, 0);
 
+
 	CreateGBSproc(MMI_CEPID, "MMI", +[]() {
 		GBS_MSG msg;
 		while (GBS_RecActDstMessage(&msg)) {

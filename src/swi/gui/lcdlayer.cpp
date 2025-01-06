@@ -12,7 +12,6 @@ static LCDLAYER main_lcd_layer = {};
 static LCDLAYER_LIST lcd_layers_list[16] = {};
 static RAP_LCDLAYER_LIST rap_lcd_layers_list[16] = {};
 static int GetLayerIdByCepId(int *layer);
-static std::mutex redraw_mutex;
 
 void LCDLAYER_Init() {
 	LCDLAYER_Create(&main_lcd_layer, nullptr, LCDLAYER_DEPTH_BGR565, 0, nullptr, ScreenW(), ScreenH());
@@ -88,8 +87,6 @@ void LCDLAYER_Flush(LCDLAYER *layer) {
 	int y2 = std::max(0, std::min((int) layer->invalidate.y2, h - 1));
 	auto *source = reinterpret_cast<uint8_t *>(layer->buffer);
 	auto type = LCDLAYER_GetBitmapType(layer);
-
-	spdlog::debug("{}: [ {}, {}, {}, {} ] type={}", __func__, x1, y1, x2, y2, layer->depth);
 
 	for (int y = y1; y <= y2; y++) {
 		int index = y * w;

@@ -11,11 +11,13 @@
 
 #include "src/elfloader/loader.h"
 #include "src/swilib/switab.h"
+#include "src/utils/time.h"
 
 std::recursive_mutex m_sched_mutex;
 static int ram_rand_seed = 0;
 static bool cpu_usage_enabled = false;
 static uint64_t cpu_usage_start = 0;
+static uint64_t system_boot_time = getCurrentTimestamp();
 
 void loopback0() {
 	// noop
@@ -130,7 +132,7 @@ void *LIB_TOP(void) {
 }
 
 uint32_t GetSessionAge(void) {
-	return 0;
+	return (getCurrentTimestamp() - system_boot_time) * 1000LL / 4615LL;
 }
 
 void SetCpuClockLow(int unk) {

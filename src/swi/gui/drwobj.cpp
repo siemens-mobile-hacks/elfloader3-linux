@@ -263,6 +263,7 @@ static int _ellipseHelperFlagsToPainter(int type) {
 
 void DrawObject(DRWOBJ *drwobj) {
 	LCDLAYER *layer = LCD_GetCurrentLayer();
+	spdlog::debug("DrawObject layer={:08X}", (uint32_t) layer);
 	if (layer)
 		DrawObject2Layer(layer, drwobj);
 }

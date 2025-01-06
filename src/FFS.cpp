@@ -35,7 +35,7 @@ std::string FFS::any2dos(const std::string &unknownPath) {
 		auto drive = m[1].str();
 		auto path = m[2].str();
 		std::replace(path.begin(), path.end(), '/', '\\');
-		return drive + ":\\" + path;
+		return drive + "\\" + path;
 	} else {
 		return unix2dos(unknownPath);
 	}
@@ -47,7 +47,7 @@ std::string FFS::any2unix(const std::string &unknownPath) {
 		auto drive = m[1].str();
 		auto path = m[2].str();
 		std::replace(path.begin(), path.end(), '/', '\\');
-		return dos2unix(drive + ":\\" + path);
+		return dos2unix(drive + "\\" + path);
 	} else {
 		return unknownPath;
 	}

@@ -205,8 +205,7 @@ char *RamPressedKey() {
 }
 
 void *RamScreenBuffer() {
-	// spdlog::debug("{}: not implemented!", __func__);
-	return NULL;
+	return RamLcdMainLayersList()[0].layer->buffer;
 }
 
 void *BuildCanvas(void) {
@@ -215,8 +214,7 @@ void *BuildCanvas(void) {
 }
 
 void *Ram_LCD_Overlay_Layer() {
-	// spdlog::debug("{}: not implemented!", __func__);
-	return NULL;
+	return reinterpret_cast<uint8_t *>(RamLcdMainLayersList()[0].layer) + 0xBC;
 }
 
 void AddKeybMsgHook(KeybMsgHookProc callback) {
@@ -348,7 +346,7 @@ GUI *GetTopGUI(void) {
 }
 
 void REDRAW(void) {
-	DirectRedrawGUI();
+	PendedRedrawGUI();
 }
 
 void *FindGUIbyId(int id, CSM_RAM **csm) {
