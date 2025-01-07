@@ -92,7 +92,6 @@ void LCDLAYER_Flush(LCDLAYER *layer) {
 		int index = y * w;
 		for (int x = x1; x <= x2; x++) {
 			target[index + x] = Bitmap::getBitmapPixel(type, x, y, w, h, source);
-			// target[index + x] = 0xFFFF0000;
 		}
 	}
 

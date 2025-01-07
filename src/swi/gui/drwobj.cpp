@@ -263,7 +263,6 @@ static int _ellipseHelperFlagsToPainter(int type) {
 
 void DrawObject(DRWOBJ *drwobj) {
 	LCDLAYER *layer = LCD_GetCurrentLayer();
-	spdlog::debug("DrawObject layer={:08X}", (uint32_t) layer);
 	if (layer)
 		DrawObject2Layer(layer, drwobj);
 }
@@ -282,7 +281,7 @@ int PushDRWOBJOnLAYER(DRWOBJ *drwobj, LCDLAYER *layer) {
 	// TODO: merge DRWOBJ rect + LCDLAYER rect?
 
 	RECT *rect = &drw->rect;
-	spdlog::debug("DRAW [ {}, {}, {}, {} ]", rect->x, rect->y, rect->x2, rect->y2);
+	// spdlog::debug("DRAW [ {}, {}, {}, {} ]", rect->x, rect->y, rect->x2, rect->y2);
 	painter.setBuffer(reinterpret_cast<uint8_t *>(layer->buffer), layer->w, layer->h, LCDLAYER_GetBitmapType(layer));
 	painter.setWindow(rect->x, rect->y, rect->x2, rect->y2);
 

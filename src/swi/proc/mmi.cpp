@@ -15,21 +15,24 @@ static int _getKeyCodeFromEvent(IpcPacketKeyEvent *ev);
 void MMI_Init() {
 	CreateGBSproc(LCD_DISPLAYQUEUE_CEPID, "LCD_DISPLAYQUEUE", +[]() {
 		GBS_MSG msg;
-		while (GBS_RecActDstMessage(&msg)) {
-			if (msg.msg == LCD_DISPLAYQUEUE_CMD_REDRAW) {
-				auto *layer = reinterpret_cast<LCDLAYER *>(msg.data0);
-				LCDLAYER_Flush(layer);
-				layer->redraw_requested = 0;
-			} else {
-				spdlog::debug("[LCD_DISPLAYQUEUE] unknown cmd {:04X}", toUnsigned(msg.msg));
-			}
+		if (!GBS_RecActDstMessage(&msg))
+			return;
+		if (msg.msg == LCD_DISPLAYQUEUE_CMD_REDRAW) {
+			auto *layer = reinterpret_cast<LCDLAYER *>(msg.data0);
+			LCDLAYER_Flush(layer);
+			layer->redraw_requested = 0;
+		} else {
+			spdlog::debug("[LCD_DISPLAYQUEUE] unknown cmd {:04X}", toUnsigned(msg.msg));
 		}
 	}, 0, 0);
 
-
 	CreateGBSproc(MMI_CEPID, "MMI", +[]() {
 		GBS_MSG msg;
-		while (GBS_RecActDstMessage(&msg)) {
+		if (!GBS_RecActDstMessage(&msg))
+			return;
+		if (msg.msg == MMI_CMD_REDRAW) {
+			DirectRedrawGUI();
+		} else {
 			spdlog::debug("[MMI] {:04X} {:04X}", toUnsigned(msg.msg), toUnsigned(msg.submess));
 
 			CSM_RAM *cursor = reinterpret_cast<CSM_RAM *>(CSM_root()->csm_q->csm.last);

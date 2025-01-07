@@ -3,6 +3,7 @@
 #include "src/swi/ll.h"
 #include "src/swi/gui.h"
 #include "src/swi/csm.h"
+#include "swilib/gbs.h"
 
 #include <cstdint>
 #include <cstdio>
@@ -10,16 +11,19 @@
 #include <cassert>
 #include <cstring>
 #include <queue>
+#include <spdlog/common.h>
 #include <unordered_map>
 #include <spdlog/spdlog.h>
 #include <swilib/gui.h>
 #include <swilib/system.h>
 
+static std::queue<int> gui_to_redraw;
 static std::queue<GUI_RAM *> gui_to_destroy;
 static std::unordered_map<int, GUI_RAM *> id2gui = {};
 static std::unordered_map<int, CSM_RAM *> id2csm = {};
 static std::unordered_map<int, size_t> id2gui_index = {};
 static std::vector<GUI_RAM *> sorted_gui_list = {};
+std::atomic<bool> redraw_requested = false;
 static Painter *painter = nullptr;
 
 static int global_gui_id = 1;
@@ -165,6 +169,8 @@ void GUI_HandleKeyPress(GBS_MSG *msg) {
 			GBS_RunInContext(MMI_CEPID, [id]() {
 				GeneralFunc_flag1(id, 1);
 			});
+		} else {
+			spdlog::debug("[GUI:{}] onKey ret={}", gui_ram->id, ret);
 		}
 	}
 }
@@ -307,6 +313,7 @@ void GeneralFunc_flag0(int id, int cmd) {
 }
 
 void DirectRedrawGUI(void) {
+	redraw_requested = false;
 	DirectRedrawGUI_ID(GUI_GetTopID());
 }
 
@@ -322,7 +329,8 @@ void DirectRedrawGUI_ID(int id) {
 	if (prev_gui_ram)
 		DirectRedrawGUI_ID(prev_gui_ram->id);
 
-	spdlog::debug("[GUI:{}] onRedraw", gui_ram->id);
+	if (spdlog::get_level() <= spdlog::level::debug)
+		spdlog::debug("[GUI:{}] onRedraw", gui_ram->id);
 
 	auto *layer = LCD_GetCurrentLayer();
 	layer->rect = *gui_ram->gui->canvas;
@@ -335,9 +343,10 @@ void DirectRedrawGUI_ID(int id) {
 }
 
 void PendedRedrawGUI(void) {
-	GBS_RunInContext(MMI_CEPID, []() {
-		DirectRedrawGUI_ID(GUI_GetTopID());
-	});
+	if (!redraw_requested) {
+		redraw_requested = true;
+		GBS_SendMessage(MMI_CEPID, MMI_CMD_REDRAW);
+	}
 }
 
 GUI *GetTopGUI(void) {

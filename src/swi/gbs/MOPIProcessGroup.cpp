@@ -318,11 +318,11 @@ void MOPIProcessGroup::run() {
 				MOPI_FreeMessage(&msg);
 			} else if ((MOPI_GetMessageFlags(&msg) & MOPI_MSG_FLAG_GTIMER)) {
 				switch (MOPI_GetMessageType(&msg)) {
-					case MOPI_MSG_TYPE_GTIMER_CALLBACK:
+					case MOPI_MSG_TYPE_GTIMER_MSG:
 						proc->handler();
 					break;
 
-					case MOPI_MSG_TYPE_GTIMER_MSG:
+					case MOPI_MSG_TYPE_GTIMER_CALLBACK:
 					{
 						auto *gtimer_msg = MOPI_GetPayload<MOPI_GTIMER_MSG>(&msg);
 						gtimer_msg->callback(gtimer_msg->tmr);

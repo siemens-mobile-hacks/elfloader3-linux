@@ -43,7 +43,6 @@ void AppWindow::parseRxBuffer() {
 void AppWindow::handleIpcCommand(IpcPacket *pkt) {
 	switch (pkt->cmd) {
 		case IPC_CMD_REDRAW:
-			qDebug("renderNow");
 			renderNow();
 		break;
 

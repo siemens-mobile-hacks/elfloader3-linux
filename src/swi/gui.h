@@ -5,6 +5,7 @@
 
 #define LCD_DISPLAYQUEUE_CEPID			0x4200
 #define LCD_DISPLAYQUEUE_CMD_REDRAW		0x6423
+#define MMI_CMD_REDRAW					0x6404
 
 enum {
 	DRWOBJ_RECT_FLAG_INVERT_BG	= 0x20,
@@ -136,6 +137,7 @@ GUI_RAM *GUI_GetPrev(int id);
 GUI_RAM *GUI_GetNext(int id);
 void GUI_Close(int id);
 void GUI_HandleKeyPress(GBS_MSG *msg);
+void GUI_HandlePendedRedraws();
 uint32_t GUI_Color2Int(const char *color);
 Painter *GUI_GetPainter();
 

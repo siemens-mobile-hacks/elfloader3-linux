@@ -96,7 +96,7 @@ add_executable(elfloader3
 )
 
 target_compile_options(elfloader3 PUBLIC -Wall -Werror -Wno-unused-function -Wsign-compare -Wno-psabi -g)
-target_compile_definitions(elfloader3 PUBLIC -DNEWSGOLD=1 -DELKA=1)
+target_compile_definitions(elfloader3 PUBLIC -DNEWSGOLD=1 -DELKA=1 -DSWILIB_LINUX_SIMULATOR=1)
 target_link_options(elfloader3 PUBLIC -Wl,--dynamic-linker=/usr/arm-linux-gnueabihf/lib/ld-linux-armhf.so.3 -Wl,-rpath=/usr/arm-linux-gnueabihf/lib/)
 target_link_libraries(elfloader3 PUBLIC ssl crypto png z argparse spdlog)
 
