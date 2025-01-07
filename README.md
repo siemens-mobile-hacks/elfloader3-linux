@@ -21,6 +21,8 @@ git clone https://github.com/siemens-mobile-hacks/sdk
 # Emulator
 git clone https://github.com/Azq2/elfloader3-linux
 cd elfloader3-linux
+git submodule init
+git submodule update
 cmake -B build
 cmake --build build -- -j$(nproc)
 make
