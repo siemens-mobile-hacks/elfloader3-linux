@@ -5,7 +5,6 @@
 #include <QLocalSocket>
 
 #include <vector>
-#include <mutex>
 
 #include <IpcProto.h>
 
@@ -20,28 +19,21 @@ protected:
 	QString m_socket_path;
 	QLocalSocket m_socket;
 	std::vector<uint8_t> m_rx_buffer;
+	QImage m_image;
 
 	uint32_t toIpcKeyCode(QKeyEvent *e);
 	uint32_t toIpcKeyModifier(QKeyEvent *e);
 public:
-	explicit AppWindow(int w, int h, QWindow *parent = nullptr);
+	explicit AppWindow(uint8_t *buffer, QString socket, int w, int h, QWindow *parent = nullptr);
 
 	void parseRxBuffer();
 	void handleIpcCommand(IpcPacket *pkt);
 	void sendIpcCommand(IpcPacket *pkt);
 
-	void setScreenBuffer(uint8_t *buffer) {
-		m_screen_buffer = buffer;
-	}
-
-	void setSocketPath(QString socket) {
-		m_socket_path = socket;
-	}
-
 	void connectToServer();
 public slots:
 	void renderLater();
-	void renderNow();
+	void renderNow(const QRect &update);
 
 protected:
 	bool event(QEvent *event) override;

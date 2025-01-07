@@ -7,6 +7,7 @@
 #include <cassert>
 
 #include "src/swi/csm.h"
+#include "src/io/Loop.h"
 #include "src/swi/ll.h"
 #include "src/swi/gui.h"
 
@@ -54,6 +55,11 @@ void CSM_GarbageCollector() {
 		if (cursor->state == CSM_STATE_CLOSED)
 			CSM_Destroy(cursor);
 		cursor = next;
+	}
+
+	if (!CSM_root()->csm_q->csm.first) {
+		spdlog::debug("No active CSM!");
+		Loop::instance()->stop();
 	}
 }
 

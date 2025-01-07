@@ -45,9 +45,15 @@ public:
 		m_handlers[cmd] = callback;
 	}
 
-	inline void sendRedraw() {
-		IpcPacket packet = { IPC_CMD_REDRAW, sizeof(IpcPacket) };
-		send(&packet);
+	inline void sendRedraw(int x, int y, int x2, int y2) {
+		IpcPacketRedraw packet = {
+			.header = { IPC_CMD_REDRAW, sizeof(IpcPacketRedraw) },
+			.x = x,
+			.y = y,
+			.x2 = x2,
+			.y2 = y2,
+		};
+		send(&packet.header);
 	}
 
 	inline void setHelperPath(const std::string &helper_path) {

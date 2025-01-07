@@ -148,11 +148,8 @@ void GUI_Close(int id) {
 
 void GUI_HandleKeyPress(GBS_MSG *msg) {
 	int top_id = GUI_GetTopID();
-	if (top_id < 0 && msg->submess == 60) {
-		spdlog::debug("msg {}", msg->submess);
-		CloseCSM(0);
+	if (top_id < 0)
 		return;
-	}
 
 	GUI_RAM *gui_ram = GUI_GetById(top_id);
 
@@ -389,41 +386,3 @@ int GUI_DeleteTimer(void *gui, int id) {
 void GUI_StartTimerProc(void *gui, int id, long timeout_ms, GUI_TimerProc callback) {
 	spdlog::debug("{}: not implemented!", __func__);
 }
-
-#if 0
-// Currently we have only one layer
-static LCDLAYER mmi_layer = {};
-static LCDLAYER *mmi_layers[10] = {
-	&mmi_layer, nullptr
-};
-
-
-
-
-
-
-
-
-void GUI_REDRAW() {
-	// WTF?
-	GUI_DirectRedrawGUI();
-}
-
-LCDLAYER **GUI_GetLCDLayerList() {
-	return mmi_layers;
-}
-
-void *GUI_RamScreenBuffer() {
-	return IPC::instance()->getScreenBuffer();
-}
-
-void GUI_IpcRedrawScreen() {
-	if (!screen_redraw_requested) {
-		screen_redraw_requested = true;
-		GBS_RunInContext(MMI_CEPID, []() {
-			screen_redraw_requested = false;
-			IPC::instance()->sendRedraw();
-		});
-	}
-}
-#endif

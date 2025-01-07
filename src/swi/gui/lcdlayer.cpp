@@ -87,6 +87,7 @@ void LCDLAYER_Flush(LCDLAYER *layer) {
 	int y2 = std::max(0, std::min((int) layer->invalidate.y2, h - 1));
 	auto *source = reinterpret_cast<uint8_t *>(layer->buffer);
 	auto type = LCDLAYER_GetBitmapType(layer);
+	LCDLAYER_ResetInvalidateRegion(layer);
 
 	for (int y = y1; y <= y2; y++) {
 		int index = y * w;
@@ -95,8 +96,9 @@ void LCDLAYER_Flush(LCDLAYER *layer) {
 		}
 	}
 
-	IPC::instance()->sendRedraw();
-	LCDLAYER_ResetInvalidateRegion(layer);
+	if (x1 <= x2 && y1 <= y2) {
+		IPC::instance()->sendRedraw(x1, y1, x2, y2);
+	}
 }
 
 void LCDLAYER_Redraw(LCDLAYER *layer) {

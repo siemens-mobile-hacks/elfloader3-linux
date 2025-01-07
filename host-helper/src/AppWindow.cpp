@@ -1,10 +1,14 @@
 #include "AppWindow.h"
+#include "IpcProto.h"
 
 #include <cstdio>
 
-AppWindow::AppWindow(int w, int h, QWindow *parent) : QWindow(parent), m_backingStore(new QBackingStore(this)), m_socket(this) {
+AppWindow::AppWindow(uint8_t *buffer, QString socket, int w, int h, QWindow *parent) : QWindow(parent), m_backingStore(new QBackingStore(this)), m_socket(this) {
 	m_width = w;
 	m_height = h;
+	m_screen_buffer = buffer;
+	m_socket_path = socket;
+	m_image = QImage(m_screen_buffer, m_width, m_height, QImage::Format_ARGB32);
 
 	QRect screen_geometry = QGuiApplication::primaryScreen()->geometry();
 	int x = (screen_geometry.width() - m_width) / 2;
@@ -43,7 +47,10 @@ void AppWindow::parseRxBuffer() {
 void AppWindow::handleIpcCommand(IpcPacket *pkt) {
 	switch (pkt->cmd) {
 		case IPC_CMD_REDRAW:
-			renderNow();
+		{
+			IpcPacketRedraw *pkt_redraw = reinterpret_cast<IpcPacketRedraw *>(pkt);
+			renderNow(QRect(QPoint(pkt_redraw->x, pkt_redraw->y), QPoint(pkt_redraw->x2, pkt_redraw->y2)));
+		}
 		break;
 
 		default:
@@ -89,7 +96,7 @@ bool AppWindow::event(QEvent *event) {
 	}
 
 	if (event->type() == QEvent::UpdateRequest) {
-		renderNow();
+		renderNow(QRect(0, 0, width(), height()));
 		return true;
 	}
 	return QWindow::event(event);
@@ -105,24 +112,20 @@ void AppWindow::resizeEvent(QResizeEvent *resizeEvent) {
 
 void AppWindow::exposeEvent(QExposeEvent *) {
 	if (isExposed())
-		renderNow();
+		renderNow(QRect(0, 0, width(), height()));
 }
 
-void AppWindow::renderNow() {
+void AppWindow::renderNow(const QRect &update) {
 	if (!isExposed())
 		return;
 
-	QRect rect(0, 0, width(), height());
-	m_backingStore->beginPaint(rect);
+	m_backingStore->beginPaint(update);
 
 	QPaintDevice *device = m_backingStore->paintDevice();
 	QPainter painter(device);
-
-	QImage image(m_screen_buffer, m_width, m_height, QImage::Format_ARGB32);
-	painter.drawImage(rect, image);
-
+	painter.drawImage(m_image.rect(), m_image);
 	painter.end();
 
 	m_backingStore->endPaint();
-	m_backingStore->flush(rect);
+	m_backingStore->flush(update);
 }

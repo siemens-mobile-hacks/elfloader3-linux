@@ -19,8 +19,8 @@ void MMI_Init() {
 			return;
 		if (msg.msg == LCD_DISPLAYQUEUE_CMD_REDRAW) {
 			auto *layer = reinterpret_cast<LCDLAYER *>(msg.data0);
-			LCDLAYER_Flush(layer);
 			layer->redraw_requested = 0;
+			LCDLAYER_Flush(layer);
 		} else {
 			spdlog::debug("[LCD_DISPLAYQUEUE] unknown cmd {:04X}", toUnsigned(msg.msg));
 		}

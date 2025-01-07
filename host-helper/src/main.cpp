@@ -25,9 +25,7 @@ int main(int argc, char *argv[]) {
 		return -1;
 	}
 
-	AppWindow win(width, height);
-	win.setScreenBuffer(mem);
-	win.setSocketPath(socket);
+	AppWindow win(mem, socket, width, height);
 	win.connectToServer();
 	win.show();
 

@@ -11,6 +11,7 @@ ExternalProject_Add(host_helper
 	SOURCE_DIR			"${CMAKE_CURRENT_SOURCE_DIR}/host-helper"
 	BINARY_DIR			"${CMAKE_CURRENT_SOURCE_DIR}/host-helper/build"
 	INSTALL_COMMAND		""
+	BUILD_ALWAYS		ON
 )
 
 set(CMAKE_CXX_STANDARD 20)

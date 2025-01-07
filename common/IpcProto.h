@@ -500,6 +500,14 @@ struct IpcPacket {
 	uint8_t size;
 };
 
+struct IpcPacketRedraw {
+	IpcPacket header;
+	int x;
+	int y;
+	int x2;
+	int y2;
+};
+
 struct IpcPacketKeyEvent {
 	IpcPacket header;
 	IpcKeyState state;

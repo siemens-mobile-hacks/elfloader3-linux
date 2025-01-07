@@ -1,4 +1,7 @@
 cmake_minimum_required(VERSION 3.16)
+
+set(CMAKE_EXPORT_COMPILE_COMMANDS true)
+
 project(host-helper LANGUAGES CXX)
 
 find_package(Qt6 REQUIRED COMPONENTS Core Gui Widgets Network)
